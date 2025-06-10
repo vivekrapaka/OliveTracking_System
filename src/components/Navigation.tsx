@@ -27,18 +27,13 @@ export const Navigation = () => {
               <img 
                 src="/lovable-uploads/ee53a353-0042-45dd-90f5-826c4841d71f.png" 
                 alt="Olive Tracking System" 
-                className="h-10 w-auto transition-transform duration-300 group-hover:scale-110 drop-shadow-lg"
+                className="h-12 w-auto transition-transform duration-300 group-hover:scale-110 drop-shadow-lg"
               />
               <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-xl"></div>
             </div>
-            <div className="flex flex-col">
-              <span className="text-xl font-bold text-slate-900 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                OliveTrackingSystem
-              </span>
-              <span className="text-xs text-slate-500 font-medium">
-                Powered by Shabeer and Team
-              </span>
-            </div>
+            <span className="text-xl font-bold text-slate-900 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              OliveTrackingSystem
+            </span>
           </Link>
 
           {/* Desktop Navigation */}
