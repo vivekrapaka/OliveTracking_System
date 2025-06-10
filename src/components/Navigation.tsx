@@ -23,10 +23,12 @@ export const Navigation = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <CheckSquare className="h-5 w-5 text-white" />
-            </div>
-            <span className="text-xl font-bold text-slate-900">TeamTaskManager</span>
+            <img 
+              src="/lovable-uploads/ee53a353-0042-45dd-90f5-826c4841d71f.png" 
+              alt="Olive Tracking System" 
+              className="h-8 w-auto"
+            />
+            <span className="text-xl font-bold text-slate-900">OliveTrackingSystem</span>
           </Link>
 
           {/* Desktop Navigation */}

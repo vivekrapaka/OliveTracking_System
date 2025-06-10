@@ -1,6 +1,5 @@
-
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -9,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { 
   Plus, 
   Search, 
@@ -16,20 +16,22 @@ import {
   Calendar as CalendarIcon,
   Users,
   Clock,
-  MoreHorizontal,
   Edit,
   Trash2
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
+import { EditTaskDialog } from "@/components/EditTaskDialog";
 
 const Tasks = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>();
+  const [editingTask, setEditingTask] = useState<any>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-  // Mock data - this will come from your backend API
+  // Mock data with assigned teammates details
   const [tasks, setTasks] = useState([
     { 
       id: 1, 
@@ -128,6 +130,23 @@ const Tasks = () => {
       description: "New task has been created successfully.",
     });
     setIsCreateModalOpen(false);
+  };
+
+  const handleEditTask = (task: any) => {
+    setEditingTask(task);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSaveTask = (updatedTask: any) => {
+    setTasks(tasks.map(task => task.id === updatedTask.id ? updatedTask : task));
+  };
+
+  const handleDeleteTask = (taskId: number) => {
+    setTasks(tasks.filter(task => task.id !== taskId));
+    toast({
+      title: "Task Deleted",
+      description: "Task has been deleted successfully.",
+    });
   };
 
   return (
@@ -283,9 +302,12 @@ const Tasks = () => {
                     </div>
                     <div>
                       <p className="text-slate-600 font-medium mb-1">Assigned To</p>
-                      <div className="flex items-center text-slate-700">
-                        <Users className="h-3 w-3 mr-1" />
-                        {task.assignedTeammates.length} members
+                      <div className="flex flex-wrap gap-1">
+                        {task.assignedTeammates.map((teammate, index) => (
+                          <Badge key={index} variant="outline" className="text-xs">
+                            {teammate}
+                          </Badge>
+                        ))}
                       </div>
                     </div>
                   </div>
@@ -297,18 +319,51 @@ const Tasks = () => {
                 </div>
 
                 <div className="flex items-center space-x-2 ml-4">
-                  <Button variant="ghost" size="sm">
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => handleEditTask(task)}
+                  >
                     <Edit className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Task</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to delete "{task.name}"? This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction 
+                          onClick={() => handleDeleteTask(task.id)}
+                          className="bg-red-600 hover:bg-red-700"
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
+
+      {/* Edit Task Dialog */}
+      <EditTaskDialog
+        isOpen={isEditDialogOpen}
+        onClose={() => setIsEditDialogOpen(false)}
+        task={editingTask}
+        onSave={handleSaveTask}
+      />
 
       {filteredTasks.length === 0 && (
         <div className="text-center py-12">
