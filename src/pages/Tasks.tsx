@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,12 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { 
-  Plus, 
-  Search, 
-  Filter, 
+import {
+  Plus,
+  Search,
+  Filter,
   Calendar as CalendarIcon,
-  Users,
   Clock,
   Edit,
   Trash2
@@ -23,6 +23,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { EditTaskDialog } from "@/components/EditTaskDialog";
+import { TeammateSelector } from "@/components/TeammateSelector";
 
 const Tasks = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -30,53 +31,64 @@ const Tasks = () => {
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [editingTask, setEditingTask] = useState<any>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedTeammates, setSelectedTeammates] = useState<string[]>([]);
 
-  // Mock data with assigned teammates details
+  // Mock teammates data - this would come from your API
+  const teammates = [
+    { id: 1, name: "John Doe", role: "Senior Frontend Developer" },
+    { id: 2, name: "Jane Smith", role: "Backend Developer" },
+    { id: 3, name: "Mike Johnson", role: "Full Stack Developer" },
+    { id: 4, name: "Sarah Wilson", role: "UX Designer" },
+    { id: 5, name: "Tom Brown", role: "DevOps Engineer" }
+  ];
+
+  // ... keep existing code (tasks state, stages, issueTypes, priorities, color functions, filteredTasks)
+
   const [tasks, setTasks] = useState([
-    { 
-      id: 1, 
-      name: "User Authentication System", 
-      issueType: "Feature", 
+    {
+      id: 1,
+      name: "User Authentication System",
+      issueType: "Feature",
       receivedDate: "2024-06-01",
       developmentStartDate: "2024-06-05",
-      currentStage: "Development", 
-      dueDate: "2024-06-15", 
+      currentStage: "Development",
+      dueDate: "2024-06-15",
       assignedTeammates: ["John Doe", "Jane Smith"],
       priority: "High",
       isCompleted: false
     },
-    { 
-      id: 2, 
-      name: "Database Schema Design", 
-      issueType: "Task", 
+    {
+      id: 2,
+      name: "Database Schema Design",
+      issueType: "Task",
       receivedDate: "2024-06-02",
       developmentStartDate: "2024-06-06",
-      currentStage: "Review", 
-      dueDate: "2024-06-12", 
+      currentStage: "Review",
+      dueDate: "2024-06-12",
       assignedTeammates: ["Mike Johnson"],
       priority: "Medium",
       isCompleted: false
     },
-    { 
-      id: 3, 
-      name: "Frontend Dashboard", 
-      issueType: "Feature", 
+    {
+      id: 3,
+      name: "Frontend Dashboard",
+      issueType: "Feature",
       receivedDate: "2024-06-03",
       developmentStartDate: "2024-06-07",
-      currentStage: "Testing", 
-      dueDate: "2024-06-18", 
+      currentStage: "Testing",
+      dueDate: "2024-06-18",
       assignedTeammates: ["Sarah Wilson", "Tom Brown"],
       priority: "High",
       isCompleted: false
     },
-    { 
-      id: 4, 
-      name: "Bug Fix - Login Issue", 
-      issueType: "Bug", 
+    {
+      id: 4,
+      name: "Bug Fix - Login Issue",
+      issueType: "Bug",
       receivedDate: "2024-06-04",
       developmentStartDate: "2024-06-04",
-      currentStage: "Completed", 
-      dueDate: "2024-06-08", 
+      currentStage: "Completed",
+      dueDate: "2024-06-08",
       assignedTeammates: ["John Doe"],
       priority: "Critical",
       isCompleted: true
@@ -124,11 +136,20 @@ const Tasks = () => {
     task.currentStage.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const handleTeammateToggle = (teammateName: string) => {
+    setSelectedTeammates(prev =>
+      prev.includes(teammateName)
+        ? prev.filter(name => name !== teammateName)
+        : [...prev, teammateName]
+    );
+  };
+
   const handleCreateTask = () => {
     toast({
       title: "Task Created",
       description: "New task has been created successfully.",
     });
+    setSelectedTeammates([]);
     setIsCreateModalOpen(false);
   };
 
@@ -157,7 +178,7 @@ const Tasks = () => {
           <h1 className="text-3xl font-bold text-slate-900">Tasks</h1>
           <p className="text-slate-600 mt-1">Manage and track all your project tasks</p>
         </div>
-        
+
         <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
           <DialogTrigger asChild>
             <Button className="bg-blue-600 hover:bg-blue-700">
@@ -239,6 +260,11 @@ const Tasks = () => {
                   </SelectContent>
                 </Select>
               </div>
+              <TeammateSelector
+                teammates={teammates}
+                selectedTeammates={selectedTeammates}
+                onTeammateToggle={handleTeammateToggle}
+              />
             </div>
             <div className="flex justify-end space-x-2">
               <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>
@@ -269,6 +295,8 @@ const Tasks = () => {
         </Button>
       </div>
 
+      {/* ... keep existing code (Tasks Grid, EditTaskDialog, no tasks found section) */}
+
       {/* Tasks Grid */}
       <div className="grid gap-6">
         {filteredTasks.map((task) => (
@@ -285,7 +313,7 @@ const Tasks = () => {
                       {task.priority}
                     </Badge>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                     <div>
                       <p className="text-slate-600 font-medium mb-1">Current Stage</p>
@@ -319,8 +347,8 @@ const Tasks = () => {
                 </div>
 
                 <div className="flex items-center space-x-2 ml-4">
-                  <Button 
-                    variant="ghost" 
+                  <Button
+                    variant="ghost"
                     size="sm"
                     onClick={() => handleEditTask(task)}
                   >
@@ -341,7 +369,7 @@ const Tasks = () => {
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction 
+                        <AlertDialogAction
                           onClick={() => handleDeleteTask(task.id)}
                           className="bg-red-600 hover:bg-red-700"
                         >
@@ -363,6 +391,7 @@ const Tasks = () => {
         onClose={() => setIsEditDialogOpen(false)}
         task={editingTask}
         onSave={handleSaveTask}
+        teammates={teammates}
       />
 
       {filteredTasks.length === 0 && (
