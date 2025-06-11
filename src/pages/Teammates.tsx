@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -525,5 +526,3 @@ const Teammates = () => {
 };
 
 export default Teammates;
-
-</edits_to_apply>
