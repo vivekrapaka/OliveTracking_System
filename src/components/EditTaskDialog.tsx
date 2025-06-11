@@ -85,7 +85,6 @@ export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: Edi
         description: "Task has been updated successfully.",
       });
       onClose();
-    }
   };
 
   if (!task) return null;
