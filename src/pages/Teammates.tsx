@@ -19,6 +19,7 @@ import {
   MapPin
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { useTeammateAvailability } from "@/hooks/useTeammateAvailability";
 
 const Teammates = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -26,8 +27,32 @@ const Teammates = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingTeammate, setEditingTeammate] = useState<any>(null);
 
+  // Mock tasks data to sync with Tasks page
+  const mockTasks = [
+    { 
+      id: 1, 
+      assignedTeammates: ["John Doe", "Jane Smith"],
+      currentStage: "Development"
+    },
+    { 
+      id: 2, 
+      assignedTeammates: ["Mike Johnson"],
+      currentStage: "Review"
+    },
+    { 
+      id: 3, 
+      assignedTeammates: ["Sarah Wilson", "Tom Brown"],
+      currentStage: "Testing"
+    },
+    { 
+      id: 4, 
+      assignedTeammates: ["John Doe"],
+      currentStage: "Completed"
+    }
+  ];
+
   // Mock data - this will come from your backend API
-  const [teammates, setTeammates] = useState([
+  const [teammatesData, setTeammatesData] = useState([
     {
       id: 1,
       name: "John Doe",
@@ -48,7 +73,7 @@ const Teammates = () => {
       phone: "+1 (555) 234-5678",
       role: "Backend Developer",
       department: "Engineering",
-      availabilityStatus: "Occupied",
+      availabilityStatus: "Available",
       location: "San Francisco, CA",
       avatar: "/placeholder.svg",
       tasksAssigned: 2,
@@ -94,6 +119,9 @@ const Teammates = () => {
       tasksCompleted: 10
     }
   ]);
+
+  // Use the hook to get updated availability status
+  const teammates = useTeammateAvailability(mockTasks, teammatesData);
 
   const roles = ["Frontend Developer", "Backend Developer", "Full Stack Developer", "UX Designer", "DevOps Engineer", "Project Manager"];
   const departments = ["Engineering", "Design", "Product", "Marketing", "Sales"];
@@ -145,7 +173,7 @@ const Teammates = () => {
 
   const handleSaveTeammate = () => {
     if (editingTeammate) {
-      setTeammates(teammates.map(teammate => 
+      setTeammatesData(teammatesData.map(teammate => 
         teammate.id === editingTeammate.id ? editingTeammate : teammate
       ));
       toast({
@@ -158,7 +186,7 @@ const Teammates = () => {
   };
 
   const handleDeleteTeammate = (teammateId: number) => {
-    setTeammates(teammates.filter(teammate => teammate.id !== teammateId));
+    setTeammatesData(teammatesData.filter(teammate => teammate.id !== teammateId));
     toast({
       title: "Teammate Deleted",
       description: "Team member has been deleted successfully.",
@@ -497,3 +525,5 @@ const Teammates = () => {
 };
 
 export default Teammates;
+
+</edits_to_apply>

@@ -24,6 +24,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { EditTaskDialog } from "@/components/EditTaskDialog";
+import { TeammateSelector } from "@/components/TeammateSelector";
 
 const Tasks = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -259,32 +260,11 @@ const Tasks = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid gap-2">
-                <Label>Assign Teammates</Label>
-                <div className="border rounded-md p-3 max-h-40 overflow-y-auto">
-                  {teammates.map((teammate) => (
-                    <div key={teammate.id} className="flex items-center space-x-2 py-2">
-                      <Checkbox
-                        id={`teammate-${teammate.id}`}
-                        checked={selectedTeammates.includes(teammate.name)}
-                        onCheckedChange={() => handleTeammateToggle(teammate.name)}
-                      />
-                      <Label htmlFor={`teammate-${teammate.id}`} className="text-sm">
-                        {teammate.name} - {teammate.role}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-                {selectedTeammates.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {selectedTeammates.map((name) => (
-                      <Badge key={name} variant="outline" className="text-xs">
-                        {name}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <TeammateSelector
+                teammates={teammates}
+                selectedTeammates={selectedTeammates}
+                onTeammateToggle={handleTeammateToggle}
+              />
             </div>
             <div className="flex justify-end space-x-2">
               <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>
@@ -424,3 +404,5 @@ const Tasks = () => {
 };
 
 export default Tasks;
+
+}
