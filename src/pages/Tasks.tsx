@@ -42,8 +42,6 @@ const Tasks = () => {
     { id: 5, name: "Tom Brown", role: "DevOps Engineer" }
   ];
 
-  // ... keep existing code (tasks state, stages, issueTypes, priorities, color functions, filteredTasks)
-
   const [tasks, setTasks] = useState([
     {
       id: 1,
