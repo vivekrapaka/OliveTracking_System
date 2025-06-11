@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 // ... keep existing code (imports)
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,14 +22,34 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { useTeammateAvailability } from "@/hooks/useTeammateAvailability";
 
-const Teammates = () => {
+interface Task {
+  id: number;
+  assignedTeammates: string[];
+  currentStage: string;
+}
+
+interface Teammate {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  role: string;
+  department: string;
+  availabilityStatus: string;
+  location: string;
+  avatar: string;
+  tasksAssigned: number;
+  tasksCompleted: number;
+}
+
+export const Teammates = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingTeammate, setEditingTeammate] = useState<any>(null);
+  const [editingTeammate, setEditingTeammate] = useState<Teammate | null>(null);
 
   // Mock tasks data to sync with Tasks page
-  const mockTasks = [
+  const [tasks, setTasks] = useState<Task[]>([
     {
       id: 1,
       assignedTeammates: ["John Doe", "Jane Smith"],
@@ -50,10 +70,10 @@ const Teammates = () => {
       assignedTeammates: ["John Doe"],
       currentStage: "Completed"
     }
-  ];
+  ]);
 
   // Mock data - this will come from your backend API
-  const [teammatesData, setTeammatesData] = useState([
+  const [teammatesData, setTeammatesData] = useState<Teammate[]>([
     {
       id: 1,
       name: "John Doe",
@@ -121,18 +141,24 @@ const Teammates = () => {
     }
   ]);
 
+  const availabilityStatuses = ["Available", "Occupied", "Leave"];
+
   // Use the hook to get updated availability status
-  const teammates = useTeammateAvailability(mockTasks, teammatesData);
+  const updatedTeammates = useTeammateAvailability(tasks, teammatesData);
+
+  // Keep teammatesData in sync with updatedTeammates
+  useEffect(() => {
+    setTeammatesData(updatedTeammates as Teammate[]);
+  }, [updatedTeammates]);
 
   const roles = ["Frontend Developer", "Backend Developer", "Full Stack Developer", "UX Designer", "DevOps Engineer", "Project Manager"];
   const departments = ["Engineering", "Design", "Product", "Marketing", "Sales"];
-  const availabilityStatuses = ["Available", "Occupied", "On Leave"];
 
   const getAvailabilityColor = (status: string) => {
     switch (status) {
       case "Available": return "bg-green-100 text-green-800 border-green-200";
       case "Occupied": return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "On Leave": return "bg-red-100 text-red-800 border-red-200";
+      case "Leave": return "bg-red-100 text-red-800 border-red-200";
       default: return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
@@ -152,7 +178,7 @@ const Teammates = () => {
     return name.split(' ').map(word => word[0]).join('').toUpperCase();
   };
 
-  const filteredTeammates = teammates.filter(teammate =>
+  const filteredTeammates = teammatesData.filter(teammate =>
     teammate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     teammate.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
     teammate.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -167,16 +193,19 @@ const Teammates = () => {
     setIsCreateModalOpen(false);
   };
 
-  const handleEditTeammate = (teammate: any) => {
+  const handleEditTeammate = (teammate: Teammate) => {
     setEditingTeammate(teammate);
     setIsEditModalOpen(true);
   };
 
   const handleSaveTeammate = () => {
     if (editingTeammate) {
-      setTeammatesData(teammatesData.map(teammate =>
-        teammate.id === editingTeammate.id ? editingTeammate : teammate
-      ));
+      setTeammatesData(prevTeammates =>
+        prevTeammates.map(teammate =>
+          teammate.id === editingTeammate.id ? editingTeammate : teammate
+        )
+      );
+
       toast({
         title: "Teammate Updated",
         description: "Team member has been updated successfully.",
@@ -286,14 +315,14 @@ const Teammates = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
           <CardContent className="p-6">
-            <div className="text-2xl font-bold text-slate-900">{teammates.length}</div>
+            <div className="text-2xl font-bold text-slate-900">{teammatesData.length}</div>
             <p className="text-sm text-slate-600">Total Members</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6">
             <div className="text-2xl font-bold text-green-600">
-              {teammates.filter(t => t.availabilityStatus === "Available").length}
+              {teammatesData.filter(t => t.availabilityStatus === "Available").length}
             </div>
             <p className="text-sm text-slate-600">Available</p>
           </CardContent>
@@ -301,7 +330,7 @@ const Teammates = () => {
         <Card>
           <CardContent className="p-6">
             <div className="text-2xl font-bold text-yellow-600">
-              {teammates.filter(t => t.availabilityStatus === "Occupied").length}
+              {teammatesData.filter(t => t.availabilityStatus === "Occupied").length}
             </div>
             <p className="text-sm text-slate-600">Occupied</p>
           </CardContent>
@@ -309,7 +338,7 @@ const Teammates = () => {
         <Card>
           <CardContent className="p-6">
             <div className="text-2xl font-bold text-slate-900">
-              {teammates.reduce((sum, t) => sum + t.tasksAssigned, 0)}
+              {teammatesData.reduce((sum, t) => sum + t.tasksAssigned, 0)}
             </div>
             <p className="text-sm text-slate-600">Active Tasks</p>
           </CardContent>
@@ -415,7 +444,7 @@ const Teammates = () => {
 
       {/* Edit Teammate Dialog */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Team Member</DialogTitle>
           </DialogHeader>
@@ -482,7 +511,12 @@ const Teammates = () => {
                 <Label htmlFor="editAvailability">Availability Status</Label>
                 <Select
                   value={editingTeammate.availabilityStatus}
-                  onValueChange={(value) => setEditingTeammate({...editingTeammate, availabilityStatus: value})}
+                  onValueChange={(value) => {
+                    setEditingTeammate({
+                      ...editingTeammate,
+                      availabilityStatus: value
+                    });
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue />
