@@ -1,5 +1,5 @@
-
 import { useState } from "react";
+// ... keep existing code (imports)
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,10 +9,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { 
-  Plus, 
-  Search, 
-  Mail, 
+import {
+  Plus,
+  Search,
+  Mail,
   Phone,
   Edit,
   Trash2,
@@ -30,23 +30,23 @@ const Teammates = () => {
 
   // Mock tasks data to sync with Tasks page
   const mockTasks = [
-    { 
-      id: 1, 
+    {
+      id: 1,
       assignedTeammates: ["John Doe", "Jane Smith"],
       currentStage: "Development"
     },
-    { 
-      id: 2, 
+    {
+      id: 2,
       assignedTeammates: ["Mike Johnson"],
       currentStage: "Review"
     },
-    { 
-      id: 3, 
+    {
+      id: 3,
       assignedTeammates: ["Sarah Wilson", "Tom Brown"],
       currentStage: "Testing"
     },
-    { 
-      id: 4, 
+    {
+      id: 4,
       assignedTeammates: ["John Doe"],
       currentStage: "Completed"
     }
@@ -174,7 +174,7 @@ const Teammates = () => {
 
   const handleSaveTeammate = () => {
     if (editingTeammate) {
-      setTeammatesData(teammatesData.map(teammate => 
+      setTeammatesData(teammatesData.map(teammate =>
         teammate.id === editingTeammate.id ? editingTeammate : teammate
       ));
       toast({
@@ -196,13 +196,14 @@ const Teammates = () => {
 
   return (
     <div className="space-y-6">
+      {/* ... keep existing code (Header, Search, Team Stats, Team Members Grid, Edit Dialog, no teammates found section) */}
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Team Members</h1>
           <p className="text-slate-600 mt-1">Manage your team and track their availability</p>
         </div>
-        
+
         <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
           <DialogTrigger asChild>
             <Button className="bg-blue-600 hover:bg-blue-700">
@@ -327,7 +328,7 @@ const Teammates = () => {
                     {getInitials(teammate.name)}
                   </AvatarFallback>
                 </Avatar>
-                
+
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-2">
                     <div>
@@ -370,10 +371,10 @@ const Teammates = () => {
                         <span className="text-slate-600 ml-1">Completed</span>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center space-x-2">
-                      <Button 
-                        variant="ghost" 
+                      <Button
+                        variant="ghost"
                         size="sm"
                         onClick={() => handleEditTeammate(teammate)}
                       >
@@ -394,7 +395,7 @@ const Teammates = () => {
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction 
+                            <AlertDialogAction
                               onClick={() => handleDeleteTeammate(teammate.id)}
                               className="bg-red-600 hover:bg-red-700"
                             >
@@ -422,33 +423,33 @@ const Teammates = () => {
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
                 <Label htmlFor="editName">Full Name</Label>
-                <Input 
-                  id="editName" 
+                <Input
+                  id="editName"
                   value={editingTeammate.name}
                   onChange={(e) => setEditingTeammate({...editingTeammate, name: e.target.value})}
                 />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="editEmail">Email</Label>
-                <Input 
-                  id="editEmail" 
-                  type="email" 
+                <Input
+                  id="editEmail"
+                  type="email"
                   value={editingTeammate.email}
                   onChange={(e) => setEditingTeammate({...editingTeammate, email: e.target.value})}
                 />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="editPhone">Phone</Label>
-                <Input 
-                  id="editPhone" 
+                <Input
+                  id="editPhone"
                   value={editingTeammate.phone}
                   onChange={(e) => setEditingTeammate({...editingTeammate, phone: e.target.value})}
                 />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="editRole">Role</Label>
-                <Select 
-                  value={editingTeammate.role} 
+                <Select
+                  value={editingTeammate.role}
                   onValueChange={(value) => setEditingTeammate({...editingTeammate, role: value})}
                 >
                   <SelectTrigger>
@@ -463,8 +464,8 @@ const Teammates = () => {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="editDepartment">Department</Label>
-                <Select 
-                  value={editingTeammate.department} 
+                <Select
+                  value={editingTeammate.department}
                   onValueChange={(value) => setEditingTeammate({...editingTeammate, department: value})}
                 >
                   <SelectTrigger>
@@ -479,8 +480,8 @@ const Teammates = () => {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="editAvailability">Availability Status</Label>
-                <Select 
-                  value={editingTeammate.availabilityStatus} 
+                <Select
+                  value={editingTeammate.availabilityStatus}
                   onValueChange={(value) => setEditingTeammate({...editingTeammate, availabilityStatus: value})}
                 >
                   <SelectTrigger>
@@ -495,8 +496,8 @@ const Teammates = () => {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="editLocation">Location</Label>
-                <Input 
-                  id="editLocation" 
+                <Input
+                  id="editLocation"
                   value={editingTeammate.location}
                   onChange={(e) => setEditingTeammate({...editingTeammate, location: e.target.value})}
                 />

@@ -10,13 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Checkbox } from "@/components/ui/checkbox";
-import { 
-  Plus, 
-  Search, 
-  Filter, 
+import {
+  Plus,
+  Search,
+  Filter,
   Calendar as CalendarIcon,
-  Users,
   Clock,
   Edit,
   Trash2
@@ -44,52 +42,51 @@ const Tasks = () => {
     { id: 5, name: "Tom Brown", role: "DevOps Engineer" }
   ];
 
-  // Mock data with assigned teammates details
   const [tasks, setTasks] = useState([
-    { 
-      id: 1, 
-      name: "User Authentication System", 
-      issueType: "Feature", 
+    {
+      id: 1,
+      name: "User Authentication System",
+      issueType: "Feature",
       receivedDate: "2024-06-01",
       developmentStartDate: "2024-06-05",
-      currentStage: "Development", 
-      dueDate: "2024-06-15", 
+      currentStage: "Development",
+      dueDate: "2024-06-15",
       assignedTeammates: ["John Doe", "Jane Smith"],
       priority: "High",
       isCompleted: false
     },
-    { 
-      id: 2, 
-      name: "Database Schema Design", 
-      issueType: "Task", 
+    {
+      id: 2,
+      name: "Database Schema Design",
+      issueType: "Task",
       receivedDate: "2024-06-02",
       developmentStartDate: "2024-06-06",
-      currentStage: "Review", 
-      dueDate: "2024-06-12", 
+      currentStage: "Review",
+      dueDate: "2024-06-12",
       assignedTeammates: ["Mike Johnson"],
       priority: "Medium",
       isCompleted: false
     },
-    { 
-      id: 3, 
-      name: "Frontend Dashboard", 
-      issueType: "Feature", 
+    {
+      id: 3,
+      name: "Frontend Dashboard",
+      issueType: "Feature",
       receivedDate: "2024-06-03",
       developmentStartDate: "2024-06-07",
-      currentStage: "Testing", 
-      dueDate: "2024-06-18", 
+      currentStage: "Testing",
+      dueDate: "2024-06-18",
       assignedTeammates: ["Sarah Wilson", "Tom Brown"],
       priority: "High",
       isCompleted: false
     },
-    { 
-      id: 4, 
-      name: "Bug Fix - Login Issue", 
-      issueType: "Bug", 
+    {
+      id: 4,
+      name: "Bug Fix - Login Issue",
+      issueType: "Bug",
       receivedDate: "2024-06-04",
       developmentStartDate: "2024-06-04",
-      currentStage: "Completed", 
-      dueDate: "2024-06-08", 
+      currentStage: "Completed",
+      dueDate: "2024-06-08",
       assignedTeammates: ["John Doe"],
       priority: "Critical",
       isCompleted: true
@@ -138,8 +135,8 @@ const Tasks = () => {
   );
 
   const handleTeammateToggle = (teammateName: string) => {
-    setSelectedTeammates(prev => 
-      prev.includes(teammateName) 
+    setSelectedTeammates(prev =>
+      prev.includes(teammateName)
         ? prev.filter(name => name !== teammateName)
         : [...prev, teammateName]
     );
@@ -179,7 +176,7 @@ const Tasks = () => {
           <h1 className="text-3xl font-bold text-slate-900">Tasks</h1>
           <p className="text-slate-600 mt-1">Manage and track all your project tasks</p>
         </div>
-        
+
         <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
           <DialogTrigger asChild>
             <Button className="bg-blue-600 hover:bg-blue-700">
@@ -296,6 +293,8 @@ const Tasks = () => {
         </Button>
       </div>
 
+      {/* ... keep existing code (Tasks Grid, EditTaskDialog, no tasks found section) */}
+
       {/* Tasks Grid */}
       <div className="grid gap-6">
         {filteredTasks.map((task) => (
@@ -312,7 +311,7 @@ const Tasks = () => {
                       {task.priority}
                     </Badge>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                     <div>
                       <p className="text-slate-600 font-medium mb-1">Current Stage</p>
@@ -346,8 +345,8 @@ const Tasks = () => {
                 </div>
 
                 <div className="flex items-center space-x-2 ml-4">
-                  <Button 
-                    variant="ghost" 
+                  <Button
+                    variant="ghost"
                     size="sm"
                     onClick={() => handleEditTask(task)}
                   >
@@ -368,7 +367,7 @@ const Tasks = () => {
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction 
+                        <AlertDialogAction
                           onClick={() => handleDeleteTask(task.id)}
                           className="bg-red-600 hover:bg-red-700"
                         >

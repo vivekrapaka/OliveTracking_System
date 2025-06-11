@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Check, ChevronDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -21,11 +20,11 @@ interface TeammateSelectorProps {
   label?: string;
 }
 
-export const TeammateSelector = ({ 
-  teammates, 
-  selectedTeammates, 
-  onTeammateToggle, 
-  label = "Assign Teammates" 
+export const TeammateSelector = ({
+  teammates,
+  selectedTeammates,
+  onTeammateToggle,
+  label = "Assign Teammates"
 }: TeammateSelectorProps) => {
   const [open, setOpen] = useState(false);
 
@@ -40,8 +39,8 @@ export const TeammateSelector = ({
             aria-expanded={open}
             className="justify-between"
           >
-            {selectedTeammates.length === 0 
-              ? "Select teammates..." 
+            {selectedTeammates.length === 0
+              ? "Select teammates..."
               : `${selectedTeammates.length} teammate(s) selected`
             }
             <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />

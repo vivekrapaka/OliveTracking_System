@@ -60,19 +60,21 @@ export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: Edi
 
   const handleTeammateToggle = (teammateName: string) => {
     setSelectedTeammates(prev => {
-      const updated = prev.includes(teammateName) 
+      const updated = prev.includes(teammateName)
         ? prev.filter(name => name !== teammateName)
         : [...prev, teammateName];
-      
+
+
       setEditData(current => ({ ...current, assignedTeammates: updated }));
       return updated;
     });
   };
 
   const handleSave = () => {
-    if (task) {
-      const updatedTask = { 
-        ...task, 
+  
+      const updatedTask = {
+        ...task,
+
         ...editData,
         assignedTeammates: selectedTeammates,
         dueDate: selectedDate ? format(selectedDate, "yyyy-MM-dd") : task.dueDate
@@ -97,8 +99,8 @@ export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: Edi
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
             <Label htmlFor="editTaskName">Task Name</Label>
-            <Input 
-              id="editTaskName" 
+            <Input
+              id="editTaskName"
               defaultValue={task.name}
               onChange={(e) => setEditData({...editData, name: e.target.value})}
             />
