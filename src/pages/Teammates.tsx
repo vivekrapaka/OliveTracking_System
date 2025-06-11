@@ -124,8 +124,6 @@ const Teammates = () => {
   // Use the hook to get updated availability status
   const teammates = useTeammateAvailability(mockTasks, teammatesData);
 
-  // ... keep existing code (roles, departments, availabilityStatuses, color functions, getInitials, filteredTeammates, handlers)
-
   const roles = ["Frontend Developer", "Backend Developer", "Full Stack Developer", "UX Designer", "DevOps Engineer", "Project Manager"];
   const departments = ["Engineering", "Design", "Product", "Marketing", "Sales"];
   const availabilityStatuses = ["Available", "Occupied", "On Leave"];

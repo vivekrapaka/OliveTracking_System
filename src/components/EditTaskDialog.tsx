@@ -12,8 +12,6 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { TeammateSelector } from "./TeammateSelector";
 
-// ... keep existing code (interfaces)
-
 interface Task {
   id: number;
   name: string;
@@ -66,15 +64,17 @@ export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: Edi
         ? prev.filter(name => name !== teammateName)
         : [...prev, teammateName];
 
+
       setEditData(current => ({ ...current, assignedTeammates: updated }));
       return updated;
     });
   };
 
   const handleSave = () => {
-    if (task) {
+  
       const updatedTask = {
         ...task,
+
         ...editData,
         assignedTeammates: selectedTeammates,
         dueDate: selectedDate ? format(selectedDate, "yyyy-MM-dd") : task.dueDate
@@ -85,7 +85,6 @@ export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: Edi
         description: "Task has been updated successfully.",
       });
       onClose();
-    }
   };
 
   if (!task) return null;
