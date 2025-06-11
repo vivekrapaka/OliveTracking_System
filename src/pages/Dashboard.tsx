@@ -91,7 +91,7 @@ const Dashboard = () => {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
-          <p className="text-slate-600 mt-1">Welcome back! Here's what's happening with your projects.</p>
+          <p className="text-slate-600 mt-1">🏦 Welcome back! Here's what's happening with your Kotak project:</p>
         </div>
         <Link to="/tasks">
           <Button className="bg-blue-600 hover:bg-blue-700">
