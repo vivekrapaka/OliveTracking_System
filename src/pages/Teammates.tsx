@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { 
   Plus, 
   Search, 
@@ -23,6 +23,8 @@ import { toast } from "@/hooks/use-toast";
 const Teammates = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingTeammate, setEditingTeammate] = useState<any>(null);
 
   // Mock data - this will come from your backend API
   const [teammates, setTeammates] = useState([
@@ -134,6 +136,33 @@ const Teammates = () => {
       description: "New team member has been added successfully.",
     });
     setIsCreateModalOpen(false);
+  };
+
+  const handleEditTeammate = (teammate: any) => {
+    setEditingTeammate(teammate);
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveTeammate = () => {
+    if (editingTeammate) {
+      setTeammates(teammates.map(teammate => 
+        teammate.id === editingTeammate.id ? editingTeammate : teammate
+      ));
+      toast({
+        title: "Teammate Updated",
+        description: "Team member has been updated successfully.",
+      });
+      setIsEditModalOpen(false);
+      setEditingTeammate(null);
+    }
+  };
+
+  const handleDeleteTeammate = (teammateId: number) => {
+    setTeammates(teammates.filter(teammate => teammate.id !== teammateId));
+    toast({
+      title: "Teammate Deleted",
+      description: "Team member has been deleted successfully.",
+    });
   };
 
   return (
@@ -314,12 +343,37 @@ const Teammates = () => {
                     </div>
                     
                     <div className="flex items-center space-x-2">
-                      <Button variant="ghost" size="sm">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleEditTeammate(teammate)}
+                      >
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Team Member</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete "{teammate.name}"? This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={() => handleDeleteTeammate(teammate.id)}
+                              className="bg-red-600 hover:bg-red-700"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </div>
                 </div>
@@ -328,6 +382,108 @@ const Teammates = () => {
           </Card>
         ))}
       </div>
+
+      {/* Edit Teammate Dialog */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Edit Team Member</DialogTitle>
+          </DialogHeader>
+          {editingTeammate && (
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="editName">Full Name</Label>
+                <Input 
+                  id="editName" 
+                  value={editingTeammate.name}
+                  onChange={(e) => setEditingTeammate({...editingTeammate, name: e.target.value})}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="editEmail">Email</Label>
+                <Input 
+                  id="editEmail" 
+                  type="email" 
+                  value={editingTeammate.email}
+                  onChange={(e) => setEditingTeammate({...editingTeammate, email: e.target.value})}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="editPhone">Phone</Label>
+                <Input 
+                  id="editPhone" 
+                  value={editingTeammate.phone}
+                  onChange={(e) => setEditingTeammate({...editingTeammate, phone: e.target.value})}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="editRole">Role</Label>
+                <Select 
+                  value={editingTeammate.role} 
+                  onValueChange={(value) => setEditingTeammate({...editingTeammate, role: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {roles.map((role) => (
+                      <SelectItem key={role} value={role}>{role}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="editDepartment">Department</Label>
+                <Select 
+                  value={editingTeammate.department} 
+                  onValueChange={(value) => setEditingTeammate({...editingTeammate, department: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departments.map((dept) => (
+                      <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="editAvailability">Availability Status</Label>
+                <Select 
+                  value={editingTeammate.availabilityStatus} 
+                  onValueChange={(value) => setEditingTeammate({...editingTeammate, availabilityStatus: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availabilityStatuses.map((status) => (
+                      <SelectItem key={status} value={status}>{status}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="editLocation">Location</Label>
+                <Input 
+                  id="editLocation" 
+                  value={editingTeammate.location}
+                  onChange={(e) => setEditingTeammate({...editingTeammate, location: e.target.value})}
+                />
+              </div>
+            </div>
+          )}
+          <div className="flex justify-end space-x-2">
+            <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveTeammate} className="bg-blue-600 hover:bg-blue-700">
+              Save Changes
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {filteredTeammates.length === 0 && (
         <div className="text-center py-12">

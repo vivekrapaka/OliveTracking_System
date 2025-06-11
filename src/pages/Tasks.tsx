@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Plus, 
   Search, 
@@ -30,6 +31,16 @@ const Tasks = () => {
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [editingTask, setEditingTask] = useState<any>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedTeammates, setSelectedTeammates] = useState<string[]>([]);
+
+  // Mock teammates data - this would come from your API
+  const teammates = [
+    { id: 1, name: "John Doe", role: "Senior Frontend Developer" },
+    { id: 2, name: "Jane Smith", role: "Backend Developer" },
+    { id: 3, name: "Mike Johnson", role: "Full Stack Developer" },
+    { id: 4, name: "Sarah Wilson", role: "UX Designer" },
+    { id: 5, name: "Tom Brown", role: "DevOps Engineer" }
+  ];
 
   // Mock data with assigned teammates details
   const [tasks, setTasks] = useState([
@@ -124,11 +135,20 @@ const Tasks = () => {
     task.currentStage.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const handleTeammateToggle = (teammateName: string) => {
+    setSelectedTeammates(prev => 
+      prev.includes(teammateName) 
+        ? prev.filter(name => name !== teammateName)
+        : [...prev, teammateName]
+    );
+  };
+
   const handleCreateTask = () => {
     toast({
       title: "Task Created",
       description: "New task has been created successfully.",
     });
+    setSelectedTeammates([]);
     setIsCreateModalOpen(false);
   };
 
@@ -238,6 +258,32 @@ const Tasks = () => {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label>Assign Teammates</Label>
+                <div className="border rounded-md p-3 max-h-40 overflow-y-auto">
+                  {teammates.map((teammate) => (
+                    <div key={teammate.id} className="flex items-center space-x-2 py-2">
+                      <Checkbox
+                        id={`teammate-${teammate.id}`}
+                        checked={selectedTeammates.includes(teammate.name)}
+                        onCheckedChange={() => handleTeammateToggle(teammate.name)}
+                      />
+                      <Label htmlFor={`teammate-${teammate.id}`} className="text-sm">
+                        {teammate.name} - {teammate.role}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+                {selectedTeammates.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {selectedTeammates.map((name) => (
+                      <Badge key={name} variant="outline" className="text-xs">
+                        {name}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
             <div className="flex justify-end space-x-2">
@@ -363,6 +409,7 @@ const Tasks = () => {
         onClose={() => setIsEditDialogOpen(false)}
         task={editingTask}
         onSave={handleSaveTask}
+        teammates={teammates}
       />
 
       {filteredTasks.length === 0 && (
@@ -377,3 +424,5 @@ const Tasks = () => {
 };
 
 export default Tasks;
+
+}
