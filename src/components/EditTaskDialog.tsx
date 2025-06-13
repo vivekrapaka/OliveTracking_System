@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -64,28 +65,26 @@ export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: Edi
         ? prev.filter(name => name !== teammateName)
         : [...prev, teammateName];
 
-
       setEditData(current => ({ ...current, assignedTeammates: updated }));
       return updated;
     });
   };
 
   const handleSave = () => {
-  
-      const updatedTask = {
-        ...task,
-
-        ...editData,
-        assignedTeammates: selectedTeammates,
-        dueDate: selectedDate ? format(selectedDate, "yyyy-MM-dd") : task.dueDate
-      };
-      onSave(updatedTask);
-      toast({
-        title: "Task Updated",
-        description: "Task has been updated successfully.",
-      });
-      onClose();
-    }
+    if (!task) return;
+    
+    const updatedTask = {
+      ...task,
+      ...editData,
+      assignedTeammates: selectedTeammates,
+      dueDate: selectedDate ? format(selectedDate, "yyyy-MM-dd") : task.dueDate
+    };
+    onSave(updatedTask);
+    toast({
+      title: "Task Updated",
+      description: "Task has been updated successfully.",
+    });
+    onClose();
   };
 
   if (!task) return null;
