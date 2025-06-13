@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu"
 import { Check, ChevronRight, Circle } from "lucide-react"
@@ -134,7 +135,7 @@ const DropdownMenuRadioItem = React.forwardRef<
     {children}
   </DropdownMenuPrimitive.RadioItem>
 ))
-DropdownMenuRadioItem.displayName = DropdownMenuPrimitive.RadioItem.displayName
+DropdownMenuRadioItem.displayName = DropdownMenuPrim
 
 const DropdownMenuLabel = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Label>,
