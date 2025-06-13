@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
@@ -16,6 +17,7 @@ import { TeammateSelector } from "./TeammateSelector";
 interface Task {
   id: number;
   name: string;
+  description?: string;
   issueType: string;
   receivedDate: string;
   developmentStartDate: string;
@@ -77,7 +79,8 @@ export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: Edi
       ...task,
       ...editData,
       assignedTeammates: selectedTeammates,
-      dueDate: selectedDate ? format(selectedDate, "yyyy-MM-dd") : task.dueDate
+      dueDate: selectedDate ? format(selectedDate, "yyyy-MM-dd") : task.dueDate,
+      isCompleted: editData.currentStage === "Completed"
     };
     onSave(updatedTask);
     toast({
@@ -91,11 +94,11 @@ export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: Edi
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>Edit Task</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
+        <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto">
           <div className="grid gap-2">
             <Label htmlFor="editTaskName">Task Name</Label>
             <Input
@@ -103,6 +106,18 @@ export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: Edi
               defaultValue={task.name}
               onChange={(e) => setEditData({...editData, name: e.target.value})}
             />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="editTaskDescription">Description</Label>
+            <Textarea
+              id="editTaskDescription"
+              defaultValue={task.description || ""}
+              onChange={(e) => setEditData({...editData, description: e.target.value})}
+              placeholder="Enter task description (max 1000 words)"
+              maxLength={1000}
+              className="min-h-[100px]"
+            />
+            <p className="text-xs text-slate-500">{(editData.description || task.description || "").length}/1000 characters</p>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="editIssueType">Issue Type</Label>

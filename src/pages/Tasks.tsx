@@ -1,9 +1,9 @@
-
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -32,6 +32,7 @@ const Tasks = () => {
   const [editingTask, setEditingTask] = useState<any>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedTeammates, setSelectedTeammates] = useState<string[]>([]);
+  const [taskDescription, setTaskDescription] = useState("");
 
   // Mock teammates data - this would come from your API
   const teammates = [
@@ -46,6 +47,7 @@ const Tasks = () => {
     {
       id: 1,
       name: "User Authentication System",
+      description: "Implement a comprehensive user authentication system with login, registration, and password reset functionality.",
       issueType: "Feature",
       receivedDate: "2024-06-01",
       developmentStartDate: "2024-06-05",
@@ -58,6 +60,7 @@ const Tasks = () => {
     {
       id: 2,
       name: "Database Schema Design",
+      description: "Design and implement the database schema for the new project including user management and task tracking.",
       issueType: "Task",
       receivedDate: "2024-06-02",
       developmentStartDate: "2024-06-06",
@@ -70,6 +73,7 @@ const Tasks = () => {
     {
       id: 3,
       name: "Frontend Dashboard",
+      description: "Create a responsive dashboard with charts, metrics, and real-time data visualization for better user experience.",
       issueType: "Feature",
       receivedDate: "2024-06-03",
       developmentStartDate: "2024-06-07",
@@ -82,6 +86,7 @@ const Tasks = () => {
     {
       id: 4,
       name: "Bug Fix - Login Issue",
+      description: "Fix the critical login bug where users are unable to authenticate with valid credentials.",
       issueType: "Bug",
       receivedDate: "2024-06-04",
       developmentStartDate: "2024-06-04",
@@ -148,6 +153,7 @@ const Tasks = () => {
       description: "New task has been created successfully.",
     });
     setSelectedTeammates([]);
+    setTaskDescription("");
     setIsCreateModalOpen(false);
   };
 
@@ -184,14 +190,26 @@ const Tasks = () => {
               Add New Task
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
               <DialogTitle>Create New Task</DialogTitle>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
+            <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto">
               <div className="grid gap-2">
                 <Label htmlFor="taskName">Task Name</Label>
                 <Input id="taskName" placeholder="Enter task name" />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="taskDescription">Description</Label>
+                <Textarea 
+                  id="taskDescription" 
+                  placeholder="Enter task description (max 1000 words)" 
+                  value={taskDescription}
+                  onChange={(e) => setTaskDescription(e.target.value)}
+                  maxLength={1000}
+                  className="min-h-[100px]"
+                />
+                <p className="text-xs text-slate-500">{taskDescription.length}/1000 characters</p>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="issueType">Issue Type</Label>
@@ -293,12 +311,16 @@ const Tasks = () => {
         </Button>
       </div>
 
-      {/* ... keep existing code (Tasks Grid, EditTaskDialog, no tasks found section) */}
-
       {/* Tasks Grid */}
       <div className="grid gap-6">
         {filteredTasks.map((task) => (
-          <Card key={task.id} className="hover:shadow-md transition-shadow">
+          <Card 
+            key={task.id} 
+            className={cn(
+              "hover:shadow-md transition-shadow",
+              task.isCompleted && "bg-green-50 border-green-200"
+            )}
+          >
             <CardContent className="p-6">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -311,6 +333,12 @@ const Tasks = () => {
                       {task.priority}
                     </Badge>
                   </div>
+
+                  {task.description && (
+                    <p className="text-sm text-slate-600 mb-3 line-clamp-2">
+                      {task.description}
+                    </p>
+                  )}
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                     <div>
