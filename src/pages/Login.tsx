@@ -34,6 +34,22 @@ const Login = () => {
     return <Navigate to="/" replace />;
   }
 
+  // Password validation function
+  const validatePassword = (password: string) => {
+    const minLength = password.length >= 8;
+    const hasCapital = /[A-Z]/.test(password);
+    const hasNumber = /\d/.test(password);
+    
+    return {
+      isValid: minLength && hasCapital && hasNumber,
+      errors: {
+        minLength,
+        hasCapital,
+        hasNumber
+      }
+    };
+  };
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!signInData.email || !signInData.password) {
@@ -69,6 +85,22 @@ const Login = () => {
       toast({
         title: "Error",
         description: "Please fill in all fields",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate password strength
+    const passwordValidation = validatePassword(signUpData.password);
+    if (!passwordValidation.isValid) {
+      let errorMessage = "Password must contain:";
+      if (!passwordValidation.errors.minLength) errorMessage += "\n• At least 8 characters";
+      if (!passwordValidation.errors.hasCapital) errorMessage += "\n• At least one capital letter";
+      if (!passwordValidation.errors.hasNumber) errorMessage += "\n• At least one number";
+      
+      toast({
+        title: "Password Requirements",
+        description: errorMessage,
         variant: "destructive"
       });
       return;
@@ -211,6 +243,9 @@ const Login = () => {
                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </Button>
                     </div>
+                    <p className="text-xs text-gray-600">
+                      Password must be at least 8 characters long and contain at least one capital letter and one number.
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signup-confirm-password">Confirm Password</Label>
