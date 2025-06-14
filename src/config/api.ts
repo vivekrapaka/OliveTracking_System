@@ -5,7 +5,7 @@ export const API_BASE_URL = process.env.NODE_ENV === 'production'
   : 'http://localhost:8085'; // Updated to use port 8085
 
 export const API_ENDPOINTS = {
-  DASHBOARD_SUMMARY: '/api/dashboard/summary',
+  DASHBOARD_SUMMARY: '/api/dashboard', // Updated to match your backend endpoint
 } as const;
 
 // Helper function to build full API URLs
