@@ -33,6 +33,12 @@ const Tasks = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedTeammates, setSelectedTeammates] = useState<string[]>([]);
   const [taskDescription, setTaskDescription] = useState("");
+  
+  // Form validation states
+  const [taskName, setTaskName] = useState("");
+  const [issueType, setIssueType] = useState("");
+  const [priority, setPriority] = useState("");
+  const [stage, setStage] = useState("");
 
   // Mock teammates data - this would come from your API
   const teammates = [
@@ -168,13 +174,86 @@ const Tasks = () => {
     );
   };
 
+  const validateTaskForm = () => {
+    if (!taskName.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Task name is required.",
+        variant: "destructive"
+      });
+      return false;
+    }
+    if (!issueType) {
+      toast({
+        title: "Validation Error",
+        description: "Issue type is required.",
+        variant: "destructive"
+      });
+      return false;
+    }
+    if (!priority) {
+      toast({
+        title: "Validation Error",
+        description: "Priority is required.",
+        variant: "destructive"
+      });
+      return false;
+    }
+    if (!selectedDate) {
+      toast({
+        title: "Validation Error",
+        description: "Due date is required.",
+        variant: "destructive"
+      });
+      return false;
+    }
+    if (!stage) {
+      toast({
+        title: "Validation Error",
+        description: "Current stage is required.",
+        variant: "destructive"
+      });
+      return false;
+    }
+    if (selectedTeammates.length === 0) {
+      toast({
+        title: "Validation Error",
+        description: "At least one teammate must be assigned.",
+        variant: "destructive"
+      });
+      return false;
+    }
+    if (!taskDescription.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Task description is required.",
+        variant: "destructive"
+      });
+      return false;
+    }
+    return true;
+  };
+
+  const resetTaskForm = () => {
+    setTaskName("");
+    setIssueType("");
+    setPriority("");
+    setSelectedDate(undefined);
+    setStage("");
+    setSelectedTeammates([]);
+    setTaskDescription("");
+  };
+
   const handleCreateTask = () => {
+    if (!validateTaskForm()) {
+      return;
+    }
+
     toast({
       title: "Task Created",
       description: "New task has been created successfully.",
     });
-    setSelectedTeammates([]);
-    setTaskDescription("");
+    resetTaskForm();
     setIsCreateModalOpen(false);
   };
 
@@ -226,12 +305,18 @@ const Tasks = () => {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="taskName">Task Name</Label>
-                <Input id="taskName" placeholder="Enter task name" />
+                <Label htmlFor="taskName">Task Name *</Label>
+                <Input 
+                  id="taskName" 
+                  placeholder="Enter task name" 
+                  value={taskName}
+                  onChange={(e) => setTaskName(e.target.value)}
+                  required
+                />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="issueType">Issue Type</Label>
-                <Select>
+                <Label htmlFor="issueType">Issue Type *</Label>
+                <Select value={issueType} onValueChange={setIssueType} required>
                   <SelectTrigger>
                     <SelectValue placeholder="Select issue type" />
                   </SelectTrigger>
@@ -243,8 +328,8 @@ const Tasks = () => {
                 </Select>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="priority">Priority</Label>
-                <Select>
+                <Label htmlFor="priority">Priority *</Label>
+                <Select value={priority} onValueChange={setPriority} required>
                   <SelectTrigger>
                     <SelectValue placeholder="Select priority" />
                   </SelectTrigger>
@@ -256,7 +341,7 @@ const Tasks = () => {
                 </Select>
               </div>
               <div className="grid gap-2">
-                <Label>Due Date</Label>
+                <Label>Due Date *</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -282,8 +367,8 @@ const Tasks = () => {
                 </Popover>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="stage">Current Stage</Label>
-                <Select>
+                <Label htmlFor="stage">Current Stage *</Label>
+                <Select value={stage} onValueChange={setStage} required>
                   <SelectTrigger>
                     <SelectValue placeholder="Select stage" />
                   </SelectTrigger>
@@ -298,9 +383,10 @@ const Tasks = () => {
                 teammates={teammates}
                 selectedTeammates={selectedTeammates}
                 onTeammateToggle={handleTeammateToggle}
+                label="Assign Teammates *"
               />
               <div className="grid gap-2">
-                <Label htmlFor="taskDescription">Description</Label>
+                <Label htmlFor="taskDescription">Description *</Label>
                 <Textarea 
                   id="taskDescription" 
                   placeholder="Enter task description (max 1000 words)" 
@@ -308,12 +394,16 @@ const Tasks = () => {
                   onChange={(e) => setTaskDescription(e.target.value)}
                   maxLength={1000}
                   className="min-h-[100px]"
+                  required
                 />
                 <p className="text-xs text-slate-500">{taskDescription.length}/1000 characters</p>
               </div>
             </div>
             <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>
+              <Button variant="outline" onClick={() => {
+                resetTaskForm();
+                setIsCreateModalOpen(false);
+              }}>
                 Cancel
               </Button>
               <Button onClick={handleCreateTask} className="bg-blue-600 hover:bg-blue-700">

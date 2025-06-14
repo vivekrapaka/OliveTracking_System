@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -47,6 +46,15 @@ export const Teammates = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingTeammate, setEditingTeammate] = useState<Teammate | null>(null);
+  
+  // Form validation states for Add Team Member
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [role, setRole] = useState("");
+  const [department, setDepartment] = useState("");
+  const [location, setLocation] = useState("");
 
   const [tasks, setTasks] = useState<Task[]>([
     {
@@ -187,11 +195,86 @@ export const Teammates = () => {
     teammate.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const validateTeammateForm = () => {
+    if (!firstName.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "First name is required.",
+        variant: "destructive"
+      });
+      return false;
+    }
+    if (!lastName.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Last name is required.",
+        variant: "destructive"
+      });
+      return false;
+    }
+    if (!email.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Email is required.",
+        variant: "destructive"
+      });
+      return false;
+    }
+    if (!phone.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Phone number is required.",
+        variant: "destructive"
+      });
+      return false;
+    }
+    if (!role) {
+      toast({
+        title: "Validation Error",
+        description: "Role is required.",
+        variant: "destructive"
+      });
+      return false;
+    }
+    if (!department) {
+      toast({
+        title: "Validation Error",
+        description: "Department is required.",
+        variant: "destructive"
+      });
+      return false;
+    }
+    if (!location.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Location is required.",
+        variant: "destructive"
+      });
+      return false;
+    }
+    return true;
+  };
+
+  const resetTeammateForm = () => {
+    setFirstName("");
+    setLastName("");
+    setEmail("");
+    setPhone("");
+    setRole("");
+    setDepartment("");
+    setLocation("");
+  };
+
   const handleCreateTeammate = () => {
+    if (!validateTeammateForm()) {
+      return;
+    }
+
     toast({
       title: "Teammate Added",
       description: "New team member has been added successfully.",
     });
+    resetTeammateForm();
     setIsCreateModalOpen(false);
   };
 
@@ -248,25 +331,50 @@ export const Teammates = () => {
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="firstName">First Name</Label>
-                  <Input id="firstName" placeholder="Enter first name" />
+                  <Label htmlFor="firstName">First Name *</Label>
+                  <Input 
+                    id="firstName" 
+                    placeholder="Enter first name" 
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    required
+                  />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="lastName">Last Name</Label>
-                  <Input id="lastName" placeholder="Enter last name" />
+                  <Label htmlFor="lastName">Last Name *</Label>
+                  <Input 
+                    id="lastName" 
+                    placeholder="Enter last name" 
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    required
+                  />
                 </div>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="Enter email address" />
+                <Label htmlFor="email">Email *</Label>
+                <Input 
+                  id="email" 
+                  type="email" 
+                  placeholder="Enter email address" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="phone">Phone</Label>
-                <Input id="phone" placeholder="Enter phone number" />
+                <Label htmlFor="phone">Phone *</Label>
+                <Input 
+                  id="phone" 
+                  placeholder="Enter phone number" 
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  required
+                />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="role">Role</Label>
-                <Select>
+                <Label htmlFor="role">Role *</Label>
+                <Select value={role} onValueChange={setRole} required>
                   <SelectTrigger>
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
@@ -278,8 +386,8 @@ export const Teammates = () => {
                 </Select>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="department">Department</Label>
-                <Select>
+                <Label htmlFor="department">Department *</Label>
+                <Select value={department} onValueChange={setDepartment} required>
                   <SelectTrigger>
                     <SelectValue placeholder="Select department" />
                   </SelectTrigger>
@@ -291,12 +399,21 @@ export const Teammates = () => {
                 </Select>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="location">Location</Label>
-                <Input id="location" placeholder="Enter location" />
+                <Label htmlFor="location">Location *</Label>
+                <Input 
+                  id="location" 
+                  placeholder="Enter location" 
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  required
+                />
               </div>
             </div>
             <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>
+              <Button variant="outline" onClick={() => {
+                resetTeammateForm();
+                setIsCreateModalOpen(false);
+              }}>
                 Cancel
               </Button>
               <Button onClick={handleCreateTeammate} className="bg-blue-600 hover:bg-blue-700">
