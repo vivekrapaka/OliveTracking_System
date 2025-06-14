@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ import { toast } from "@/hooks/use-toast";
 import { FilterDropdown } from "@/components/FilterDropdown";
 import { useTeammateFilters } from "@/hooks/useTeammateFilters";
 import { useTeammatesData, BackendTeammate } from "@/hooks/useTeammatesData";
+import { useTeammateAvailability } from "@/hooks/useTeammateAvailability";
 
 interface Task {
   id: number;
@@ -80,8 +82,8 @@ export const Teammates = () => {
     };
   };
 
-  // Convert API data to component state
-  const teammatesData = teammatesApiData?.teammates?.map(convertBackendToFrontend) || [];
+  // Convert API data to component state - renamed to avoid conflict
+  const apiTeammatesData = teammatesApiData?.teammates?.map(convertBackendToFrontend) || [];
 
   const [tasks, setTasks] = useState<Task[]>([
     {
@@ -106,75 +108,17 @@ export const Teammates = () => {
     }
   ]);
 
-  const [teammatesData, setTeammatesData] = useState<Teammate[]>([
-    {
-      id: 1,
-      name: "John Doe",
-      email: "john.doe@company.com",
-      phone: "+1 (555) 123-4567",
-      role: "Senior Frontend Developer",
-      department: "Engineering",
-      availabilityStatus: "Available",
-      location: "New York, NY",
-      avatar: "/placeholder.svg",
-      tasksAssigned: 3,
-      tasksCompleted: 15
-    },
-    {
-      id: 2,
-      name: "Jane Smith",
-      email: "jane.smith@company.com",
-      phone: "+1 (555) 234-5678",
-      role: "Backend Developer",
-      department: "Engineering",
-      availabilityStatus: "Available",
-      location: "San Francisco, CA",
-      avatar: "/placeholder.svg",
-      tasksAssigned: 2,
-      tasksCompleted: 12
-    },
-    {
-      id: 3,
-      name: "Mike Johnson",
-      email: "mike.johnson@company.com",
-      phone: "+1 (555) 345-6789",
-      role: "Full Stack Developer",
-      department: "Engineering",
-      availabilityStatus: "Available",
-      location: "Austin, TX",
-      avatar: "/placeholder.svg",
-      tasksAssigned: 1,
-      tasksCompleted: 8
-    },
-    {
-      id: 4,
-      name: "Sarah Wilson",
-      email: "sarah.wilson@company.com",
-      phone: "+1 (555) 456-7890",
-      role: "UX Designer",
-      department: "Design",
-      availabilityStatus: "On Leave",
-      location: "Seattle, WA",
-      avatar: "/placeholder.svg",
-      tasksAssigned: 0,
-      tasksCompleted: 6
-    },
-    {
-      id: 5,
-      name: "Tom Brown",
-      email: "tom.brown@company.com",
-      phone: "+1 (555) 567-8901",
-      role: "DevOps Engineer",
-      department: "Engineering",
-      availabilityStatus: "Available",
-      location: "Boston, MA",
-      avatar: "/placeholder.svg",
-      tasksAssigned: 2,
-      tasksCompleted: 10
-    }
-  ]);
+  // Initialize with API data instead of hardcoded data
+  const [teammatesData, setTeammatesData] = useState<Teammate[]>([]);
 
   const availabilityStatuses = ["Available", "Occupied", "Leave"];
+
+  // Update local state when API data changes
+  useEffect(() => {
+    if (apiTeammatesData.length > 0) {
+      setTeammatesData(apiTeammatesData);
+    }
+  }, [apiTeammatesData]);
 
   const updatedTeammates = useTeammateAvailability(tasks, teammatesData);
 
@@ -200,7 +144,6 @@ export const Teammates = () => {
 
   const roles = ["Frontend Developer", "Backend Developer", "Full Stack Developer", "UX Designer", "DevOps Engineer", "Project Manager", "developer", "Manager"];
   const departments = ["Engineering", "Design", "Product", "Marketing", "Sales", "Engeering"];
-  const availabilityStatuses = ["Available", "Occupied", "Leave"];
 
   const getAvailabilityColor = (status: string) => {
     switch (status) {
