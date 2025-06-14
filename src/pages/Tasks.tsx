@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -57,7 +56,7 @@ interface Task {
 }
 
 export const Tasks = () => {
-  const { data: tasksApiData, isLoading, error, refetch, isRefetching } = useTasksData();
+  const { data: tasksApiData, isLoading, error } = useTasksData();
   const { data: teammatesApiData } = useTeammatesData();
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -220,10 +219,6 @@ export const Tasks = () => {
           <AlertCircle className="h-12 w-12 mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">Failed to load tasks</h3>
           <p className="text-slate-600 mb-4">{error.message}</p>
-          <Button onClick={() => refetch()} variant="outline">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Try Again
-          </Button>
         </div>
       </div>
     );
@@ -239,16 +234,6 @@ export const Tasks = () => {
         </div>
 
         <div className="flex items-center space-x-2">
-          <Button
-            onClick={() => refetch()}
-            variant="outline"
-            size="sm"
-            disabled={isRefetching}
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${isRefetching ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-
           <Button className="bg-blue-600 hover:bg-blue-700">
             <Plus className="h-4 w-4 mr-2" />
             Add Task
