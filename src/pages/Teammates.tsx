@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,6 +27,7 @@ import { toast } from "@/hooks/use-toast";
 import { FilterDropdown } from "@/components/FilterDropdown";
 import { useTeammatesData, BackendTeammate } from "@/hooks/useTeammatesData";
 import { AddTeammateForm } from "@/components/AddTeammateForm";
+import { EditTeammateForm } from "@/components/EditTeammateForm";
 
 interface Teammate {
   id: number;
@@ -46,6 +46,8 @@ interface Teammate {
 export const Teammates = () => {
   const { data: teammatesApiData, isLoading, error } = useTeammatesData();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedTeammate, setSelectedTeammate] = useState<Teammate | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
@@ -139,6 +141,16 @@ export const Teammates = () => {
 
   const handleAddSuccess = () => {
     setIsAddModalOpen(false);
+  };
+
+  const handleEditTeammate = (teammate: Teammate) => {
+    setSelectedTeammate(teammate);
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditSuccess = () => {
+    setIsEditModalOpen(false);
+    setSelectedTeammate(null);
   };
 
   if (isLoading) {
@@ -303,7 +315,11 @@ export const Teammates = () => {
                   <TableCell>{teammate.tasksAssigned}</TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-2">
-                      <Button variant="ghost" size="sm">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleEditTeammate(teammate)}
+                      >
                         <Edit className="h-4 w-4" />
                       </Button>
                       <AlertDialog>
@@ -338,6 +354,16 @@ export const Teammates = () => {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Edit Modal */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        {selectedTeammate && (
+          <EditTeammateForm 
+            teammate={selectedTeammate} 
+            onSuccess={handleEditSuccess} 
+          />
+        )}
+      </Dialog>
 
       {filteredTeammates.length === 0 && !isLoading && (
         <div className="text-center py-12">
