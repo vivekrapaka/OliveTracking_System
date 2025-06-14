@@ -30,7 +30,8 @@ export const mockDashboardData: DashboardData = {
       stage: "Development",
       assignee: "John Doe",
       dueDate: "2024-01-15",
-      priority: "High"
+      priority: "High",
+      taskNumber: "TSK-001"
     },
     {
       id: 2,
@@ -38,7 +39,8 @@ export const mockDashboardData: DashboardData = {
       stage: "Testing",
       assignee: "Jane Smith",
       dueDate: "2024-01-12",
-      priority: "Critical"
+      priority: "Critical",
+      taskNumber: "TSK-002"
     },
     {
       id: 3,
@@ -46,7 +48,8 @@ export const mockDashboardData: DashboardData = {
       stage: "Review",
       assignee: "Mike Johnson",
       dueDate: "2024-01-18",
-      priority: "Medium"
+      priority: "Medium",
+      taskNumber: "TSK-003"
     },
     {
       id: 4,
@@ -54,7 +57,8 @@ export const mockDashboardData: DashboardData = {
       stage: "Planning",
       assignee: "Sarah Wilson",
       dueDate: "2024-01-20",
-      priority: "Low"
+      priority: "Low",
+      taskNumber: "TSK-004"
     }
   ],
   teamMembersSummary: [
@@ -116,7 +120,8 @@ export const mockDashboardData: DashboardData = {
       stage: "Development",
       assignee: "John Doe",
       dueDate: "2024-01-16",
-      priority: "High"
+      priority: "High",
+      taskNumber: "TSK-005"
     },
     {
       id: 6,
@@ -124,7 +129,8 @@ export const mockDashboardData: DashboardData = {
       stage: "Review",
       assignee: "Sarah Wilson",
       dueDate: "2024-01-14",
-      priority: "Critical"
+      priority: "Critical",
+      taskNumber: "TSK-006"
     },
     {
       id: 7,
@@ -132,7 +138,8 @@ export const mockDashboardData: DashboardData = {
       stage: "Testing",
       assignee: "Mike Johnson",
       dueDate: "2024-01-17",
-      priority: "Medium"
+      priority: "Medium",
+      taskNumber: "TSK-007"
     }
   ]
 };

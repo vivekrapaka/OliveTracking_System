@@ -136,7 +136,12 @@ const Dashboard = () => {
               {dashboardData.activeTasksList.map((task) => (
                 <div key={task.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                   <div className="flex-1">
-                    <h3 className="font-medium text-slate-900 mb-1">{task.name}</h3>
+                    <div className="flex items-center space-x-3 mb-1">
+                      <div className="bg-gray-800 text-white px-2 py-1 rounded font-mono text-xs font-bold border border-gray-600">
+                        {task.taskNumber}
+                      </div>
+                      <h3 className="font-medium text-slate-900">{task.name}</h3>
+                    </div>
                     <div className="flex items-center space-x-4 text-sm text-slate-600">
                       <span className="flex items-center">
                         <Users className="h-3 w-3 mr-1" />
@@ -228,7 +233,12 @@ const Dashboard = () => {
             {dashboardData.recentTasks.map((task) => (
               <div key={task.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
                 <div className="flex-1">
-                  <h3 className="font-medium text-slate-900 mb-1">{task.name}</h3>
+                  <div className="flex items-center space-x-3 mb-1">
+                    <div className="bg-gray-800 text-white px-2 py-1 rounded font-mono text-xs font-bold border border-gray-600">
+                      {task.taskNumber}
+                    </div>
+                    <h3 className="font-medium text-slate-900">{task.name}</h3>
+                  </div>
                   <div className="flex items-center space-x-4 text-sm text-slate-600">
                     <span className="flex items-center">
                       <Users className="h-3 w-3 mr-1" />

@@ -20,6 +20,7 @@ export interface DashboardData {
     assignee: string;
     dueDate: string;
     priority: string;
+    taskNumber: string;
   }>;
   teamMembersSummary: Array<{
     id: number;
@@ -38,6 +39,7 @@ export interface DashboardData {
     assignee: string;
     dueDate: string;
     priority: string;
+    taskNumber: string;
   }>;
 }
 
