@@ -28,16 +28,15 @@ const Dashboard = () => {
 
   if (error) {
     console.error('Dashboard data fetch error:', error);
-    toast({
-      title: "Error",
-      description: "Failed to load dashboard data. Please try again.",
-      variant: "destructive",
-    });
+    // Don't show toast in render, just log the error
+  }
+
+  if (!dashboardData) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center space-y-4">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto" />
-          <h2 className="text-xl font-semibold text-slate-900">Failed to load dashboard</h2>
+          <h2 className="text-xl font-semibold text-slate-900">No dashboard data available</h2>
           <p className="text-slate-600">Please check your connection and try again.</p>
           <Button onClick={() => refetch()} variant="outline">
             <RefreshCw className="h-4 w-4 mr-2" />
@@ -46,10 +45,6 @@ const Dashboard = () => {
         </div>
       </div>
     );
-  }
-
-  if (!dashboardData) {
-    return null;
   }
 
   const completionRate = dashboardData.totalTasks > 0 

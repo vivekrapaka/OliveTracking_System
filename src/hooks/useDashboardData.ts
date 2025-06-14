@@ -1,6 +1,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { API_ENDPOINTS, buildApiUrl } from '@/config/api';
+import { mockDashboardData } from '@/services/mockDashboardData';
 
 export interface DashboardData {
   totalTeammates: number;
@@ -44,23 +45,29 @@ const fetchDashboardData = async (): Promise<DashboardData> => {
   const url = buildApiUrl(API_ENDPOINTS.DASHBOARD_SUMMARY);
   console.log('Fetching dashboard data from:', url);
   
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      // Add any authentication headers here if needed
-      // 'Authorization': `Bearer ${token}`,
-    },
-  });
-  
-  if (!response.ok) {
-    throw new Error(`Failed to fetch dashboard data: ${response.status} ${response.statusText}`);
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        // Add any authentication headers here if needed
+        // 'Authorization': `Bearer ${token}`,
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch dashboard data: ${response.status} ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    console.log('Dashboard data received:', data);
+    
+    return data;
+  } catch (error) {
+    console.warn('Failed to fetch from API, using mock data:', error);
+    // Return mock data when API is not available
+    return mockDashboardData;
   }
-  
-  const data = await response.json();
-  console.log('Dashboard data received:', data);
-  
-  return data;
 };
 
 export const useDashboardData = () => {
