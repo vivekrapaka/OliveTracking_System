@@ -10,6 +10,7 @@ export interface EditTeammateRequest {
   department: string;
   location: string;
   avatar: string;
+  availabilityStatus: string;
 }
 
 const editTeammate = async (name: string, teammateData: EditTeammateRequest) => {

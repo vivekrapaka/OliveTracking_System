@@ -35,13 +35,15 @@ export const EditTeammateForm = ({ teammate, onSuccess }: EditTeammateFormProps)
     phone: teammate.phone,
     department: teammate.department,
     location: teammate.location,
-    avatar: teammate.avatar
+    avatar: teammate.avatar,
+    availabilityStatus: teammate.availabilityStatus
   });
 
   const editTeammateMutation = useEditTeammate();
 
   const roles = ["Developer", "Designer", "Manager", "Tester", "Analyst"];
   const departments = ["Engineering", "Design", "Management", "QA", "Business Analysis"];
+  const statuses = ["Available", "Occupied", "On Leave", "Free"];
 
   const handleInputChange = (field: keyof EditTeammateRequest, value: string) => {
     setFormData(prev => ({
@@ -149,6 +151,22 @@ export const EditTeammateForm = ({ teammate, onSuccess }: EditTeammateFormProps)
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div>
+            <Label htmlFor="availabilityStatus">Availability Status *</Label>
+            <Select value={formData.availabilityStatus} onValueChange={(value) => handleInputChange("availabilityStatus", value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                {statuses.map((status) => (
+                  <SelectItem key={status} value={status}>
+                    {status}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div>
