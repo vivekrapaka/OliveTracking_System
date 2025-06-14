@@ -72,7 +72,6 @@ export const useDashboardData = () => {
   return useQuery({
     queryKey: ['dashboard-summary'],
     queryFn: fetchDashboardData,
-    refetchInterval: 30000,
     staleTime: 10000,
     retry: (failureCount, error) => {
       return failureCount < 3;

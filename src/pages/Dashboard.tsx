@@ -111,6 +111,15 @@ const Dashboard = () => {
           <p className="text-slate-600 mt-1">Welcome back! Here's what's happening with your Kotak project:</p>
         </div>
         <div className="flex items-center space-x-2">
+          <Button
+            onClick={() => refetch()}
+            variant="outline"
+            size="sm"
+            disabled={isRefetching}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isRefetching ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
           <Link to="/tasks">
             <Button className="bg-blue-600 hover:bg-blue-700">
               <Plus className="h-4 w-4 mr-2" />
