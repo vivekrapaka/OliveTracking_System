@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -56,7 +55,8 @@ const Tasks = () => {
       dueDate: "2024-06-15",
       assignedTeammates: ["John Doe", "Jane Smith"],
       priority: "High",
-      isCompleted: false
+      isCompleted: false,
+      isCmcDone: true
     },
     {
       id: 2,
@@ -69,7 +69,8 @@ const Tasks = () => {
       dueDate: "2024-06-12",
       assignedTeammates: ["Mike Johnson"],
       priority: "Medium",
-      isCompleted: false
+      isCompleted: false,
+      isCmcDone: false
     },
     {
       id: 3,
@@ -82,7 +83,8 @@ const Tasks = () => {
       dueDate: "2024-06-18",
       assignedTeammates: ["Sarah Wilson", "Tom Brown"],
       priority: "High",
-      isCompleted: false
+      isCompleted: false,
+      isCmcDone: true
     },
     {
       id: 4,
@@ -95,7 +97,8 @@ const Tasks = () => {
       dueDate: "2024-06-08",
       assignedTeammates: ["John Doe"],
       priority: "Critical",
-      isCompleted: true
+      isCompleted: true,
+      isCmcDone: false
     }
   ]);
 
@@ -367,9 +370,18 @@ const Tasks = () => {
                     </div>
                   </div>
 
-                  <div className="mt-4 text-xs text-slate-500">
-                    <span className="mr-4">Received: {task.receivedDate}</span>
+                  <div className="mt-4 text-xs text-slate-500 flex items-center space-x-4">
+                    <span>Received: {task.receivedDate}</span>
                     <span>Started: {task.developmentStartDate}</span>
+                    <div className="flex items-center">
+                      <span className="mr-2">CMC Done:</span>
+                      <div 
+                        className={cn(
+                          "w-3 h-3 rounded-full",
+                          task.isCmcDone ? "bg-green-500" : "bg-red-500"
+                        )}
+                      />
+                    </div>
                   </div>
                 </div>
 

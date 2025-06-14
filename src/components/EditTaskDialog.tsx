@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -26,6 +25,7 @@ interface Task {
   assignedTeammates: string[];
   priority: string;
   isCompleted: boolean;
+  isCmcDone: boolean;
 }
 
 interface Teammate {
@@ -177,6 +177,18 @@ export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: Edi
             selectedTeammates={selectedTeammates}
             onTeammateToggle={handleTeammateToggle}
           />
+          <div className="grid gap-2">
+            <Label htmlFor="editIsCmcDone">CMC Done</Label>
+            <Select defaultValue={task.isCmcDone ? "true" : "false"} onValueChange={(value) => setEditData({...editData, isCmcDone: value === "true"})}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="true">True</SelectItem>
+                <SelectItem value="false">False</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div className="grid gap-2">
             <Label htmlFor="editTaskDescription">Description</Label>
             <Textarea
