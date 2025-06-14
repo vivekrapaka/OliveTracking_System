@@ -52,11 +52,11 @@ const Dashboard = () => {
     );
   }
 
-  // Calculate completion rate using tasksByStage data
+  // Calculate completion rate using displayData instead of dashboardData
   const calculateCompletionRate = () => {
-    const completedTasks = dashboardData.tasksByStage["Completed"] || 0;
-    return dashboardData.totalTasks > 0 
-      ? Math.round((completedTasks / dashboardData.totalTasks) * 100)
+    const completedTasks = displayData.tasksByStage["Completed"] || 0;
+    return displayData.totalTasks > 0 
+      ? Math.round((completedTasks / displayData.totalTasks) * 100)
       : 0;
   };
 
@@ -153,7 +153,7 @@ const Dashboard = () => {
             <CheckSquare className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-900">{dashboardData.totalTasks}</div>
+            <div className="text-2xl font-bold text-slate-900">{displayData.totalTasks}</div>
             <p className="text-xs text-slate-600 mt-1">All tasks in system</p>
           </CardContent>
         </Card>
@@ -167,17 +167,17 @@ const Dashboard = () => {
                 <Clock className="h-4 w-4 text-orange-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-slate-900">{dashboardData.activeTasks}</div>
+                <div className="text-2xl font-bold text-slate-900">{displayData.activeTasks}</div>
                 <p className="text-xs text-slate-600 mt-1">In progress</p>
               </CardContent>
             </Card>
           </DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Active Tasks ({dashboardData.activeTasks})</DialogTitle>
+              <DialogTitle>Active Tasks ({displayData.activeTasks})</DialogTitle>
             </DialogHeader>
             <div className="space-y-3">
-              {dashboardData.activeTasksList.map((task) => (
+              {displayData.activeTasksList.map((task) => (
                 <div key={task.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-1">
@@ -220,17 +220,17 @@ const Dashboard = () => {
                 <Users className="h-4 w-4 text-green-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-slate-900">{dashboardData.totalTeammates}</div>
-                <p className="text-xs text-slate-600 mt-1">{dashboardData.freeTeammates} free, {dashboardData.occupiedTeammates} occupied</p>
+                <div className="text-2xl font-bold text-slate-900">{displayData.totalTeammates}</div>
+                <p className="text-xs text-slate-600 mt-1">{displayData.freeTeammates} free, {displayData.occupiedTeammates} occupied</p>
               </CardContent>
             </Card>
           </DialogTrigger>
           <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Team Members ({dashboardData.totalTeammates})</DialogTitle>
+              <DialogTitle>Team Members ({displayData.totalTeammates})</DialogTitle>
             </DialogHeader>
             <div className="space-y-3">
-              {dashboardData.teamMembersSummary.map((member) => (
+              {displayData.teamMembersSummary.map((member) => (
                 <div key={member.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                   <div className="flex-1">
                     <h3 className="font-medium text-slate-900 mb-1">{member.name}</h3>
@@ -259,7 +259,7 @@ const Dashboard = () => {
             <div className="text-2xl font-bold text-slate-900">{completionRate}%</div>
             <Progress value={completionRate} className="mt-2" />
             <p className="text-xs text-slate-600 mt-1">
-              {dashboardData.tasksByStage["Completed"] || 0} of {dashboardData.totalTasks} tasks completed
+              {displayData.tasksByStage["Completed"] || 0} of {displayData.totalTasks} tasks completed
             </p>
           </CardContent>
         </Card>
@@ -277,7 +277,7 @@ const Dashboard = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {dashboardData.recentTasks.map((task) => (
+            {displayData.recentTasks.map((task) => (
               <div key={task.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-1">
