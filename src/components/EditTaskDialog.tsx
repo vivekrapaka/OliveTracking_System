@@ -15,6 +15,7 @@ import { TeammateSelector } from "./TeammateSelector";
 
 interface Task {
   id: number;
+  taskNumber: string;
   name: string;
   description?: string;
   issueType: string;
@@ -100,6 +101,15 @@ export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: Edi
         </DialogHeader>
         <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto">
           <div className="grid gap-2">
+            <Label htmlFor="editTaskNumber">Task Number</Label>
+            <Input
+              id="editTaskNumber"
+              value={task.taskNumber}
+              readOnly
+              className="bg-gray-100 border border-gray-300"
+            />
+          </div>
+          <div className="grid gap-2">
             <Label htmlFor="editTaskName">Task Name</Label>
             <Input
               id="editTaskName"
@@ -166,8 +176,8 @@ export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: Edi
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {stages.map((stage) => (
-                  <SelectItem key={stage} value={stage}>{stage}</SelectItem>
+                {stages.map((stage, index) => (
+                  <SelectItem key={stage} value={stage}>{index + 1}. {stage}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

@@ -46,6 +46,7 @@ const Tasks = () => {
   const [tasks, setTasks] = useState([
     {
       id: 1,
+      taskNumber: "TSK-001",
       name: "User Authentication System",
       description: "Implement a comprehensive user authentication system with login, registration, and password reset functionality.",
       issueType: "Feature",
@@ -60,6 +61,7 @@ const Tasks = () => {
     },
     {
       id: 2,
+      taskNumber: "TSK-002",
       name: "Database Schema Design",
       description: "Design and implement the database schema for the new project including user management and task tracking.",
       issueType: "Task",
@@ -74,6 +76,7 @@ const Tasks = () => {
     },
     {
       id: 3,
+      taskNumber: "TSK-003",
       name: "Frontend Dashboard",
       description: "Create a responsive dashboard with charts, metrics, and real-time data visualization for better user experience.",
       issueType: "Feature",
@@ -88,6 +91,7 @@ const Tasks = () => {
     },
     {
       id: 4,
+      taskNumber: "TSK-004",
       name: "Bug Fix - Login Issue",
       description: "Fix the critical login bug where users are unable to authenticate with valid credentials.",
       issueType: "Bug",
@@ -105,6 +109,18 @@ const Tasks = () => {
   const stages = ["Planning", "Development", "Review", "Testing", "Completed"];
   const issueTypes = ["Feature", "Bug", "Task", "Enhancement"];
   const priorities = ["Low", "Medium", "High", "Critical"];
+
+  // Generate next task number
+  const generateTaskNumber = () => {
+    const maxId = Math.max(...tasks.map(task => task.id), 0);
+    const nextNumber = (maxId + 1).toString().padStart(3, '0');
+    return `TSK-${nextNumber}`;
+  };
+
+  const getStageWithNumber = (stage: string) => {
+    const stageIndex = stages.findIndex(s => s === stage) + 1;
+    return `${stageIndex}. ${stage}`;
+  };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -140,7 +156,8 @@ const Tasks = () => {
   const filteredTasks = tasks.filter(task =>
     task.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     task.issueType.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    task.currentStage.toLowerCase().includes(searchTerm.toLowerCase())
+    task.currentStage.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    task.taskNumber.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleTeammateToggle = (teammateName: string) => {
@@ -199,6 +216,15 @@ const Tasks = () => {
               <DialogTitle>Create New Task</DialogTitle>
             </DialogHeader>
             <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto">
+              <div className="grid gap-2">
+                <Label htmlFor="taskNumber">Task Number</Label>
+                <Input 
+                  id="taskNumber" 
+                  value={generateTaskNumber()}
+                  readOnly
+                  className="bg-gray-100 border border-gray-300"
+                />
+              </div>
               <div className="grid gap-2">
                 <Label htmlFor="taskName">Task Name</Label>
                 <Input id="taskName" placeholder="Enter task name" />
@@ -262,8 +288,8 @@ const Tasks = () => {
                     <SelectValue placeholder="Select stage" />
                   </SelectTrigger>
                   <SelectContent>
-                    {stages.map((stage) => (
-                      <SelectItem key={stage} value={stage}>{stage}</SelectItem>
+                    {stages.map((stage, index) => (
+                      <SelectItem key={stage} value={stage}>{index + 1}. {stage}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -329,6 +355,9 @@ const Tasks = () => {
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-3">
+                    <Badge variant="outline" className="font-mono text-xs">
+                      {task.taskNumber}
+                    </Badge>
                     <h3 className="text-lg font-semibold text-slate-900">{task.name}</h3>
                     <Badge className={getIssueTypeColor(task.issueType)}>
                       {task.issueType}
@@ -348,7 +377,7 @@ const Tasks = () => {
                     <div>
                       <p className="text-slate-600 font-medium mb-1">Current Stage</p>
                       <Badge className={getStageColor(task.currentStage)}>
-                        {task.currentStage}
+                        {getStageWithNumber(task.currentStage)}
                       </Badge>
                     </div>
                     <div>
