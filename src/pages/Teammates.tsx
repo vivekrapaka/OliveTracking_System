@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-// ... keep existing code (imports)
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import {
   Plus,
@@ -17,10 +16,13 @@ import {
   Edit,
   Trash2,
   User,
-  MapPin
+  MapPin,
+  X
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useTeammateAvailability } from "@/hooks/useTeammateAvailability";
+import { FilterDropdown } from "@/components/FilterDropdown";
+import { useTeammateFilters } from "@/hooks/useTeammateFilters";
 
 interface Task {
   id: number;
@@ -43,12 +45,19 @@ interface Teammate {
 }
 
 export const Teammates = () => {
-  const [searchTerm, setSearchTerm] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingTeammate, setEditingTeammate] = useState<Teammate | null>(null);
+  
+  // Form validation states for Add Team Member
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [role, setRole] = useState("");
+  const [department, setDepartment] = useState("");
+  const [location, setLocation] = useState("");
 
-  // Mock tasks data to sync with Tasks page
   const [tasks, setTasks] = useState<Task[]>([
     {
       id: 1,
@@ -72,7 +81,6 @@ export const Teammates = () => {
     }
   ]);
 
-  // Mock data - this will come from your backend API
   const [teammatesData, setTeammatesData] = useState<Teammate[]>([
     {
       id: 1,
@@ -143,13 +151,27 @@ export const Teammates = () => {
 
   const availabilityStatuses = ["Available", "Occupied", "Leave"];
 
-  // Use the hook to get updated availability status
   const updatedTeammates = useTeammateAvailability(tasks, teammatesData);
 
-  // Keep teammatesData in sync with updatedTeammates
   useEffect(() => {
     setTeammatesData(updatedTeammates as Teammate[]);
   }, [updatedTeammates]);
+
+  // Use the filtering hook with tasks
+  const {
+    searchTerm,
+    setSearchTerm,
+    selectedDepartments,
+    setSelectedDepartments,
+    selectedRoles,
+    setSelectedRoles,
+    selectedAvailabilityStatus,
+    setSelectedAvailabilityStatus,
+    filteredTeammates,
+    filterOptions,
+    activeFiltersCount,
+    clearAllFilters
+  } = useTeammateFilters(teammatesData, tasks);
 
   const roles = ["Frontend Developer", "Backend Developer", "Full Stack Developer", "UX Designer", "DevOps Engineer", "Project Manager"];
   const departments = ["Engineering", "Design", "Product", "Marketing", "Sales"];
@@ -175,21 +197,95 @@ export const Teammates = () => {
   };
 
   const getInitials = (name: string) => {
-    return name.split(' ').map(word => word[0]).join('').toUpperCase();
+    const nameParts = name.trim().split(/\s+/);
+    if (nameParts.length >= 2) {
+      return (nameParts[0][0] + nameParts[1][0]).toUpperCase();
+    } else if (nameParts.length === 1) {
+      return nameParts[0][0].toUpperCase();
+    }
+    return "U";
   };
 
-  const filteredTeammates = teammatesData.filter(teammate =>
-    teammate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    teammate.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    teammate.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    teammate.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const validateTeammateForm = () => {
+    if (!firstName.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "First name is required.",
+        variant: "destructive"
+      });
+      return false;
+    }
+    if (!lastName.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Last name is required.",
+        variant: "destructive"
+      });
+      return false;
+    }
+    if (!email.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Email is required.",
+        variant: "destructive"
+      });
+      return false;
+    }
+    if (!phone.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Phone number is required.",
+        variant: "destructive"
+      });
+      return false;
+    }
+    if (!role) {
+      toast({
+        title: "Validation Error",
+        description: "Role is required.",
+        variant: "destructive"
+      });
+      return false;
+    }
+    if (!department) {
+      toast({
+        title: "Validation Error",
+        description: "Department is required.",
+        variant: "destructive"
+      });
+      return false;
+    }
+    if (!location.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Location is required.",
+        variant: "destructive"
+      });
+      return false;
+    }
+    return true;
+  };
+
+  const resetTeammateForm = () => {
+    setFirstName("");
+    setLastName("");
+    setEmail("");
+    setPhone("");
+    setRole("");
+    setDepartment("");
+    setLocation("");
+  };
 
   const handleCreateTeammate = () => {
+    if (!validateTeammateForm()) {
+      return;
+    }
+
     toast({
       title: "Teammate Added",
       description: "New team member has been added successfully.",
     });
+    resetTeammateForm();
     setIsCreateModalOpen(false);
   };
 
@@ -225,7 +321,6 @@ export const Teammates = () => {
 
   return (
     <div className="space-y-6">
-      {/* ... keep existing code (Header, Search, Team Stats, Team Members Grid, Edit Dialog, no teammates found section) */}
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
         <div>
@@ -245,21 +340,52 @@ export const Teammates = () => {
               <DialogTitle>Add New Team Member</DialogTitle>
             </DialogHeader>
             <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="name">Full Name</Label>
-                <Input id="name" placeholder="Enter full name" />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="firstName">First Name *</Label>
+                  <Input 
+                    id="firstName" 
+                    placeholder="Enter first name" 
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="lastName">Last Name *</Label>
+                  <Input 
+                    id="lastName" 
+                    placeholder="Enter last name" 
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    required
+                  />
+                </div>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="Enter email address" />
+                <Label htmlFor="email">Email *</Label>
+                <Input 
+                  id="email" 
+                  type="email" 
+                  placeholder="Enter email address" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="phone">Phone</Label>
-                <Input id="phone" placeholder="Enter phone number" />
+                <Label htmlFor="phone">Phone *</Label>
+                <Input 
+                  id="phone" 
+                  placeholder="Enter phone number" 
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  required
+                />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="role">Role</Label>
-                <Select>
+                <Label htmlFor="role">Role *</Label>
+                <Select value={role} onValueChange={setRole} required>
                   <SelectTrigger>
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
@@ -271,8 +397,8 @@ export const Teammates = () => {
                 </Select>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="department">Department</Label>
-                <Select>
+                <Label htmlFor="department">Department *</Label>
+                <Select value={department} onValueChange={setDepartment} required>
                   <SelectTrigger>
                     <SelectValue placeholder="Select department" />
                   </SelectTrigger>
@@ -284,12 +410,21 @@ export const Teammates = () => {
                 </Select>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="location">Location</Label>
-                <Input id="location" placeholder="Enter location" />
+                <Label htmlFor="location">Location *</Label>
+                <Input 
+                  id="location" 
+                  placeholder="Enter location" 
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  required
+                />
               </div>
             </div>
             <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>
+              <Button variant="outline" onClick={() => {
+                resetTeammateForm();
+                setIsCreateModalOpen(false);
+              }}>
                 Cancel
               </Button>
               <Button onClick={handleCreateTeammate} className="bg-blue-600 hover:bg-blue-700">
@@ -300,15 +435,57 @@ export const Teammates = () => {
         </Dialog>
       </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
-        <Input
-          placeholder="Search team members..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
-        />
+      {/* Search and Advanced Filters */}
+      <div className="space-y-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
+          <Input
+            placeholder="Search team members by name..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+
+        {/* Filter Bar */}
+        <div className="flex flex-wrap gap-3 items-center">
+          <FilterDropdown
+            title="Department"
+            options={filterOptions.departments}
+            selectedValues={selectedDepartments}
+            onSelectionChange={setSelectedDepartments}
+          />
+          <FilterDropdown
+            title="Role"
+            options={filterOptions.roles}
+            selectedValues={selectedRoles}
+            onSelectionChange={setSelectedRoles}
+          />
+          <FilterDropdown
+            title="Availability"
+            options={filterOptions.availabilityStatuses}
+            selectedValues={selectedAvailabilityStatus}
+            onSelectionChange={setSelectedAvailabilityStatus}
+          />
+
+          {/* Clear Filters */}
+          {activeFiltersCount > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearAllFilters}
+              className="text-slate-600 hover:text-slate-900"
+            >
+              <X className="h-4 w-4 mr-1" />
+              Clear all ({activeFiltersCount})
+            </Button>
+          )}
+        </div>
+
+        {/* Results Count */}
+        <div className="text-sm text-slate-600">
+          Showing {filteredTeammates.length} of {teammatesData.length} team members
+        </div>
       </div>
 
       {/* Team Stats */}
@@ -352,8 +529,7 @@ export const Teammates = () => {
             <CardContent className="p-6">
               <div className="flex items-start space-x-4">
                 <Avatar className="h-16 w-16">
-                  <AvatarImage src={teammate.avatar} alt={teammate.name} />
-                  <AvatarFallback className="bg-blue-100 text-blue-600 font-semibold">
+                  <AvatarFallback className="bg-blue-100 text-blue-600 font-semibold text-lg">
                     {getInitials(teammate.name)}
                   </AvatarFallback>
                 </Avatar>

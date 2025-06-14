@@ -1,15 +1,16 @@
-
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Plus,
   Search,
@@ -17,21 +18,30 @@ import {
   Calendar as CalendarIcon,
   Clock,
   Edit,
-  Trash2
+  Trash2,
+  X
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { EditTaskDialog } from "@/components/EditTaskDialog";
 import { TeammateSelector } from "@/components/TeammateSelector";
+import { FilterDropdown } from "@/components/FilterDropdown";
+import { useTaskFilters } from "@/hooks/useTaskFilters";
 
 const Tasks = () => {
-  const [searchTerm, setSearchTerm] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [editingTask, setEditingTask] = useState<any>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedTeammates, setSelectedTeammates] = useState<string[]>([]);
+  const [taskDescription, setTaskDescription] = useState("");
+  
+  // Form validation states
+  const [taskName, setTaskName] = useState("");
+  const [issueType, setIssueType] = useState("");
+  const [priority, setPriority] = useState("");
+  const [stage, setStage] = useState("");
 
   // Mock teammates data - this would come from your API
   const teammates = [
@@ -45,7 +55,9 @@ const Tasks = () => {
   const [tasks, setTasks] = useState([
     {
       id: 1,
+      taskNumber: "TSK-001",
       name: "User Authentication System",
+      description: "Implement a comprehensive user authentication system with login, registration, and password reset functionality.",
       issueType: "Feature",
       receivedDate: "2024-06-01",
       developmentStartDate: "2024-06-05",
@@ -53,11 +65,14 @@ const Tasks = () => {
       dueDate: "2024-06-15",
       assignedTeammates: ["John Doe", "Jane Smith"],
       priority: "High",
-      isCompleted: false
+      isCompleted: false,
+      isCmcDone: true
     },
     {
       id: 2,
+      taskNumber: "TSK-002",
       name: "Database Schema Design",
+      description: "Design and implement the database schema for the new project including user management and task tracking.",
       issueType: "Task",
       receivedDate: "2024-06-02",
       developmentStartDate: "2024-06-06",
@@ -65,11 +80,14 @@ const Tasks = () => {
       dueDate: "2024-06-12",
       assignedTeammates: ["Mike Johnson"],
       priority: "Medium",
-      isCompleted: false
+      isCompleted: false,
+      isCmcDone: false
     },
     {
       id: 3,
+      taskNumber: "TSK-003",
       name: "Frontend Dashboard",
+      description: "Create a responsive dashboard with charts, metrics, and real-time data visualization for better user experience.",
       issueType: "Feature",
       receivedDate: "2024-06-03",
       developmentStartDate: "2024-06-07",
@@ -77,11 +95,14 @@ const Tasks = () => {
       dueDate: "2024-06-18",
       assignedTeammates: ["Sarah Wilson", "Tom Brown"],
       priority: "High",
-      isCompleted: false
+      isCompleted: false,
+      isCmcDone: true
     },
     {
       id: 4,
+      taskNumber: "TSK-004",
       name: "Bug Fix - Login Issue",
+      description: "Fix the critical login bug where users are unable to authenticate with valid credentials.",
       issueType: "Bug",
       receivedDate: "2024-06-04",
       developmentStartDate: "2024-06-04",
@@ -89,13 +110,48 @@ const Tasks = () => {
       dueDate: "2024-06-08",
       assignedTeammates: ["John Doe"],
       priority: "Critical",
-      isCompleted: true
+      isCompleted: true,
+      isCmcDone: false
     }
   ]);
 
-  const stages = ["Planning", "Development", "Review", "Testing", "Completed"];
+  const stages = ["Planning", "Development", "Review", "Testing", "HOLD", "Completed"];
   const issueTypes = ["Feature", "Bug", "Task", "Enhancement"];
   const priorities = ["Low", "Medium", "High", "Critical"];
+
+  // Use the filtering hook
+  const {
+    searchTerm,
+    setSearchTerm,
+    selectedPriorities,
+    setSelectedPriorities,
+    selectedStages,
+    setSelectedStages,
+    selectedIssueTypes,
+    setSelectedIssueTypes,
+    selectedTeammates: filterSelectedTeammates,
+    setSelectedTeammates: setFilterSelectedTeammates,
+    showCompletedOnly,
+    setShowCompletedOnly,
+    showCmcDoneOnly,
+    setShowCmcDoneOnly,
+    filteredTasks,
+    filterOptions,
+    activeFiltersCount,
+    clearAllFilters
+  } = useTaskFilters(tasks);
+
+  // Generate next task number
+  const generateTaskNumber = () => {
+    const maxId = Math.max(...tasks.map(task => task.id), 0);
+    const nextNumber = (maxId + 1).toString().padStart(3, '0');
+    return `TSK-${nextNumber}`;
+  };
+
+  const getStageWithNumber = (stage: string) => {
+    const stageIndex = stages.findIndex(s => s === stage) + 1;
+    return `${stageIndex}. ${stage}`;
+  };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -113,6 +169,7 @@ const Tasks = () => {
       case "Development": return "bg-purple-100 text-purple-800 border-purple-200";
       case "Review": return "bg-orange-100 text-orange-800 border-orange-200";
       case "Testing": return "bg-indigo-100 text-indigo-800 border-indigo-200";
+      case "HOLD": return "bg-yellow-100 text-yellow-800 border-yellow-200";
       case "Completed": return "bg-green-100 text-green-800 border-green-200";
       default: return "bg-gray-100 text-gray-800 border-gray-200";
     }
@@ -128,12 +185,6 @@ const Tasks = () => {
     }
   };
 
-  const filteredTasks = tasks.filter(task =>
-    task.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    task.issueType.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    task.currentStage.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   const handleTeammateToggle = (teammateName: string) => {
     setSelectedTeammates(prev =>
       prev.includes(teammateName)
@@ -142,12 +193,78 @@ const Tasks = () => {
     );
   };
 
+  const validateTaskForm = () => {
+    if (!taskName.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Task name is required.",
+        variant: "destructive"
+      });
+      return false;
+    }
+    if (!issueType) {
+      toast({
+        title: "Validation Error",
+        description: "Issue type is required.",
+        variant: "destructive"
+      });
+      return false;
+    }
+    if (!priority) {
+      toast({
+        title: "Validation Error",
+        description: "Priority is required.",
+        variant: "destructive"
+      });
+      return false;
+    }
+    if (!selectedDate) {
+      toast({
+        title: "Validation Error",
+        description: "Due date is required.",
+        variant: "destructive"
+      });
+      return false;
+    }
+    if (!stage) {
+      toast({
+        title: "Validation Error",
+        description: "Current stage is required.",
+        variant: "destructive"
+      });
+      return false;
+    }
+    if (selectedTeammates.length === 0) {
+      toast({
+        title: "Validation Error",
+        description: "At least one teammate must be assigned.",
+        variant: "destructive"
+      });
+      return false;
+    }
+    return true;
+  };
+
+  const resetTaskForm = () => {
+    setTaskName("");
+    setIssueType("");
+    setPriority("");
+    setSelectedDate(undefined);
+    setStage("");
+    setSelectedTeammates([]);
+    setTaskDescription("");
+  };
+
   const handleCreateTask = () => {
+    if (!validateTaskForm()) {
+      return;
+    }
+
     toast({
       title: "Task Created",
       description: "New task has been created successfully.",
     });
-    setSelectedTeammates([]);
+    resetTaskForm();
     setIsCreateModalOpen(false);
   };
 
@@ -184,18 +301,32 @@ const Tasks = () => {
               Add New Task
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
               <DialogTitle>Create New Task</DialogTitle>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
+            <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto">
               <div className="grid gap-2">
-                <Label htmlFor="taskName">Task Name</Label>
-                <Input id="taskName" placeholder="Enter task name" />
+                <Label htmlFor="taskNumber">Task Number</Label>
+                <div className="flex items-center">
+                  <div className="bg-gray-800 text-white px-2 py-1 rounded font-mono text-xs font-bold border border-gray-600">
+                    {generateTaskNumber()}
+                  </div>
+                </div>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="issueType">Issue Type</Label>
-                <Select>
+                <Label htmlFor="taskName">Task Name *</Label>
+                <Input 
+                  id="taskName" 
+                  placeholder="Enter task name" 
+                  value={taskName}
+                  onChange={(e) => setTaskName(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="issueType">Issue Type *</Label>
+                <Select value={issueType} onValueChange={setIssueType} required>
                   <SelectTrigger>
                     <SelectValue placeholder="Select issue type" />
                   </SelectTrigger>
@@ -207,8 +338,8 @@ const Tasks = () => {
                 </Select>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="priority">Priority</Label>
-                <Select>
+                <Label htmlFor="priority">Priority *</Label>
+                <Select value={priority} onValueChange={setPriority} required>
                   <SelectTrigger>
                     <SelectValue placeholder="Select priority" />
                   </SelectTrigger>
@@ -220,7 +351,7 @@ const Tasks = () => {
                 </Select>
               </div>
               <div className="grid gap-2">
-                <Label>Due Date</Label>
+                <Label>Due Date *</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -246,14 +377,14 @@ const Tasks = () => {
                 </Popover>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="stage">Current Stage</Label>
-                <Select>
+                <Label htmlFor="stage">Current Stage *</Label>
+                <Select value={stage} onValueChange={setStage} required>
                   <SelectTrigger>
                     <SelectValue placeholder="Select stage" />
                   </SelectTrigger>
                   <SelectContent>
-                    {stages.map((stage) => (
-                      <SelectItem key={stage} value={stage}>{stage}</SelectItem>
+                    {stages.map((stage, index) => (
+                      <SelectItem key={stage} value={stage}>{index + 1}. {stage}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -262,10 +393,26 @@ const Tasks = () => {
                 teammates={teammates}
                 selectedTeammates={selectedTeammates}
                 onTeammateToggle={handleTeammateToggle}
+                label="Assign Teammates *"
               />
+              <div className="grid gap-2">
+                <Label htmlFor="taskDescription">Description</Label>
+                <Textarea 
+                  id="taskDescription" 
+                  placeholder="Enter task description (max 1000 words)" 
+                  value={taskDescription}
+                  onChange={(e) => setTaskDescription(e.target.value)}
+                  maxLength={1000}
+                  className="min-h-[100px]"
+                />
+                <p className="text-xs text-slate-500">{taskDescription.length}/1000 characters</p>
+              </div>
             </div>
             <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>
+              <Button variant="outline" onClick={() => {
+                resetTaskForm();
+                setIsCreateModalOpen(false);
+              }}>
                 Cancel
               </Button>
               <Button onClick={handleCreateTask} className="bg-blue-600 hover:bg-blue-700">
@@ -276,33 +423,102 @@ const Tasks = () => {
         </Dialog>
       </div>
 
-      {/* Search and Filter */}
-      <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
-          <Input
-            placeholder="Search tasks..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
+      {/* Search and Advanced Filters */}
+      <div className="space-y-4">
+        <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
+            <Input
+              placeholder="Search tasks..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
         </div>
-        <Button variant="outline">
-          <Filter className="h-4 w-4 mr-2" />
-          Filter
-        </Button>
-      </div>
 
-      {/* ... keep existing code (Tasks Grid, EditTaskDialog, no tasks found section) */}
+        {/* Filter Bar */}
+        <div className="flex flex-wrap gap-3 items-center">
+          <FilterDropdown
+            title="Priority"
+            options={filterOptions.priorities}
+            selectedValues={selectedPriorities}
+            onSelectionChange={setSelectedPriorities}
+          />
+          <FilterDropdown
+            title="Stage"
+            options={filterOptions.stages}
+            selectedValues={selectedStages}
+            onSelectionChange={setSelectedStages}
+          />
+          <FilterDropdown
+            title="Issue Type"
+            options={filterOptions.issueTypes}
+            selectedValues={selectedIssueTypes}
+            onSelectionChange={setSelectedIssueTypes}
+          />
+          <FilterDropdown
+            title="Assignee"
+            options={filterOptions.teammates}
+            selectedValues={filterSelectedTeammates}
+            onSelectionChange={setFilterSelectedTeammates}
+          />
+
+          {/* Special Filters */}
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="completed"
+              checked={showCompletedOnly}
+              onCheckedChange={setShowCompletedOnly}
+            />
+            <label htmlFor="completed" className="text-sm">Completed Only</label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="cmc"
+              checked={showCmcDoneOnly}
+              onCheckedChange={setShowCmcDoneOnly}
+            />
+            <label htmlFor="cmc" className="text-sm">CMC Done</label>
+          </div>
+
+          {/* Clear Filters */}
+          {activeFiltersCount > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearAllFilters}
+              className="text-slate-600 hover:text-slate-900"
+            >
+              <X className="h-4 w-4 mr-1" />
+              Clear all ({activeFiltersCount})
+            </Button>
+          )}
+        </div>
+
+        {/* Results Count */}
+        <div className="text-sm text-slate-600">
+          Showing {filteredTasks.length} of {tasks.length} tasks
+        </div>
+      </div>
 
       {/* Tasks Grid */}
       <div className="grid gap-6">
         {filteredTasks.map((task) => (
-          <Card key={task.id} className="hover:shadow-md transition-shadow">
+          <Card 
+            key={task.id} 
+            className={cn(
+              "hover:shadow-md transition-shadow",
+              task.isCompleted && "bg-green-50 border-green-200"
+            )}
+          >
             <CardContent className="p-6">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-3">
+                    <div className="bg-gray-800 text-white px-2 py-1 rounded font-mono text-xs font-bold border border-gray-600">
+                      {task.taskNumber}
+                    </div>
                     <h3 className="text-lg font-semibold text-slate-900">{task.name}</h3>
                     <Badge className={getIssueTypeColor(task.issueType)}>
                       {task.issueType}
@@ -311,6 +527,12 @@ const Tasks = () => {
                       {task.priority}
                     </Badge>
                   </div>
+
+                  {task.description && (
+                    <p className="text-sm text-slate-600 mb-3 line-clamp-2">
+                      {task.description}
+                    </p>
+                  )}
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                     <div>
@@ -338,9 +560,18 @@ const Tasks = () => {
                     </div>
                   </div>
 
-                  <div className="mt-4 text-xs text-slate-500">
-                    <span className="mr-4">Received: {task.receivedDate}</span>
+                  <div className="mt-4 text-xs text-slate-500 flex items-center space-x-4">
+                    <span>Received: {task.receivedDate}</span>
                     <span>Started: {task.developmentStartDate}</span>
+                    <div className="flex items-center">
+                      <span className="mr-2">CMC Done:</span>
+                      <div 
+                        className={cn(
+                          "w-3 h-3 rounded-full",
+                          task.isCmcDone ? "bg-green-500" : "bg-red-500"
+                        )}
+                      />
+                    </div>
                   </div>
                 </div>
 

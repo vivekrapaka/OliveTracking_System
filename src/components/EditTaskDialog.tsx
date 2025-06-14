@@ -1,8 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
@@ -15,7 +15,9 @@ import { TeammateSelector } from "./TeammateSelector";
 
 interface Task {
   id: number;
+  taskNumber: string;
   name: string;
+  description?: string;
   issueType: string;
   receivedDate: string;
   developmentStartDate: string;
@@ -24,6 +26,7 @@ interface Task {
   assignedTeammates: string[];
   priority: string;
   isCompleted: boolean;
+  isCmcDone: boolean;
 }
 
 interface Teammate {
@@ -42,10 +45,11 @@ interface EditTaskDialogProps {
 
 export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: EditTaskDialogProps) => {
   const [selectedDate, setSelectedDate] = useState<Date>();
+  const [selectedStartDate, setSelectedStartDate] = useState<Date>();
   const [editData, setEditData] = useState<Partial<Task>>({});
   const [selectedTeammates, setSelectedTeammates] = useState<string[]>([]);
 
-  const stages = ["Planning", "Development", "Review", "Testing", "Completed"];
+  const stages = ["Planning", "Development", "Review", "Testing", "HOLD", "Completed"];
   const issueTypes = ["Feature", "Bug", "Task", "Enhancement"];
   const priorities = ["Low", "Medium", "High", "Critical"];
 
@@ -55,6 +59,9 @@ export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: Edi
       setSelectedTeammates(task.assignedTeammates || []);
       if (task.dueDate) {
         setSelectedDate(new Date(task.dueDate));
+      }
+      if (task.developmentStartDate) {
+        setSelectedStartDate(new Date(task.developmentStartDate));
       }
     }
   }, [task]);
@@ -77,7 +84,9 @@ export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: Edi
       ...task,
       ...editData,
       assignedTeammates: selectedTeammates,
-      dueDate: selectedDate ? format(selectedDate, "yyyy-MM-dd") : task.dueDate
+      dueDate: selectedDate ? format(selectedDate, "yyyy-MM-dd") : task.dueDate,
+      developmentStartDate: selectedStartDate ? format(selectedStartDate, "yyyy-MM-dd") : task.developmentStartDate,
+      isCompleted: editData.currentStage === "Completed"
     };
     onSave(updatedTask);
     toast({
@@ -91,11 +100,20 @@ export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: Edi
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>Edit Task</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
+        <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto">
+          <div className="grid gap-2">
+            <Label htmlFor="editTaskNumber">Task Number</Label>
+            <Input
+              id="editTaskNumber"
+              value={task.taskNumber}
+              readOnly
+              className="bg-gray-100 border border-gray-300"
+            />
+          </div>
           <div className="grid gap-2">
             <Label htmlFor="editTaskName">Task Name</Label>
             <Input
@@ -174,6 +192,56 @@ export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: Edi
             selectedTeammates={selectedTeammates}
             onTeammateToggle={handleTeammateToggle}
           />
+          <div className="grid gap-2">
+            <Label>Started Date</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "justify-start text-left font-normal",
+                    !selectedStartDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {selectedStartDate ? format(selectedStartDate, "PPP") : <span>Pick a date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={selectedStartDate}
+                  onSelect={setSelectedStartDate}
+                  initialFocus
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="editIsCmcDone">CMC Done</Label>
+            <Select defaultValue={task.isCmcDone ? "true" : "false"} onValueChange={(value) => setEditData({...editData, isCmcDone: value === "true"})}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="true">True</SelectItem>
+                <SelectItem value="false">False</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="editTaskDescription">Description</Label>
+            <Textarea
+              id="editTaskDescription"
+              defaultValue={task.description || ""}
+              onChange={(e) => setEditData({...editData, description: e.target.value})}
+              placeholder="Enter task description (max 1000 words)"
+              maxLength={1000}
+              className="min-h-[100px]"
+            />
+            <p className="text-xs text-slate-500">{(editData.description || task.description || "").length}/1000 characters</p>
+          </div>
         </div>
         <div className="flex justify-end space-x-2">
           <Button variant="outline" onClick={onClose}>
