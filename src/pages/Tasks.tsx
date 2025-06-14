@@ -289,12 +289,11 @@ const Tasks = () => {
             <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto">
               <div className="grid gap-2">
                 <Label htmlFor="taskNumber">Task Number</Label>
-                <Input 
-                  id="taskNumber" 
-                  value={generateTaskNumber()}
-                  readOnly
-                  className="bg-gray-100 border border-gray-300"
-                />
+                <div className="flex items-center">
+                  <div className="bg-slate-800 text-white px-3 py-2 rounded-md font-mono text-sm font-bold border-2 border-slate-700">
+                    {generateTaskNumber()}
+                  </div>
+                </div>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="taskName">Task Name *</Label>
@@ -436,9 +435,9 @@ const Tasks = () => {
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-3">
-                    <Badge variant="outline" className="font-mono text-xs">
+                    <div className="bg-slate-800 text-white px-3 py-1 rounded-md font-mono text-xs font-bold border-2 border-slate-700">
                       {task.taskNumber}
-                    </Badge>
+                    </div>
                     <h3 className="text-lg font-semibold text-slate-900">{task.name}</h3>
                     <Badge className={getIssueTypeColor(task.issueType)}>
                       {task.issueType}
