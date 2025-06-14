@@ -167,10 +167,6 @@ export const Teammates = () => {
     setSelectedRoles,
     selectedAvailabilityStatus,
     setSelectedAvailabilityStatus,
-    selectedLocations,
-    setSelectedLocations,
-    selectedCurrentStages,
-    setSelectedCurrentStages,
     filteredTeammates,
     filterOptions,
     activeFiltersCount,
@@ -444,7 +440,7 @@ export const Teammates = () => {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
           <Input
-            placeholder="Search team members..."
+            placeholder="Search team members by name..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -470,18 +466,6 @@ export const Teammates = () => {
             options={filterOptions.availabilityStatuses}
             selectedValues={selectedAvailabilityStatus}
             onSelectionChange={setSelectedAvailabilityStatus}
-          />
-          <FilterDropdown
-            title="Location"
-            options={filterOptions.locations}
-            selectedValues={selectedLocations}
-            onSelectionChange={setSelectedLocations}
-          />
-          <FilterDropdown
-            title="Current Stage"
-            options={filterOptions.currentStages}
-            selectedValues={selectedCurrentStages}
-            onSelectionChange={setSelectedCurrentStages}
           />
 
           {/* Clear Filters */}
