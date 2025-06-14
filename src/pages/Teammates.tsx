@@ -352,7 +352,7 @@ export const Teammates = () => {
             <CardContent className="p-6">
               <div className="flex items-start space-x-4">
                 <Avatar className="h-16 w-16">
-                  <AvatarFallback className="bg-blue-100 text-blue-600 font-semibold text-lg">
+                  <AvatarFallback className="bg-blue-100 text-blue-600 font-bold text-2xl">
                     {getInitials(teammate.name)}
                   </AvatarFallback>
                 </Avatar>
