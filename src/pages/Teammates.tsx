@@ -17,12 +17,13 @@ import {
   Trash2,
   User,
   MapPin,
-  X
+  X,
+  RefreshCw
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { useTeammateAvailability } from "@/hooks/useTeammateAvailability";
 import { FilterDropdown } from "@/components/FilterDropdown";
 import { useTeammateFilters } from "@/hooks/useTeammateFilters";
+import { useTeammatesData, BackendTeammate } from "@/hooks/useTeammatesData";
 
 interface Task {
   id: number;
@@ -45,6 +46,7 @@ interface Teammate {
 }
 
 export const Teammates = () => {
+  const { data: teammatesApiData, isLoading, error, refetch, isRefetching } = useTeammatesData();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingTeammate, setEditingTeammate] = useState<Teammate | null>(null);
@@ -57,6 +59,29 @@ export const Teammates = () => {
   const [role, setRole] = useState("");
   const [department, setDepartment] = useState("");
   const [location, setLocation] = useState("");
+
+  // Convert backend data to frontend format
+  const convertBackendToFrontend = (backendTeammate: BackendTeammate): Teammate => {
+    return {
+      id: backendTeammate.id,
+      name: backendTeammate.name,
+      email: backendTeammate.email,
+      phone: backendTeammate.phone,
+      role: backendTeammate.role,
+      department: backendTeammate.department,
+      // Map backend status names to frontend expected values
+      availabilityStatus: backendTeammate.availabilityStatus === "Free" ? "Available" : 
+                        backendTeammate.availabilityStatus === "Occupied" ? "Occupied" : 
+                        backendTeammate.availabilityStatus,
+      location: backendTeammate.location,
+      avatar: backendTeammate.avatar,
+      tasksAssigned: backendTeammate.tasksAssigned,
+      tasksCompleted: backendTeammate.tasksCompleted
+    };
+  };
+
+  // Convert API data to component state
+  const teammatesData = teammatesApiData?.teammates?.map(convertBackendToFrontend) || [];
 
   const [tasks, setTasks] = useState<Task[]>([
     {
@@ -173,8 +198,9 @@ export const Teammates = () => {
     clearAllFilters
   } = useTeammateFilters(teammatesData, tasks);
 
-  const roles = ["Frontend Developer", "Backend Developer", "Full Stack Developer", "UX Designer", "DevOps Engineer", "Project Manager"];
-  const departments = ["Engineering", "Design", "Product", "Marketing", "Sales"];
+  const roles = ["Frontend Developer", "Backend Developer", "Full Stack Developer", "UX Designer", "DevOps Engineer", "Project Manager", "developer", "Manager"];
+  const departments = ["Engineering", "Design", "Product", "Marketing", "Sales", "Engeering"];
+  const availabilityStatuses = ["Available", "Occupied", "Leave"];
 
   const getAvailabilityColor = (status: string) => {
     switch (status) {
@@ -187,7 +213,8 @@ export const Teammates = () => {
 
   const getDepartmentColor = (department: string) => {
     switch (department) {
-      case "Engineering": return "bg-blue-100 text-blue-800 border-blue-200";
+      case "Engineering":
+      case "Engeering": return "bg-blue-100 text-blue-800 border-blue-200";
       case "Design": return "bg-purple-100 text-purple-800 border-purple-200";
       case "Product": return "bg-orange-100 text-orange-800 border-orange-200";
       case "Marketing": return "bg-pink-100 text-pink-800 border-pink-200";
@@ -319,6 +346,33 @@ export const Teammates = () => {
     });
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
+          <p className="text-slate-600">Loading teammates...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <div className="text-red-600 mb-4">
+          <User className="h-12 w-12 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold mb-2">Failed to load teammates</h3>
+          <p className="text-slate-600 mb-4">{error.message}</p>
+          <Button onClick={() => refetch()} variant="outline">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Try Again
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -328,111 +382,123 @@ export const Teammates = () => {
           <p className="text-slate-600 mt-1">Manage your team and track their availability</p>
         </div>
 
-        <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Team Member
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>Add New Team Member</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
+        <div className="flex items-center space-x-2">
+          <Button
+            onClick={() => refetch()}
+            variant="outline"
+            size="sm"
+            disabled={isRefetching}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isRefetching ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+
+          <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-blue-600 hover:bg-blue-700">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Team Member
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Add New Team Member</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="firstName">First Name *</Label>
+                    <Input 
+                      id="firstName" 
+                      placeholder="Enter first name" 
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="lastName">Last Name *</Label>
+                    <Input 
+                      id="lastName" 
+                      placeholder="Enter last name" 
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="firstName">First Name *</Label>
+                  <Label htmlFor="email">Email *</Label>
                   <Input 
-                    id="firstName" 
-                    placeholder="Enter first name" 
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
+                    id="email" 
+                    type="email" 
+                    placeholder="Enter email address" 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     required
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="lastName">Last Name *</Label>
+                  <Label htmlFor="phone">Phone *</Label>
                   <Input 
-                    id="lastName" 
-                    placeholder="Enter last name" 
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
+                    id="phone" 
+                    placeholder="Enter phone number" 
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="role">Role *</Label>
+                  <Select value={role} onValueChange={setRole} required>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {roles.map((role) => (
+                        <SelectItem key={role} value={role}>{role}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="department">Department *</Label>
+                  <Select value={department} onValueChange={setDepartment} required>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {departments.map((dept) => (
+                        <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="location">Location *</Label>
+                  <Input 
+                    id="location" 
+                    placeholder="Enter location" 
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
                     required
                   />
                 </div>
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email *</Label>
-                <Input 
-                  id="email" 
-                  type="email" 
-                  placeholder="Enter email address" 
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => {
+                  resetTeammateForm();
+                  setIsCreateModalOpen(false);
+                }}>
+                  Cancel
+                </Button>
+                <Button onClick={handleCreateTeammate} className="bg-blue-600 hover:bg-blue-700">
+                  Add Member
+                </Button>
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="phone">Phone *</Label>
-                <Input 
-                  id="phone" 
-                  placeholder="Enter phone number" 
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="role">Role *</Label>
-                <Select value={role} onValueChange={setRole} required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {roles.map((role) => (
-                      <SelectItem key={role} value={role}>{role}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="department">Department *</Label>
-                <Select value={department} onValueChange={setDepartment} required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {departments.map((dept) => (
-                      <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="location">Location *</Label>
-                <Input 
-                  id="location" 
-                  placeholder="Enter location" 
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => {
-                resetTeammateForm();
-                setIsCreateModalOpen(false);
-              }}>
-                Cancel
-              </Button>
-              <Button onClick={handleCreateTeammate} className="bg-blue-600 hover:bg-blue-700">
-                Add Member
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Search and Advanced Filters */}
@@ -492,14 +558,14 @@ export const Teammates = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
           <CardContent className="p-6">
-            <div className="text-2xl font-bold text-slate-900">{teammatesData.length}</div>
+            <div className="text-2xl font-bold text-slate-900">{teammatesApiData?.totalMembersInTeamCount || 0}</div>
             <p className="text-sm text-slate-600">Total Members</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6">
             <div className="text-2xl font-bold text-green-600">
-              {teammatesData.filter(t => t.availabilityStatus === "Available").length}
+              {teammatesApiData?.availableTeamMembersCount || 0}
             </div>
             <p className="text-sm text-slate-600">Available</p>
           </CardContent>
@@ -507,7 +573,7 @@ export const Teammates = () => {
         <Card>
           <CardContent className="p-6">
             <div className="text-2xl font-bold text-yellow-600">
-              {teammatesData.filter(t => t.availabilityStatus === "Occupied").length}
+              {teammatesApiData?.occupiedTeamMembersCount || 0}
             </div>
             <p className="text-sm text-slate-600">Occupied</p>
           </CardContent>
@@ -515,7 +581,7 @@ export const Teammates = () => {
         <Card>
           <CardContent className="p-6">
             <div className="text-2xl font-bold text-slate-900">
-              {teammatesData.reduce((sum, t) => sum + t.tasksAssigned, 0)}
+              {teammatesApiData?.activeTasksCount || 0}
             </div>
             <p className="text-sm text-slate-600">Active Tasks</p>
           </CardContent>
@@ -530,7 +596,7 @@ export const Teammates = () => {
               <div className="flex items-start space-x-4">
                 <Avatar className="h-16 w-16">
                   <AvatarFallback className="bg-blue-100 text-blue-600 font-semibold text-lg">
-                    {getInitials(teammate.name)}
+                    {teammate.avatar || getInitials(teammate.name)}
                   </AvatarFallback>
                 </Avatar>
 
@@ -725,7 +791,7 @@ export const Teammates = () => {
         </DialogContent>
       </Dialog>
 
-      {filteredTeammates.length === 0 && (
+      {filteredTeammates.length === 0 && !isLoading && (
         <div className="text-center py-12">
           <User className="h-12 w-12 text-slate-400 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-slate-900 mb-2">No team members found</h3>

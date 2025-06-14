@@ -10,6 +10,7 @@ console.log('🔗 API Base URL configured as:', API_BASE_URL);
 
 export const API_ENDPOINTS = {
   DASHBOARD_SUMMARY: '/api/dashboard',
+  TEAMMATES: '/api/teammates',
 };
 
 // Helper function to build full API URLs
