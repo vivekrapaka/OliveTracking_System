@@ -15,12 +15,19 @@ interface Teammate {
   tasksCompleted: number;
 }
 
-export const useTeammateFilters = (teammates: Teammate[]) => {
+interface Task {
+  id: number;
+  assignedTeammates: string[];
+  currentStage: string;
+}
+
+export const useTeammateFilters = (teammates: Teammate[], tasks: Task[] = []) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [selectedAvailabilityStatus, setSelectedAvailabilityStatus] = useState<string[]>([]);
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
+  const [selectedCurrentStages, setSelectedCurrentStages] = useState<string[]>([]);
 
   const filteredTeammates = useMemo(() => {
     return teammates.filter(teammate => {
@@ -48,17 +55,25 @@ export const useTeammateFilters = (teammates: Teammate[]) => {
       const matchesLocation = selectedLocations.length === 0 || 
         selectedLocations.includes(teammate.location);
 
+      // Current Stage filter - check if teammate is assigned to tasks with selected stages
+      const matchesCurrentStage = selectedCurrentStages.length === 0 || 
+        tasks.some(task => 
+          task.assignedTeammates.includes(teammate.name) && 
+          selectedCurrentStages.includes(task.currentStage)
+        );
+
       return matchesSearch && matchesDepartment && matchesRole && 
-             matchesAvailability && matchesLocation;
+             matchesAvailability && matchesLocation && matchesCurrentStage;
     });
-  }, [teammates, searchTerm, selectedDepartments, selectedRoles, 
-      selectedAvailabilityStatus, selectedLocations]);
+  }, [teammates, tasks, searchTerm, selectedDepartments, selectedRoles, 
+      selectedAvailabilityStatus, selectedLocations, selectedCurrentStages]);
 
   const filterOptions = useMemo(() => {
     const departments = [...new Set(teammates.map(t => t.department))];
     const roles = [...new Set(teammates.map(t => t.role))];
     const availabilityStatuses = [...new Set(teammates.map(t => t.availabilityStatus))];
     const locations = [...new Set(teammates.map(t => t.location))];
+    const currentStages = [...new Set(tasks.map(t => t.currentStage))];
 
     return {
       departments: departments.map(d => ({ 
@@ -80,18 +95,25 @@ export const useTeammateFilters = (teammates: Teammate[]) => {
         label: l, 
         value: l, 
         count: teammates.filter(t => t.location === l).length 
+      })),
+      currentStages: currentStages.map(s => ({ 
+        label: s, 
+        value: s, 
+        count: tasks.filter(t => t.currentStage === s).length 
       }))
     };
-  }, [teammates]);
+  }, [teammates, tasks]);
 
   const activeFiltersCount = selectedDepartments.length + selectedRoles.length + 
-                            selectedAvailabilityStatus.length + selectedLocations.length;
+                            selectedAvailabilityStatus.length + selectedLocations.length +
+                            selectedCurrentStages.length;
 
   const clearAllFilters = () => {
     setSelectedDepartments([]);
     setSelectedRoles([]);
     setSelectedAvailabilityStatus([]);
     setSelectedLocations([]);
+    setSelectedCurrentStages([]);
     setSearchTerm("");
   };
 
@@ -106,6 +128,8 @@ export const useTeammateFilters = (teammates: Teammate[]) => {
     setSelectedAvailabilityStatus,
     selectedLocations,
     setSelectedLocations,
+    selectedCurrentStages,
+    setSelectedCurrentStages,
     filteredTeammates,
     filterOptions,
     activeFiltersCount,

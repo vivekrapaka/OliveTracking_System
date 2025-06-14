@@ -157,7 +157,7 @@ export const Teammates = () => {
     setTeammatesData(updatedTeammates as Teammate[]);
   }, [updatedTeammates]);
 
-  // Use the filtering hook
+  // Use the filtering hook with tasks
   const {
     searchTerm,
     setSearchTerm,
@@ -169,11 +169,13 @@ export const Teammates = () => {
     setSelectedAvailabilityStatus,
     selectedLocations,
     setSelectedLocations,
+    selectedCurrentStages,
+    setSelectedCurrentStages,
     filteredTeammates,
     filterOptions,
     activeFiltersCount,
     clearAllFilters
-  } = useTeammateFilters(teammatesData);
+  } = useTeammateFilters(teammatesData, tasks);
 
   const roles = ["Frontend Developer", "Backend Developer", "Full Stack Developer", "UX Designer", "DevOps Engineer", "Project Manager"];
   const departments = ["Engineering", "Design", "Product", "Marketing", "Sales"];
@@ -474,6 +476,12 @@ export const Teammates = () => {
             options={filterOptions.locations}
             selectedValues={selectedLocations}
             onSelectionChange={setSelectedLocations}
+          />
+          <FilterDropdown
+            title="Current Stage"
+            options={filterOptions.currentStages}
+            selectedValues={selectedCurrentStages}
+            onSelectionChange={setSelectedCurrentStages}
           />
 
           {/* Clear Filters */}
