@@ -115,7 +115,7 @@ const Tasks = () => {
     }
   ]);
 
-  const stages = ["Planning", "Development", "Review", "Testing", "Completed"];
+  const stages = ["Planning", "Development", "Review", "Testing", "HOLD", "Completed"];
   const issueTypes = ["Feature", "Bug", "Task", "Enhancement"];
   const priorities = ["Low", "Medium", "High", "Critical"];
 
@@ -169,6 +169,7 @@ const Tasks = () => {
       case "Development": return "bg-purple-100 text-purple-800 border-purple-200";
       case "Review": return "bg-orange-100 text-orange-800 border-orange-200";
       case "Testing": return "bg-indigo-100 text-indigo-800 border-indigo-200";
+      case "HOLD": return "bg-yellow-100 text-yellow-800 border-yellow-200";
       case "Completed": return "bg-green-100 text-green-800 border-green-200";
       default: return "bg-gray-100 text-gray-800 border-gray-200";
     }
