@@ -538,7 +538,7 @@ const Tasks = () => {
                     <div>
                       <p className="text-slate-600 font-medium mb-1">Current Stage</p>
                       <Badge className={getStageColor(task.currentStage)}>
-                        {getStageWithNumber(task.currentStage)}
+                        {task.currentStage}
                       </Badge>
                     </div>
                     <div>
