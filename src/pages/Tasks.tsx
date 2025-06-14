@@ -223,14 +223,6 @@ const Tasks = () => {
       });
       return false;
     }
-    if (!taskDescription.trim()) {
-      toast({
-        title: "Validation Error",
-        description: "Task description is required.",
-        variant: "destructive"
-      });
-      return false;
-    }
     return true;
   };
 
@@ -386,7 +378,7 @@ const Tasks = () => {
                 label="Assign Teammates *"
               />
               <div className="grid gap-2">
-                <Label htmlFor="taskDescription">Description *</Label>
+                <Label htmlFor="taskDescription">Description</Label>
                 <Textarea 
                   id="taskDescription" 
                   placeholder="Enter task description (max 1000 words)" 
@@ -394,7 +386,6 @@ const Tasks = () => {
                   onChange={(e) => setTaskDescription(e.target.value)}
                   maxLength={1000}
                   className="min-h-[100px]"
-                  required
                 />
                 <p className="text-xs text-slate-500">{taskDescription.length}/1000 characters</p>
               </div>
