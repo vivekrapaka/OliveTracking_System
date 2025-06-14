@@ -17,7 +17,6 @@ import {
 import { Link } from "react-router-dom";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { DashboardLoading } from "@/components/DashboardLoading";
-import { toast } from "@/hooks/use-toast";
 
 const Dashboard = () => {
   const { data: dashboardData, isLoading, error, refetch, isRefetching } = useDashboardData();
@@ -28,7 +27,6 @@ const Dashboard = () => {
 
   if (error) {
     console.error('Dashboard data fetch error:', error);
-    // Don't show toast in render, just log the error
   }
 
   if (!dashboardData) {
@@ -47,9 +45,15 @@ const Dashboard = () => {
     );
   }
 
-  const completionRate = dashboardData.totalTasks > 0 
-    ? Math.round(((dashboardData.totalTasks - dashboardData.activeTasks) / dashboardData.totalTasks) * 100)
-    : 0;
+  // Calculate completion rate using tasksByStage data
+  const calculateCompletionRate = () => {
+    const completedTasks = dashboardData.tasksByStage["Completed"] || 0;
+    return dashboardData.totalTasks > 0 
+      ? Math.round((completedTasks / dashboardData.totalTasks) * 100)
+      : 0;
+  };
+
+  const completionRate = calculateCompletionRate();
 
   const getPriorityColor = (priority: string) => {
     switch (priority.toUpperCase()) {
@@ -102,7 +106,7 @@ const Dashboard = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Total Tasks Card - No longer clickable */}
+        {/* Total Tasks Card */}
         <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-slate-600">Total Tasks</CardTitle>
@@ -214,6 +218,9 @@ const Dashboard = () => {
           <CardContent>
             <div className="text-2xl font-bold text-slate-900">{completionRate}%</div>
             <Progress value={completionRate} className="mt-2" />
+            <p className="text-xs text-slate-600 mt-1">
+              {dashboardData.tasksByStage["Completed"] || 0} of {dashboardData.totalTasks} tasks completed
+            </p>
           </CardContent>
         </Card>
       </div>
