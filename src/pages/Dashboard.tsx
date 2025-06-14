@@ -86,21 +86,26 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-8">
-      {/* API Status Banner */}
+      {/* Enhanced API Status Banner */}
       {isUsingMockData && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-center space-x-3">
           <WifiOff className="h-5 w-5 text-yellow-600" />
           <div className="flex-1">
             <p className="text-sm font-medium text-yellow-800">
-              Using offline data - API connection failed
+              🔧 Using offline data - API connection failed
             </p>
             <p className="text-xs text-yellow-700 mt-1">
-              Check if your backend server is running on localhost:8085
+              Check console logs for detailed error information. Is your backend server running on localhost:8085?
             </p>
+            {error && (
+              <p className="text-xs text-yellow-600 mt-1 font-mono">
+                Error: {error.message}
+              </p>
+            )}
           </div>
           <Button onClick={() => refetch()} variant="outline" size="sm">
             <RefreshCw className={`h-4 w-4 mr-2 ${isRefetching ? 'animate-spin' : ''}`} />
-            Retry API
+            Test Connection
           </Button>
         </div>
       )}
@@ -110,12 +115,16 @@ const Dashboard = () => {
           <Wifi className="h-5 w-5 text-green-600" />
           <div className="flex-1">
             <p className="text-sm font-medium text-green-800">
-              Connected to API - Live data loaded
+              ✅ Connected to API - Live data loaded successfully
             </p>
             <p className="text-xs text-green-700 mt-1">
-              Data is being fetched from your backend server
+              Data is being fetched from your backend server at localhost:8085
             </p>
           </div>
+          <Button onClick={() => refetch()} variant="outline" size="sm">
+            <RefreshCw className={`h-4 w-4 mr-2 ${isRefetching ? 'animate-spin' : ''}`} />
+            Refresh Data
+          </Button>
         </div>
       )}
 
