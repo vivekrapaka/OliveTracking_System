@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -52,12 +51,30 @@ const Dashboard = () => {
     );
   }
 
-  // Calculate completion rate using displayData instead of dashboardData
+  // Calculate completion rate with proper safety checks
   const calculateCompletionRate = () => {
+    // Add safety checks to prevent undefined errors
+    if (!displayData || !displayData.tasksByStage || !displayData.totalTasks) {
+      console.log('⚠️ [CALC] Missing data for completion rate calculation:', {
+        displayData: !!displayData,
+        tasksByStage: !!displayData?.tasksByStage,
+        totalTasks: displayData?.totalTasks
+      });
+      return 0;
+    }
+    
     const completedTasks = displayData.tasksByStage["Completed"] || 0;
-    return displayData.totalTasks > 0 
+    const rate = displayData.totalTasks > 0 
       ? Math.round((completedTasks / displayData.totalTasks) * 100)
       : 0;
+      
+    console.log('📊 [CALC] Completion rate calculated:', {
+      completedTasks,
+      totalTasks: displayData.totalTasks,
+      rate
+    });
+    
+    return rate;
   };
 
   const completionRate = calculateCompletionRate();
@@ -268,7 +285,7 @@ const Dashboard = () => {
             <div className="text-2xl font-bold text-slate-900">{completionRate}%</div>
             <Progress value={completionRate} className="mt-2" />
             <p className="text-xs text-slate-600 mt-1">
-              {displayData.tasksByStage["Completed"] || 0} of {displayData.totalTasks} tasks completed
+              {displayData.tasksByStage?.["Completed"] || 0} of {displayData.totalTasks} tasks completed
             </p>
           </CardContent>
         </Card>
