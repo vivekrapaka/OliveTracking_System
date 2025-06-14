@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -537,19 +536,19 @@ export const Teammates = () => {
           <Card key={teammate.id} className="hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-start space-x-4">
-                <Avatar className="h-16 w-16">
+                <Avatar className="h-16 w-16 flex-shrink-0">
                   <AvatarFallback className="bg-blue-100 text-blue-600 font-semibold text-lg">
                     {teammate.avatar || getInitials(teammate.name)}
                   </AvatarFallback>
                 </Avatar>
 
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-2">
-                    <div>
-                      <h3 className="text-lg font-semibold text-slate-900">{teammate.name}</h3>
-                      <p className="text-slate-600">{teammate.role}</p>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-lg font-semibold text-slate-900 truncate">{teammate.name}</h3>
+                      <p className="text-slate-600 truncate">{teammate.role}</p>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2 flex-shrink-0">
                       <Badge className={getDepartmentColor(teammate.department)}>
                         {teammate.department}
                       </Badge>
@@ -559,18 +558,18 @@ export const Teammates = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <div className="flex items-center text-sm text-slate-600">
-                      <Mail className="h-4 w-4 mr-2" />
-                      {teammate.email}
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+                    <div className="flex items-center text-sm text-slate-600 min-w-0">
+                      <Mail className="h-4 w-4 mr-2 flex-shrink-0" />
+                      <span className="truncate">{teammate.email}</span>
                     </div>
-                    <div className="flex items-center text-sm text-slate-600">
-                      <Phone className="h-4 w-4 mr-2" />
-                      {teammate.phone}
+                    <div className="flex items-center text-sm text-slate-600 min-w-0">
+                      <Phone className="h-4 w-4 mr-2 flex-shrink-0" />
+                      <span className="truncate">{teammate.phone}</span>
                     </div>
-                    <div className="flex items-center text-sm text-slate-600">
-                      <MapPin className="h-4 w-4 mr-2" />
-                      {teammate.location}
+                    <div className="flex items-center text-sm text-slate-600 min-w-0">
+                      <MapPin className="h-4 w-4 mr-2 flex-shrink-0" />
+                      <span className="truncate">{teammate.location}</span>
                     </div>
                   </div>
 
