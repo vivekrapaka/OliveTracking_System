@@ -45,39 +45,60 @@ export interface DashboardData {
 
 const fetchDashboardData = async (): Promise<DashboardData> => {
   const url = buildApiUrl(API_ENDPOINTS.DASHBOARD_SUMMARY);
-  console.log('Fetching dashboard data from:', url);
+  console.log('🚀 Attempting to fetch dashboard data from:', url);
+  console.log('🔧 Current environment:', process.env.NODE_ENV);
   
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      // Add any authentication headers here if needed
-      // 'Authorization': `Bearer ${token}`,
-    },
-  });
-  
-  console.log('Response status:', response.status);
-  console.log('Response ok:', response.ok);
-  
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        // Add any authentication headers here if needed
+        // 'Authorization': `Bearer ${token}`,
+      },
+    });
+    
+    console.log('📡 Response received - Status:', response.status, 'OK:', response.ok);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ API Error Response:', errorText);
+      throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
+    }
+    
+    const data = await response.json();
+    console.log('✅ Dashboard data received successfully:', data);
+    console.log('📊 Data keys:', Object.keys(data));
+    
+    return data;
+  } catch (error) {
+    console.error('💥 Dashboard data fetch error:', error);
+    console.log('🔄 Will retry with exponential backoff...');
+    throw error; // Let React Query handle retries
   }
-  
-  const data = await response.json();
-  console.log('Dashboard data received successfully:', data);
-  
-  return data;
 };
 
 export const useDashboardData = () => {
+  console.log('🎯 useDashboardData hook called');
+  
   return useQuery({
     queryKey: ['dashboard-summary'],
     queryFn: fetchDashboardData,
     refetchInterval: 30000, // Refetch every 30 seconds
     staleTime: 10000, // Consider data stale after 10 seconds
     retry: 3, // Retry failed requests up to 3 times
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
-    // Only use mock data if the query fails completely after all retries
+    retryDelay: (attemptIndex) => {
+      const delay = Math.min(1000 * 2 ** attemptIndex, 30000);
+      console.log(`⏳ Retry attempt ${attemptIndex + 1} in ${delay}ms`);
+      return delay;
+    },
+    // Use mock data as fallback during loading or errors
     placeholderData: mockDashboardData,
+    onError: (error) => {
+      console.error('🚨 Final query error after all retries:', error);
+    },
+    onSuccess: (data) => {
+      console.log('🎉 Query successful, data keys:', Object.keys(data));
+    }
   });
 };
