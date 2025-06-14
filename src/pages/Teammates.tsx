@@ -28,6 +28,7 @@ import { FilterDropdown } from "@/components/FilterDropdown";
 import { useTeammatesData, BackendTeammate } from "@/hooks/useTeammatesData";
 import { AddTeammateForm } from "@/components/AddTeammateForm";
 import { EditTeammateForm } from "@/components/EditTeammateForm";
+import { useDeleteTeammate } from "@/hooks/useDeleteTeammate";
 
 interface Teammate {
   id: number;
@@ -45,6 +46,7 @@ interface Teammate {
 
 export const Teammates = () => {
   const { data: teammatesApiData, isLoading, error } = useTeammatesData();
+  const deleteTeammateMutation = useDeleteTeammate();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedTeammate, setSelectedTeammate] = useState<Teammate | null>(null);
@@ -131,12 +133,20 @@ export const Teammates = () => {
     }
   };
 
-  const handleDeleteTeammate = (teammateId: number) => {
-    setTeammatesData(teammatesData.filter(teammate => teammate.id !== teammateId));
-    toast({
-      title: "Teammate Deleted",
-      description: "Teammate has been deleted successfully.",
-    });
+  const handleDeleteTeammate = async (teammateName: string) => {
+    try {
+      await deleteTeammateMutation.mutateAsync(teammateName);
+      toast({
+        title: "Teammate Deleted",
+        description: "Teammate has been deleted successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete teammate. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleAddSuccess = () => {
@@ -338,10 +348,11 @@ export const Teammates = () => {
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction
-                              onClick={() => handleDeleteTeammate(teammate.id)}
+                              onClick={() => handleDeleteTeammate(teammate.name)}
                               className="bg-red-600 hover:bg-red-700"
+                              disabled={deleteTeammateMutation.isPending}
                             >
-                              Delete
+                              {deleteTeammateMutation.isPending ? "Deleting..." : "Delete"}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
