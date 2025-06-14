@@ -45,6 +45,7 @@ interface EditTaskDialogProps {
 
 export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: EditTaskDialogProps) => {
   const [selectedDate, setSelectedDate] = useState<Date>();
+  const [selectedStartDate, setSelectedStartDate] = useState<Date>();
   const [editData, setEditData] = useState<Partial<Task>>({});
   const [selectedTeammates, setSelectedTeammates] = useState<string[]>([]);
 
@@ -58,6 +59,9 @@ export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: Edi
       setSelectedTeammates(task.assignedTeammates || []);
       if (task.dueDate) {
         setSelectedDate(new Date(task.dueDate));
+      }
+      if (task.developmentStartDate) {
+        setSelectedStartDate(new Date(task.developmentStartDate));
       }
     }
   }, [task]);
@@ -81,6 +85,7 @@ export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: Edi
       ...editData,
       assignedTeammates: selectedTeammates,
       dueDate: selectedDate ? format(selectedDate, "yyyy-MM-dd") : task.dueDate,
+      developmentStartDate: selectedStartDate ? format(selectedStartDate, "yyyy-MM-dd") : task.developmentStartDate,
       isCompleted: editData.currentStage === "Completed"
     };
     onSave(updatedTask);
@@ -187,6 +192,32 @@ export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: Edi
             selectedTeammates={selectedTeammates}
             onTeammateToggle={handleTeammateToggle}
           />
+          <div className="grid gap-2">
+            <Label>Started Date</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "justify-start text-left font-normal",
+                    !selectedStartDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {selectedStartDate ? format(selectedStartDate, "PPP") : <span>Pick a date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={selectedStartDate}
+                  onSelect={setSelectedStartDate}
+                  initialFocus
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
           <div className="grid gap-2">
             <Label htmlFor="editIsCmcDone">CMC Done</Label>
             <Select defaultValue={task.isCmcDone ? "true" : "false"} onValueChange={(value) => setEditData({...editData, isCmcDone: value === "true"})}>
