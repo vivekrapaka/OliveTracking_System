@@ -47,29 +47,26 @@ const fetchDashboardData = async (): Promise<DashboardData> => {
   const url = buildApiUrl(API_ENDPOINTS.DASHBOARD_SUMMARY);
   console.log('Fetching dashboard data from:', url);
   
-  try {
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        // Add any authentication headers here if needed
-        // 'Authorization': `Bearer ${token}`,
-      },
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch dashboard data: ${response.status} ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    console.log('Dashboard data received:', data);
-    
-    return data;
-  } catch (error) {
-    console.warn('Failed to fetch from API, using mock data:', error);
-    // Return mock data when API is not available
-    return mockDashboardData;
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      // Add any authentication headers here if needed
+      // 'Authorization': `Bearer ${token}`,
+    },
+  });
+  
+  console.log('Response status:', response.status);
+  console.log('Response ok:', response.ok);
+  
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
   }
+  
+  const data = await response.json();
+  console.log('Dashboard data received successfully:', data);
+  
+  return data;
 };
 
 export const useDashboardData = () => {
@@ -80,5 +77,7 @@ export const useDashboardData = () => {
     staleTime: 10000, // Consider data stale after 10 seconds
     retry: 3, // Retry failed requests up to 3 times
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+    // Only use mock data if the query fails completely after all retries
+    placeholderData: mockDashboardData,
   });
 };
