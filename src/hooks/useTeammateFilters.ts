@@ -21,8 +21,6 @@ export const useTeammateFilters = (teammates: Teammate[]) => {
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [selectedAvailabilityStatus, setSelectedAvailabilityStatus] = useState<string[]>([]);
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
-  const [minTasksAssigned, setMinTasksAssigned] = useState<number>(0);
-  const [maxTasksAssigned, setMaxTasksAssigned] = useState<number>(100);
 
   const filteredTeammates = useMemo(() => {
     return teammates.filter(teammate => {
@@ -50,15 +48,11 @@ export const useTeammateFilters = (teammates: Teammate[]) => {
       const matchesLocation = selectedLocations.length === 0 || 
         selectedLocations.includes(teammate.location);
 
-      // Tasks assigned filter
-      const matchesTaskRange = teammate.tasksAssigned >= minTasksAssigned && 
-        teammate.tasksAssigned <= maxTasksAssigned;
-
       return matchesSearch && matchesDepartment && matchesRole && 
-             matchesAvailability && matchesLocation && matchesTaskRange;
+             matchesAvailability && matchesLocation;
     });
   }, [teammates, searchTerm, selectedDepartments, selectedRoles, 
-      selectedAvailabilityStatus, selectedLocations, minTasksAssigned, maxTasksAssigned]);
+      selectedAvailabilityStatus, selectedLocations]);
 
   const filterOptions = useMemo(() => {
     const departments = [...new Set(teammates.map(t => t.department))];
@@ -91,16 +85,13 @@ export const useTeammateFilters = (teammates: Teammate[]) => {
   }, [teammates]);
 
   const activeFiltersCount = selectedDepartments.length + selectedRoles.length + 
-                            selectedAvailabilityStatus.length + selectedLocations.length +
-                            (minTasksAssigned > 0 ? 1 : 0) + (maxTasksAssigned < 100 ? 1 : 0);
+                            selectedAvailabilityStatus.length + selectedLocations.length;
 
   const clearAllFilters = () => {
     setSelectedDepartments([]);
     setSelectedRoles([]);
     setSelectedAvailabilityStatus([]);
     setSelectedLocations([]);
-    setMinTasksAssigned(0);
-    setMaxTasksAssigned(100);
     setSearchTerm("");
   };
 
@@ -115,10 +106,6 @@ export const useTeammateFilters = (teammates: Teammate[]) => {
     setSelectedAvailabilityStatus,
     selectedLocations,
     setSelectedLocations,
-    minTasksAssigned,
-    setMinTasksAssigned,
-    maxTasksAssigned,
-    setMaxTasksAssigned,
     filteredTeammates,
     filterOptions,
     activeFiltersCount,

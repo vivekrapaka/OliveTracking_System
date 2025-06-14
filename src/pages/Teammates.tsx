@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Slider } from "@/components/ui/slider";
 import {
   Plus,
   Search,
@@ -170,10 +169,6 @@ export const Teammates = () => {
     setSelectedAvailabilityStatus,
     selectedLocations,
     setSelectedLocations,
-    minTasksAssigned,
-    setMinTasksAssigned,
-    maxTasksAssigned,
-    setMaxTasksAssigned,
     filteredTeammates,
     filterOptions,
     activeFiltersCount,
@@ -480,27 +475,6 @@ export const Teammates = () => {
             selectedValues={selectedLocations}
             onSelectionChange={setSelectedLocations}
           />
-
-          {/* Task Range Filter */}
-          <div className="flex items-center space-x-3 border rounded-lg px-3 py-2">
-            <span className="text-sm font-medium">Tasks:</span>
-            <div className="flex items-center space-x-2 w-32">
-              <Slider
-                value={[minTasksAssigned, maxTasksAssigned]}
-                onValueChange={([min, max]) => {
-                  setMinTasksAssigned(min);
-                  setMaxTasksAssigned(max);
-                }}
-                max={10}
-                min={0}
-                step={1}
-                className="flex-1"
-              />
-            </div>
-            <span className="text-xs text-slate-500">
-              {minTasksAssigned}-{maxTasksAssigned}
-            </span>
-          </div>
 
           {/* Clear Filters */}
           {activeFiltersCount > 0 && (
