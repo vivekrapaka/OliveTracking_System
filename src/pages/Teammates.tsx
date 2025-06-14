@@ -1,12 +1,11 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import {
   Table,
@@ -22,21 +21,13 @@ import {
   Edit,
   Trash2,
   Users,
-  Mail,
-  Phone,
-  MapPin,
-  Building2,
-  CheckCircle,
-  Clock,
   AlertCircle,
-  RefreshCw,
-  Filter,
   X,
-  User
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { FilterDropdown } from "@/components/FilterDropdown";
 import { useTeammatesData, BackendTeammate } from "@/hooks/useTeammatesData";
+import { AddTeammateForm } from "@/components/AddTeammateForm";
 
 interface Teammate {
   id: number;
@@ -54,10 +45,7 @@ interface Teammate {
 
 export const Teammates = () => {
   const { data: teammatesApiData, isLoading, error } = useTeammatesData();
-
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingTeammate, setEditingTeammate] = useState<Teammate | null>(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
@@ -90,22 +78,6 @@ export const Teammates = () => {
       setTeammatesData(apiTeammatesData);
     }
   }, [apiTeammatesData]);
-
-  // Form states for teammate creation/editing
-  const [teammateName, setTeammateName] = useState("");
-  const [teammateEmail, setTeammateEmail] = useState("");
-  const [teammateRole, setTeammateRole] = useState("");
-  const [teammatePhone, setTeammatePhone] = useState("");
-  const [teammateDepartment, setTeammateDepartment] = useState("");
-  const [teammateLocation, setTeammateLocation] = useState("");
-  const [teammateAvatar, setTeammateAvatar] = useState("");
-  const [teammateAvailabilityStatus, setTeammateAvailabilityStatus] = useState("");
-  const [teammateTasksAssigned, setTeammateTasksAssigned] = useState(0);
-  const [teammateTasksCompleted, setTeammateTasksCompleted] = useState(0);
-
-  const roles = ["Developer", "Designer", "Manager", "Tester", "Analyst"];
-  const departments = ["Engineering", "Design", "Management", "QA", "Business Analysis"];
-  const statuses = ["Available", "Occupied", "On Leave"];
 
   // Filter teammates based on search and filters
   const filteredTeammates = teammatesData.filter(teammate => {
@@ -157,11 +129,6 @@ export const Teammates = () => {
     }
   };
 
-  const handleEditTeammate = (teammate: Teammate) => {
-    setEditingTeammate(teammate);
-    setIsEditModalOpen(true);
-  };
-
   const handleDeleteTeammate = (teammateId: number) => {
     setTeammatesData(teammatesData.filter(teammate => teammate.id !== teammateId));
     toast({
@@ -170,11 +137,15 @@ export const Teammates = () => {
     });
   };
 
+  const handleAddSuccess = () => {
+    setIsAddModalOpen(false);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
+          <div className="h-8 w-8 animate-spin mx-auto mb-4 border-4 border-blue-600 border-t-transparent rounded-full" />
           <p className="text-slate-600">Loading teammates...</p>
         </div>
       </div>
@@ -203,10 +174,15 @@ export const Teammates = () => {
         </div>
 
         <div className="flex items-center space-x-2">
-          <Button className="bg-blue-600 hover:bg-blue-700">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Teammate
-          </Button>
+          <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-blue-600 hover:bg-blue-700">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Teammate
+              </Button>
+            </DialogTrigger>
+            <AddTeammateForm onSuccess={handleAddSuccess} />
+          </Dialog>
         </div>
       </div>
 
@@ -327,11 +303,7 @@ export const Teammates = () => {
                   <TableCell>{teammate.tasksAssigned}</TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEditTeammate(teammate)}
-                      >
+                      <Button variant="ghost" size="sm">
                         <Edit className="h-4 w-4" />
                       </Button>
                       <AlertDialog>
