@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-// ... keep existing code (imports)
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import {
   Plus,
@@ -48,7 +47,6 @@ export const Teammates = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingTeammate, setEditingTeammate] = useState<Teammate | null>(null);
 
-  // Mock tasks data to sync with Tasks page
   const [tasks, setTasks] = useState<Task[]>([
     {
       id: 1,
@@ -72,7 +70,6 @@ export const Teammates = () => {
     }
   ]);
 
-  // Mock data - this will come from your backend API
   const [teammatesData, setTeammatesData] = useState<Teammate[]>([
     {
       id: 1,
@@ -143,10 +140,8 @@ export const Teammates = () => {
 
   const availabilityStatuses = ["Available", "Occupied", "Leave"];
 
-  // Use the hook to get updated availability status
   const updatedTeammates = useTeammateAvailability(tasks, teammatesData);
 
-  // Keep teammatesData in sync with updatedTeammates
   useEffect(() => {
     setTeammatesData(updatedTeammates as Teammate[]);
   }, [updatedTeammates]);
@@ -350,7 +345,7 @@ export const Teammates = () => {
         </Card>
       </div>
 
-      {/* Team Members Grid */}
+      {/* Team Members Grid with Avatar showing initials */}
       <div className="grid gap-6">
         {filteredTeammates.map((teammate) => (
           <Card key={teammate.id} className="hover:shadow-md transition-shadow">
