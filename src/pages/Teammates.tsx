@@ -558,16 +558,16 @@ export const Teammates = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-                    <div className="flex items-center text-sm text-slate-600 min-w-0">
+                  <div className="space-y-2 mb-4">
+                    <div className="flex items-center text-sm text-slate-600">
                       <Mail className="h-4 w-4 mr-2 flex-shrink-0" />
                       <span className="truncate">{teammate.email}</span>
                     </div>
-                    <div className="flex items-center text-sm text-slate-600 min-w-0">
+                    <div className="flex items-center text-sm text-slate-600">
                       <Phone className="h-4 w-4 mr-2 flex-shrink-0" />
                       <span className="truncate">{teammate.phone}</span>
                     </div>
-                    <div className="flex items-center text-sm text-slate-600 min-w-0">
+                    <div className="flex items-center text-sm text-slate-600">
                       <MapPin className="h-4 w-4 mr-2 flex-shrink-0" />
                       <span className="truncate">{teammate.location}</span>
                     </div>
