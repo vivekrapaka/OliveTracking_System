@@ -6,9 +6,9 @@ export const API_BASE_URL = process.env.NODE_ENV === 'production'
 
 export const API_ENDPOINTS = {
   DASHBOARD_SUMMARY: '/api/dashboard', // Updated to match your backend endpoint
-} as const;
+};
 
 // Helper function to build full API URLs
-export const buildApiUrl = (endpoint: string): string => {
+export const buildApiUrl = (endpoint) => {
   return `${API_BASE_URL}${endpoint}`;
 };
