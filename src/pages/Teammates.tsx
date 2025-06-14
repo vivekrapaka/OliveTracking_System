@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Slider } from "@/components/ui/slider";
 import {
   Plus,
   Search,
@@ -16,10 +17,13 @@ import {
   Edit,
   Trash2,
   User,
-  MapPin
+  MapPin,
+  X
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useTeammateAvailability } from "@/hooks/useTeammateAvailability";
+import { FilterDropdown } from "@/components/FilterDropdown";
+import { useTeammateFilters } from "@/hooks/useTeammateFilters";
 
 interface Task {
   id: number;
@@ -42,7 +46,6 @@ interface Teammate {
 }
 
 export const Teammates = () => {
-  const [searchTerm, setSearchTerm] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingTeammate, setEditingTeammate] = useState<Teammate | null>(null);
@@ -155,6 +158,28 @@ export const Teammates = () => {
     setTeammatesData(updatedTeammates as Teammate[]);
   }, [updatedTeammates]);
 
+  // Use the filtering hook
+  const {
+    searchTerm,
+    setSearchTerm,
+    selectedDepartments,
+    setSelectedDepartments,
+    selectedRoles,
+    setSelectedRoles,
+    selectedAvailabilityStatus,
+    setSelectedAvailabilityStatus,
+    selectedLocations,
+    setSelectedLocations,
+    minTasksAssigned,
+    setMinTasksAssigned,
+    maxTasksAssigned,
+    setMaxTasksAssigned,
+    filteredTeammates,
+    filterOptions,
+    activeFiltersCount,
+    clearAllFilters
+  } = useTeammateFilters(teammatesData);
+
   const roles = ["Frontend Developer", "Backend Developer", "Full Stack Developer", "UX Designer", "DevOps Engineer", "Project Manager"];
   const departments = ["Engineering", "Design", "Product", "Marketing", "Sales"];
 
@@ -187,13 +212,6 @@ export const Teammates = () => {
     }
     return "U";
   };
-
-  const filteredTeammates = teammatesData.filter(teammate =>
-    teammate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    teammate.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    teammate.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    teammate.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   const validateTeammateForm = () => {
     if (!firstName.trim()) {
@@ -424,15 +442,84 @@ export const Teammates = () => {
         </Dialog>
       </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
-        <Input
-          placeholder="Search team members..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
-        />
+      {/* Search and Advanced Filters */}
+      <div className="space-y-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
+          <Input
+            placeholder="Search team members..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+
+        {/* Filter Bar */}
+        <div className="flex flex-wrap gap-3 items-center">
+          <FilterDropdown
+            title="Department"
+            options={filterOptions.departments}
+            selectedValues={selectedDepartments}
+            onSelectionChange={setSelectedDepartments}
+          />
+          <FilterDropdown
+            title="Role"
+            options={filterOptions.roles}
+            selectedValues={selectedRoles}
+            onSelectionChange={setSelectedRoles}
+          />
+          <FilterDropdown
+            title="Availability"
+            options={filterOptions.availabilityStatuses}
+            selectedValues={selectedAvailabilityStatus}
+            onSelectionChange={setSelectedAvailabilityStatus}
+          />
+          <FilterDropdown
+            title="Location"
+            options={filterOptions.locations}
+            selectedValues={selectedLocations}
+            onSelectionChange={setSelectedLocations}
+          />
+
+          {/* Task Range Filter */}
+          <div className="flex items-center space-x-3 border rounded-lg px-3 py-2">
+            <span className="text-sm font-medium">Tasks:</span>
+            <div className="flex items-center space-x-2 w-32">
+              <Slider
+                value={[minTasksAssigned, maxTasksAssigned]}
+                onValueChange={([min, max]) => {
+                  setMinTasksAssigned(min);
+                  setMaxTasksAssigned(max);
+                }}
+                max={10}
+                min={0}
+                step={1}
+                className="flex-1"
+              />
+            </div>
+            <span className="text-xs text-slate-500">
+              {minTasksAssigned}-{maxTasksAssigned}
+            </span>
+          </div>
+
+          {/* Clear Filters */}
+          {activeFiltersCount > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearAllFilters}
+              className="text-slate-600 hover:text-slate-900"
+            >
+              <X className="h-4 w-4 mr-1" />
+              Clear all ({activeFiltersCount})
+            </Button>
+          )}
+        </div>
+
+        {/* Results Count */}
+        <div className="text-sm text-slate-600">
+          Showing {filteredTeammates.length} of {teammatesData.length} team members
+        </div>
       </div>
 
       {/* Team Stats */}
@@ -469,7 +556,7 @@ export const Teammates = () => {
         </Card>
       </div>
 
-      {/* Team Members Grid with Avatar showing initials */}
+      {/* Team Members Grid */}
       <div className="grid gap-6">
         {filteredTeammates.map((teammate) => (
           <Card key={teammate.id} className="hover:shadow-md transition-shadow">

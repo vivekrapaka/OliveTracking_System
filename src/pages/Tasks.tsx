@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Plus,
   Search,
@@ -17,16 +18,18 @@ import {
   Calendar as CalendarIcon,
   Clock,
   Edit,
-  Trash2
+  Trash2,
+  X
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { EditTaskDialog } from "@/components/EditTaskDialog";
 import { TeammateSelector } from "@/components/TeammateSelector";
+import { FilterDropdown } from "@/components/FilterDropdown";
+import { useTaskFilters } from "@/hooks/useTaskFilters";
 
 const Tasks = () => {
-  const [searchTerm, setSearchTerm] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [editingTask, setEditingTask] = useState<any>(null);
@@ -116,6 +119,28 @@ const Tasks = () => {
   const issueTypes = ["Feature", "Bug", "Task", "Enhancement"];
   const priorities = ["Low", "Medium", "High", "Critical"];
 
+  // Use the filtering hook
+  const {
+    searchTerm,
+    setSearchTerm,
+    selectedPriorities,
+    setSelectedPriorities,
+    selectedStages,
+    setSelectedStages,
+    selectedIssueTypes,
+    setSelectedIssueTypes,
+    selectedTeammates: filterSelectedTeammates,
+    setSelectedTeammates: setFilterSelectedTeammates,
+    showCompletedOnly,
+    setShowCompletedOnly,
+    showCmcDoneOnly,
+    setShowCmcDoneOnly,
+    filteredTasks,
+    filterOptions,
+    activeFiltersCount,
+    clearAllFilters
+  } = useTaskFilters(tasks);
+
   // Generate next task number
   const generateTaskNumber = () => {
     const maxId = Math.max(...tasks.map(task => task.id), 0);
@@ -158,13 +183,6 @@ const Tasks = () => {
       default: return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
-
-  const filteredTasks = tasks.filter(task =>
-    task.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    task.issueType.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    task.currentStage.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    task.taskNumber.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   const handleTeammateToggle = (teammateName: string) => {
     setSelectedTeammates(prev =>
@@ -404,21 +422,83 @@ const Tasks = () => {
         </Dialog>
       </div>
 
-      {/* Search and Filter */}
-      <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
-          <Input
-            placeholder="Search tasks..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
+      {/* Search and Advanced Filters */}
+      <div className="space-y-4">
+        <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
+            <Input
+              placeholder="Search tasks..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
         </div>
-        <Button variant="outline">
-          <Filter className="h-4 w-4 mr-2" />
-          Filter
-        </Button>
+
+        {/* Filter Bar */}
+        <div className="flex flex-wrap gap-3 items-center">
+          <FilterDropdown
+            title="Priority"
+            options={filterOptions.priorities}
+            selectedValues={selectedPriorities}
+            onSelectionChange={setSelectedPriorities}
+          />
+          <FilterDropdown
+            title="Stage"
+            options={filterOptions.stages}
+            selectedValues={selectedStages}
+            onSelectionChange={setSelectedStages}
+          />
+          <FilterDropdown
+            title="Issue Type"
+            options={filterOptions.issueTypes}
+            selectedValues={selectedIssueTypes}
+            onSelectionChange={setSelectedIssueTypes}
+          />
+          <FilterDropdown
+            title="Assignee"
+            options={filterOptions.teammates}
+            selectedValues={filterSelectedTeammates}
+            onSelectionChange={setFilterSelectedTeammates}
+          />
+
+          {/* Special Filters */}
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="completed"
+              checked={showCompletedOnly}
+              onCheckedChange={setShowCompletedOnly}
+            />
+            <label htmlFor="completed" className="text-sm">Completed Only</label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="cmc"
+              checked={showCmcDoneOnly}
+              onCheckedChange={setShowCmcDoneOnly}
+            />
+            <label htmlFor="cmc" className="text-sm">CMC Done</label>
+          </div>
+
+          {/* Clear Filters */}
+          {activeFiltersCount > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearAllFilters}
+              className="text-slate-600 hover:text-slate-900"
+            >
+              <X className="h-4 w-4 mr-1" />
+              Clear all ({activeFiltersCount})
+            </Button>
+          )}
+        </div>
+
+        {/* Results Count */}
+        <div className="text-sm text-slate-600">
+          Showing {filteredTasks.length} of {tasks.length} tasks
+        </div>
       </div>
 
       {/* Tasks Grid */}
