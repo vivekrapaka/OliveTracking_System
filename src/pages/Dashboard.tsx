@@ -12,11 +12,14 @@ import {
   AlertCircle,
   Calendar,
   Plus,
-  RefreshCw
+  RefreshCw,
+  Wifi,
+  WifiOff
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { DashboardLoading } from "@/components/DashboardLoading";
+import { mockDashboardData } from "@/services/mockDashboardData";
 
 const Dashboard = () => {
   const { data: dashboardData, isLoading, error, refetch, isRefetching } = useDashboardData();
@@ -25,11 +28,15 @@ const Dashboard = () => {
     return <DashboardLoading />;
   }
 
+  // Use mock data as fallback when API fails
+  const displayData = dashboardData || mockDashboardData;
+  const isUsingMockData = !dashboardData;
+
   if (error) {
     console.error('Dashboard data fetch error:', error);
   }
 
-  if (!dashboardData) {
+  if (!displayData) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center space-y-4">
@@ -79,6 +86,39 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-8">
+      {/* API Status Banner */}
+      {isUsingMockData && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-center space-x-3">
+          <WifiOff className="h-5 w-5 text-yellow-600" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-yellow-800">
+              Using offline data - API connection failed
+            </p>
+            <p className="text-xs text-yellow-700 mt-1">
+              Check if your backend server is running on localhost:8085
+            </p>
+          </div>
+          <Button onClick={() => refetch()} variant="outline" size="sm">
+            <RefreshCw className={`h-4 w-4 mr-2 ${isRefetching ? 'animate-spin' : ''}`} />
+            Retry API
+          </Button>
+        </div>
+      )}
+
+      {!isUsingMockData && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center space-x-3">
+          <Wifi className="h-5 w-5 text-green-600" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-green-800">
+              Connected to API - Live data loaded
+            </p>
+            <p className="text-xs text-green-700 mt-1">
+              Data is being fetched from your backend server
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
         <div>
