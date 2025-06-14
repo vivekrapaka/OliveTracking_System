@@ -108,18 +108,6 @@ export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: Edi
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="editTaskDescription">Description</Label>
-            <Textarea
-              id="editTaskDescription"
-              defaultValue={task.description || ""}
-              onChange={(e) => setEditData({...editData, description: e.target.value})}
-              placeholder="Enter task description (max 1000 words)"
-              maxLength={1000}
-              className="min-h-[100px]"
-            />
-            <p className="text-xs text-slate-500">{(editData.description || task.description || "").length}/1000 characters</p>
-          </div>
-          <div className="grid gap-2">
             <Label htmlFor="editIssueType">Issue Type</Label>
             <Select defaultValue={task.issueType} onValueChange={(value) => setEditData({...editData, issueType: value})}>
               <SelectTrigger>
@@ -189,6 +177,18 @@ export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: Edi
             selectedTeammates={selectedTeammates}
             onTeammateToggle={handleTeammateToggle}
           />
+          <div className="grid gap-2">
+            <Label htmlFor="editTaskDescription">Description</Label>
+            <Textarea
+              id="editTaskDescription"
+              defaultValue={task.description || ""}
+              onChange={(e) => setEditData({...editData, description: e.target.value})}
+              placeholder="Enter task description (max 1000 words)"
+              maxLength={1000}
+              className="min-h-[100px]"
+            />
+            <p className="text-xs text-slate-500">{(editData.description || task.description || "").length}/1000 characters</p>
+          </div>
         </div>
         <div className="flex justify-end space-x-2">
           <Button variant="outline" onClick={onClose}>

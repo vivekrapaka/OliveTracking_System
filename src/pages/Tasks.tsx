@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -200,18 +201,6 @@ const Tasks = () => {
                 <Input id="taskName" placeholder="Enter task name" />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="taskDescription">Description</Label>
-                <Textarea 
-                  id="taskDescription" 
-                  placeholder="Enter task description (max 1000 words)" 
-                  value={taskDescription}
-                  onChange={(e) => setTaskDescription(e.target.value)}
-                  maxLength={1000}
-                  className="min-h-[100px]"
-                />
-                <p className="text-xs text-slate-500">{taskDescription.length}/1000 characters</p>
-              </div>
-              <div className="grid gap-2">
                 <Label htmlFor="issueType">Issue Type</Label>
                 <Select>
                   <SelectTrigger>
@@ -281,6 +270,18 @@ const Tasks = () => {
                 selectedTeammates={selectedTeammates}
                 onTeammateToggle={handleTeammateToggle}
               />
+              <div className="grid gap-2">
+                <Label htmlFor="taskDescription">Description</Label>
+                <Textarea 
+                  id="taskDescription" 
+                  placeholder="Enter task description (max 1000 words)" 
+                  value={taskDescription}
+                  onChange={(e) => setTaskDescription(e.target.value)}
+                  maxLength={1000}
+                  className="min-h-[100px]"
+                />
+                <p className="text-xs text-slate-500">{taskDescription.length}/1000 characters</p>
+              </div>
             </div>
             <div className="flex justify-end space-x-2">
               <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>
