@@ -175,7 +175,13 @@ export const Teammates = () => {
   };
 
   const getInitials = (name: string) => {
-    return name.split(' ').map(word => word[0]).join('').toUpperCase();
+    const nameParts = name.trim().split(/\s+/);
+    if (nameParts.length >= 2) {
+      return (nameParts[0][0] + nameParts[1][0]).toUpperCase();
+    } else if (nameParts.length === 1) {
+      return nameParts[0][0].toUpperCase();
+    }
+    return "U";
   };
 
   const filteredTeammates = teammatesData.filter(teammate =>
@@ -225,7 +231,6 @@ export const Teammates = () => {
 
   return (
     <div className="space-y-6">
-      {/* ... keep existing code (Header, Search, Team Stats, Team Members Grid, Edit Dialog, no teammates found section) */}
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
         <div>
@@ -352,8 +357,7 @@ export const Teammates = () => {
             <CardContent className="p-6">
               <div className="flex items-start space-x-4">
                 <Avatar className="h-16 w-16">
-                  <AvatarImage src={teammate.avatar} alt={teammate.name} />
-                  <AvatarFallback className="bg-blue-100 text-blue-600 font-semibold">
+                  <AvatarFallback className="bg-blue-100 text-blue-600 font-semibold text-lg">
                     {getInitials(teammate.name)}
                   </AvatarFallback>
                 </Avatar>
