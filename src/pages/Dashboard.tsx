@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -51,30 +52,16 @@ const Dashboard = () => {
     );
   }
 
-  // Calculate completion rate with proper safety checks
+  // Calculate completion rate with safety checks
   const calculateCompletionRate = () => {
-    // Add safety checks to prevent undefined errors
-    if (!displayData || !displayData.tasksByStage || !displayData.totalTasks) {
-      console.log('⚠️ [CALC] Missing data for completion rate calculation:', {
-        displayData: !!displayData,
-        tasksByStage: !!displayData?.tasksByStage,
-        totalTasks: displayData?.totalTasks
-      });
+    if (!displayData?.tasksByStage || !displayData?.totalTasks) {
       return 0;
     }
     
     const completedTasks = displayData.tasksByStage["Completed"] || 0;
-    const rate = displayData.totalTasks > 0 
+    return displayData.totalTasks > 0 
       ? Math.round((completedTasks / displayData.totalTasks) * 100)
       : 0;
-      
-    console.log('📊 [CALC] Completion rate calculated:', {
-      completedTasks,
-      totalTasks: displayData.totalTasks,
-      rate
-    });
-    
-    return rate;
   };
 
   const completionRate = calculateCompletionRate();
@@ -103,22 +90,17 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-8">
-      {/* Enhanced API Status Banner */}
+      {/* API Status Banner */}
       {isUsingMockData && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-center space-x-3">
           <WifiOff className="h-5 w-5 text-yellow-600" />
           <div className="flex-1">
             <p className="text-sm font-medium text-yellow-800">
-              🔧 Using offline data - API connection failed
+              Using offline data - API connection failed
             </p>
             <p className="text-xs text-yellow-700 mt-1">
-              Check console logs for detailed error information. Is your backend server running on localhost:8085?
+              Check if your backend server is running on localhost:8085
             </p>
-            {error && (
-              <p className="text-xs text-yellow-600 mt-1 font-mono">
-                Error: {error.message}
-              </p>
-            )}
           </div>
           <Button onClick={() => refetch()} variant="outline" size="sm">
             <RefreshCw className={`h-4 w-4 mr-2 ${isRefetching ? 'animate-spin' : ''}`} />
@@ -132,10 +114,7 @@ const Dashboard = () => {
           <Wifi className="h-5 w-5 text-green-600" />
           <div className="flex-1">
             <p className="text-sm font-medium text-green-800">
-              ✅ Connected to API - Live data loaded successfully
-            </p>
-            <p className="text-xs text-green-700 mt-1">
-              Data is being fetched from your backend server at localhost:8085
+              Connected to API - Live data loaded successfully
             </p>
           </div>
           <Button onClick={() => refetch()} variant="outline" size="sm">
@@ -149,7 +128,7 @@ const Dashboard = () => {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
-          <p className="text-slate-600 mt-1">🏦 Welcome back! Here's what's happening with your Kotak project:</p>
+          <p className="text-slate-600 mt-1">Welcome back! Here's what's happening with your Kotak project:</p>
         </div>
         <div className="flex items-center space-x-2">
           <Button
