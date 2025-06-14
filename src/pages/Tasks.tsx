@@ -290,7 +290,7 @@ const Tasks = () => {
               <div className="grid gap-2">
                 <Label htmlFor="taskNumber">Task Number</Label>
                 <div className="flex items-center">
-                  <div className="bg-gray-800 text-white px-3 py-1.5 rounded font-mono text-xs font-bold border-4 border-gray-700">
+                  <div className="bg-gray-800 text-white px-7 py-5 rounded font-mono text-xs font-bold">
                     {generateTaskNumber()}
                   </div>
                 </div>
@@ -435,7 +435,7 @@ const Tasks = () => {
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-3">
-                    <div className="bg-gray-800 text-white px-3 py-1.5 rounded font-mono text-xs font-bold border-4 border-gray-700">
+                    <div className="bg-gray-800 text-white px-7 py-5 rounded font-mono text-xs font-bold">
                       {task.taskNumber}
                     </div>
                     <h3 className="text-lg font-semibold text-slate-900">{task.name}</h3>
