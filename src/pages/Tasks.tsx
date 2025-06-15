@@ -20,7 +20,9 @@ import {
   RefreshCw,
   X,
   Clock,
-  AlertCircle
+  AlertCircle,
+  Calendar,
+  Users
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -327,96 +329,99 @@ export const Tasks = () => {
           <CardTitle>All Tasks</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Task</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Priority</TableHead>
-                <TableHead>Stage</TableHead>
-                <TableHead>Assigned To</TableHead>
-                <TableHead>Due Date</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredTasks.map((task) => (
-                <TableRow key={task.id}>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{task.taskNumber}</div>
-                      <div className="text-sm text-slate-600 truncate max-w-[200px]">{task.name}</div>
+          <div className="space-y-4">
+            {filteredTasks.map((task) => (
+              <div 
+                key={task.id} 
+                className={cn(
+                  "flex items-center justify-between p-4 rounded-lg transition-colors",
+                  task.currentStage === "Completed" ? "bg-green-50" : 
+                  task.currentStage === "HOLD" ? "bg-red-50" : 
+                  "bg-slate-50 hover:bg-slate-100"
+                )}
+              >
+                <div className="flex-1">
+                  <div className="flex items-center space-x-3 mb-1">
+                    <div className="bg-gray-800 text-white px-2 py-1 rounded font-mono text-xs font-bold border border-gray-600">
+                      {task.taskNumber}
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={getIssueTypeColor(task.issueType)}>
-                      {task.issueType}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={getPriorityColor(task.priority)}>
-                      {task.priority}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={getStageColor(task.currentStage)}>
-                      {task.currentStage}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {task.assignedTeammates.map((teammate, index) => (
-                        <Badge key={index} variant="outline" className="text-xs">
-                          {teammate}
-                        </Badge>
-                      ))}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      {format(new Date(task.dueDate), "MMM dd, yyyy")}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEditTask(task)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete Task</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Are you sure you want to delete "{task.taskNumber}"? This action cannot be undone.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleDeleteTask(task)}
-                              className="bg-red-600 hover:bg-red-700"
-                              disabled={deleteTaskMutation.isPending}
-                            >
-                              {deleteTaskMutation.isPending ? "Deleting..." : "Delete"}
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                    <h3 className="font-medium text-slate-900">{task.name}</h3>
+                  </div>
+                  {task.description && (
+                    <p className="text-sm text-slate-600 mb-2">{task.description}</p>
+                  )}
+                  <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600">
+                    <span className="flex items-center">
+                      <Calendar className="h-3 w-3 mr-1" />
+                      Received: {format(new Date(task.receivedDate), "MMM dd, yyyy")}
+                    </span>
+                    <span className="flex items-center">
+                      <Calendar className="h-3 w-3 mr-1" />
+                      Start: {format(new Date(task.developmentStartDate), "MMM dd, yyyy")}
+                    </span>
+                    <span className="flex items-center">
+                      <Calendar className="h-3 w-3 mr-1" />
+                      Due: {format(new Date(task.dueDate), "MMM dd, yyyy")}
+                    </span>
+                    <span className="flex items-center">
+                      <Users className="h-3 w-3 mr-1" />
+                      {task.assignedTeammates.join(", ")}
+                    </span>
+                    <span className={cn(
+                      "flex items-center px-2 py-0.5 rounded text-xs font-medium",
+                      task.isCmcDone ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                    )}>
+                      CMC: {task.isCmcDone ? "Done" : "Pending"}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Badge className={getIssueTypeColor(task.issueType)}>
+                    {task.issueType}
+                  </Badge>
+                  <Badge className={getPriorityColor(task.priority)}>
+                    {task.priority}
+                  </Badge>
+                  <Badge className={getStageColor(task.currentStage)}>
+                    {task.currentStage}
+                  </Badge>
+                  <div className="flex items-center space-x-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEditTask(task)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will permanently delete the task "{task.name}". This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleDeleteTask(task)}
+                            className="bg-red-600 hover:bg-red-700"
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
 
