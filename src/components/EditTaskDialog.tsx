@@ -45,13 +45,18 @@ interface EditTaskDialogProps {
 }
 
 export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: EditTaskDialogProps) => {
+  const [taskName, setTaskName] = useState("");
+  const [description, setDescription] = useState("");
+  const [currentStage, setCurrentStage] = useState("");
+  const [issueType, setIssueType] = useState("");
+  const [priority, setPriority] = useState("");
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedStartDate, setSelectedStartDate] = useState<Date>();
   const [selectedReceivedDate, setSelectedReceivedDate] = useState<Date>();
   const [selectedDevelopmentStartDate, setSelectedDevelopmentStartDate] = useState<Date>();
-  const [editData, setEditData] = useState<Partial<Task>>({});
   const [selectedTeammates, setSelectedTeammates] = useState<string[]>([]);
   const [isCodeReviewDone, setIsCodeReviewDone] = useState(false);
+  const [isCmcDone, setIsCmcDone] = useState(false);
 
   const editTaskMutation = useEditTask();
 
@@ -61,9 +66,14 @@ export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: Edi
 
   useEffect(() => {
     if (task) {
-      setEditData(task);
+      setTaskName(task.name);
+      setDescription(task.description || "");
+      setCurrentStage(task.currentStage);
+      setIssueType(task.issueType);
+      setPriority(task.priority);
       setSelectedTeammates(task.assignedTeammates || []);
       setIsCodeReviewDone(false); // Default value since it's not in the task interface
+      setIsCmcDone(task.isCmcDone);
       
       if (task.dueDate) {
         setSelectedDate(new Date(task.dueDate));
@@ -79,12 +89,9 @@ export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: Edi
 
   const handleTeammateToggle = (teammateName: string) => {
     setSelectedTeammates(prev => {
-      const updated = prev.includes(teammateName)
+      return prev.includes(teammateName)
         ? prev.filter(name => name !== teammateName)
         : [...prev, teammateName];
-
-      setEditData(current => ({ ...current, assignedTeammates: updated }));
-      return updated;
     });
   };
 
@@ -92,23 +99,23 @@ export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: Edi
     if (!task) return;
     
     const taskData = {
-      taskName: editData.name || task.name,
-      description: editData.description || task.description || "",
-      currentStage: editData.currentStage || task.currentStage,
+      taskName: taskName,
+      description: description,
+      currentStage: currentStage,
       startDate: selectedStartDate ? format(selectedStartDate, "yyyy-MM-dd") : "",
       dueDate: selectedDate ? format(selectedDate, "yyyy-MM-dd") : task.dueDate,
-      isCompleted: editData.currentStage === "Completed" || editData.isCompleted || false,
-      issueType: editData.issueType || task.issueType,
+      isCompleted: currentStage === "Completed",
+      issueType: issueType,
       receivedDate: selectedReceivedDate ? format(selectedReceivedDate, "yyyy-MM-dd") : task.receivedDate,
       developmentStartDate: selectedDevelopmentStartDate ? format(selectedDevelopmentStartDate, "yyyy-MM-dd") : task.developmentStartDate,
       isCodeReviewDone: isCodeReviewDone,
-      isCmcDone: editData.isCmcDone !== undefined ? editData.isCmcDone : task.isCmcDone,
+      isCmcDone: isCmcDone,
       assignedTeammateNames: selectedTeammates,
-      priority: editData.priority || task.priority,
+      priority: priority,
     };
 
     editTaskMutation.mutate({
-      taskName: task.name, // Use original task name for the API call
+      taskSequenceNumber: task.taskNumber, // Use task sequence number instead of task name
       taskData
     }, {
       onSuccess: () => {
@@ -135,17 +142,19 @@ export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: Edi
               className="bg-gray-100 border border-gray-300"
             />
           </div>
+          
           <div className="grid gap-2">
             <Label htmlFor="editTaskName">Task Name</Label>
             <Input
               id="editTaskName"
-              defaultValue={task.name}
-              onChange={(e) => setEditData({...editData, name: e.target.value})}
+              value={taskName}
+              onChange={(e) => setTaskName(e.target.value)}
             />
           </div>
+          
           <div className="grid gap-2">
             <Label htmlFor="editIssueType">Issue Type</Label>
-            <Select defaultValue={task.issueType} onValueChange={(value) => setEditData({...editData, issueType: value})}>
+            <Select value={issueType} onValueChange={setIssueType}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -156,15 +165,16 @@ export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: Edi
               </SelectContent>
             </Select>
           </div>
+          
           <div className="grid gap-2">
             <Label htmlFor="editPriority">Priority</Label>
-            <Select defaultValue={task.priority} onValueChange={(value) => setEditData({...editData, priority: value})}>
+            <Select value={priority} onValueChange={setPriority}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {priorities.map((priority) => (
-                  <SelectItem key={priority} value={priority}>{priority}</SelectItem>
+                {priorities.map((priorityOption) => (
+                  <SelectItem key={priorityOption} value={priorityOption}>{priorityOption}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -280,7 +290,7 @@ export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: Edi
           
           <div className="grid gap-2">
             <Label htmlFor="editStage">Current Stage</Label>
-            <Select defaultValue={task.currentStage} onValueChange={(value) => setEditData({...editData, currentStage: value})}>
+            <Select value={currentStage} onValueChange={setCurrentStage}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -313,7 +323,7 @@ export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: Edi
 
           <div className="grid gap-2">
             <Label htmlFor="editIsCmcDone">CMC Done</Label>
-            <Select defaultValue={task.isCmcDone ? "true" : "false"} onValueChange={(value) => setEditData({...editData, isCmcDone: value === "true"})}>
+            <Select value={isCmcDone ? "true" : "false"} onValueChange={(value) => setIsCmcDone(value === "true")}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -328,13 +338,13 @@ export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: Edi
             <Label htmlFor="editTaskDescription">Description</Label>
             <Textarea
               id="editTaskDescription"
-              defaultValue={task.description || ""}
-              onChange={(e) => setEditData({...editData, description: e.target.value})}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
               placeholder="Enter task description (max 1000 words)"
               maxLength={1000}
               className="min-h-[100px]"
             />
-            <p className="text-xs text-slate-500">{(editData.description || task.description || "").length}/1000 characters</p>
+            <p className="text-xs text-slate-500">{description.length}/1000 characters</p>
           </div>
         </div>
         <div className="flex justify-end space-x-2">
