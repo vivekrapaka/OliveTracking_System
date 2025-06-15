@@ -8,11 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { TeammateSelector } from "./TeammateSelector";
 import { useAddTask } from "@/hooks/useAddTask";
+import { useTaskSequenceNumber } from "@/hooks/useTaskSequenceNumber";
 
 interface Teammate {
   id: number;
@@ -39,6 +40,7 @@ export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps
   const [developmentStartDate, setDevelopmentStartDate] = useState<Date>();
 
   const addTaskMutation = useAddTask();
+  const { data: taskSequenceNumber, isLoading: isLoadingSequence, refetch: refetchSequence } = useTaskSequenceNumber();
 
   const stages = ["SIT", "DEV", "Pre-Prod", "Prod", "FSD", "UAT"];
   const issueTypes = ["Feature", "Bug", "Enhancement"];
@@ -86,6 +88,7 @@ export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps
     addTaskMutation.mutate(taskData, {
       onSuccess: () => {
         resetForm();
+        refetchSequence(); // Refresh sequence number for next task
         onClose();
       }
     });
@@ -103,6 +106,28 @@ export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps
           <DialogTitle>Add New Task</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto">
+          {/* Task Sequence Number */}
+          <div className="grid gap-2">
+            <Label>Task Number</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                value={isLoadingSequence ? "Loading..." : taskSequenceNumber || "TSK-001"}
+                readOnly
+                className="bg-gray-50 text-gray-700"
+                placeholder="TSK-001"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => refetchSequence()}
+                disabled={isLoadingSequence}
+                className="px-3"
+              >
+                <RefreshCw className={cn("h-4 w-4", isLoadingSequence && "animate-spin")} />
+              </Button>
+            </div>
+          </div>
+
           <div className="grid gap-2">
             <Label htmlFor="taskName">Task Name *</Label>
             <Input
