@@ -59,7 +59,7 @@ export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: Edi
 
   const editTaskMutation = useEditTask();
 
-  const stages = ["SIT", "DEV", "Pre-Prod", "Prod", "FSD", "UAT", "Completed"];
+  const stages = ["SIT", "DEV", "Pre-Prod", "Prod", "FSD", "UAT", "Completed", "HOLD"];
   const issueTypes = ["Feature", "Bug", "Enhancement"];
   const priorities = ["HIGH", "MEDIUM", "LOW"];
 
