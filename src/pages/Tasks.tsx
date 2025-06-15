@@ -1,164 +1,152 @@
-import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   Plus,
   Search,
-  Filter,
-  Calendar as CalendarIcon,
-  Clock,
   Edit,
   Trash2,
-  X
+  RefreshCw,
+  X,
+  Clock,
+  AlertCircle
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
-import { EditTaskDialog } from "@/components/EditTaskDialog";
-import { TeammateSelector } from "@/components/TeammateSelector";
 import { FilterDropdown } from "@/components/FilterDropdown";
-import { useTaskFilters } from "@/hooks/useTaskFilters";
+import { useTasksData, BackendTask } from "@/hooks/useTasksData";
+import { useTeammatesData } from "@/hooks/useTeammatesData";
+import { EditTaskDialog } from "@/components/EditTaskDialog";
+import { AddTaskDialog } from "@/components/AddTaskDialog";
+import { useDeleteTask } from "@/hooks/useDeleteTask";
 
-const Tasks = () => {
+interface Task {
+  id: number;
+  taskNumber: string;
+  name: string;
+  description?: string;
+  issueType: string;
+  receivedDate: string;
+  developmentStartDate: string;
+  currentStage: string;
+  dueDate: string;
+  assignedTeammates: string[];
+  priority: string;
+  isCompleted: boolean;
+  isCmcDone: boolean;
+}
+
+export const Tasks = () => {
+  const { data: tasksApiData, isLoading, error } = useTasksData();
+  const { data: teammatesApiData } = useTeammatesData();
+  const deleteTaskMutation = useDeleteTask();
+
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date>();
-  const [editingTask, setEditingTask] = useState<any>(null);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [selectedTeammates, setSelectedTeammates] = useState<string[]>([]);
-  const [taskDescription, setTaskDescription] = useState("");
-  
-  // Form validation states
-  const [taskName, setTaskName] = useState("");
-  const [issueType, setIssueType] = useState("");
-  const [priority, setPriority] = useState("");
-  const [stage, setStage] = useState("");
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedStages, setSelectedStages] = useState<string[]>([]);
+  const [selectedPriorities, setSelectedPriorities] = useState<string[]>([]);
+  const [selectedIssueTypes, setSelectedIssueTypes] = useState<string[]>([]);
 
-  // Mock teammates data - this would come from your API
-  const teammates = [
-    { id: 1, name: "John Doe", role: "Senior Frontend Developer" },
-    { id: 2, name: "Jane Smith", role: "Backend Developer" },
-    { id: 3, name: "Mike Johnson", role: "Full Stack Developer" },
-    { id: 4, name: "Sarah Wilson", role: "UX Designer" },
-    { id: 5, name: "Tom Brown", role: "DevOps Engineer" }
-  ];
-
-  const [tasks, setTasks] = useState([
-    {
-      id: 1,
-      taskNumber: "TSK-001",
-      name: "User Authentication System",
-      description: "Implement a comprehensive user authentication system with login, registration, and password reset functionality.",
-      issueType: "Feature",
-      receivedDate: "2024-06-01",
-      developmentStartDate: "2024-06-05",
-      currentStage: "Development",
-      dueDate: "2024-06-15",
-      assignedTeammates: ["John Doe", "Jane Smith"],
-      priority: "High",
-      isCompleted: false,
-      isCmcDone: true
-    },
-    {
-      id: 2,
-      taskNumber: "TSK-002",
-      name: "Database Schema Design",
-      description: "Design and implement the database schema for the new project including user management and task tracking.",
-      issueType: "Task",
-      receivedDate: "2024-06-02",
-      developmentStartDate: "2024-06-06",
-      currentStage: "Review",
-      dueDate: "2024-06-12",
-      assignedTeammates: ["Mike Johnson"],
-      priority: "Medium",
-      isCompleted: false,
-      isCmcDone: false
-    },
-    {
-      id: 3,
-      taskNumber: "TSK-003",
-      name: "Frontend Dashboard",
-      description: "Create a responsive dashboard with charts, metrics, and real-time data visualization for better user experience.",
-      issueType: "Feature",
-      receivedDate: "2024-06-03",
-      developmentStartDate: "2024-06-07",
-      currentStage: "Testing",
-      dueDate: "2024-06-18",
-      assignedTeammates: ["Sarah Wilson", "Tom Brown"],
-      priority: "High",
-      isCompleted: false,
-      isCmcDone: true
-    },
-    {
-      id: 4,
-      taskNumber: "TSK-004",
-      name: "Bug Fix - Login Issue",
-      description: "Fix the critical login bug where users are unable to authenticate with valid credentials.",
-      issueType: "Bug",
-      receivedDate: "2024-06-04",
-      developmentStartDate: "2024-06-04",
-      currentStage: "Completed",
-      dueDate: "2024-06-08",
-      assignedTeammates: ["John Doe"],
-      priority: "Critical",
-      isCompleted: true,
-      isCmcDone: false
-    }
-  ]);
-
-  const stages = ["Planning", "Development", "Review", "Testing", "HOLD", "Completed"];
-  const issueTypes = ["Feature", "Bug", "Task", "Enhancement"];
-  const priorities = ["Low", "Medium", "High", "Critical"];
-
-  // Use the filtering hook
-  const {
-    searchTerm,
-    setSearchTerm,
-    selectedPriorities,
-    setSelectedPriorities,
-    selectedStages,
-    setSelectedStages,
-    selectedIssueTypes,
-    setSelectedIssueTypes,
-    selectedTeammates: filterSelectedTeammates,
-    setSelectedTeammates: setFilterSelectedTeammates,
-    showCompletedOnly,
-    setShowCompletedOnly,
-    showCmcDoneOnly,
-    setShowCmcDoneOnly,
-    filteredTasks,
-    filterOptions,
-    activeFiltersCount,
-    clearAllFilters
-  } = useTaskFilters(tasks);
-
-  // Generate next task number
-  const generateTaskNumber = () => {
-    const maxId = Math.max(...tasks.map(task => task.id), 0);
-    const nextNumber = (maxId + 1).toString().padStart(3, '0');
-    return `TSK-${nextNumber}`;
+  // Convert backend data to frontend format
+  const convertBackendToFrontend = (backendTask: BackendTask): Task => {
+    return {
+      id: backendTask.id,
+      taskNumber: backendTask.taskNumber,
+      name: backendTask.name,
+      description: backendTask.description,
+      issueType: backendTask.issueType,
+      receivedDate: backendTask.receivedDate,
+      developmentStartDate: backendTask.developmentStartDate,
+      currentStage: backendTask.currentStage,
+      dueDate: backendTask.dueDate,
+      assignedTeammates: backendTask.assignedTeammates,
+      priority: backendTask.priority,
+      isCompleted: backendTask.isCompleted,
+      isCmcDone: backendTask.isCmcDone
+    };
   };
 
-  const getStageWithNumber = (stage: string) => {
-    const stageIndex = stages.findIndex(s => s === stage) + 1;
-    return `${stageIndex}. ${stage}`;
+  // Convert API data to component state
+  const apiTasksData = tasksApiData?.tasks?.map(convertBackendToFrontend) || [];
+  const [tasksData, setTasksData] = useState<Task[]>([]);
+
+  // Update local state when API data changes
+  useEffect(() => {
+    if (apiTasksData.length > 0) {
+      setTasksData(apiTasksData);
+    }
+  }, [apiTasksData]);
+
+  // Convert teammates data for the dialog
+  const teammates = teammatesApiData?.teammates?.map(teammate => ({
+    id: teammate.id,
+    name: teammate.name,
+    role: teammate.role
+  })) || [];
+
+  // Filter tasks based on search and filters
+  const filteredTasks = tasksData.filter(task => {
+    const matchesSearch = searchTerm === "" || 
+      task.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      task.taskNumber.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesStage = selectedStages.length === 0 || selectedStages.includes(task.currentStage);
+    const matchesPriority = selectedPriorities.length === 0 || selectedPriorities.includes(task.priority);
+    const matchesIssueType = selectedIssueTypes.length === 0 || selectedIssueTypes.includes(task.issueType);
+
+    return matchesSearch && matchesStage && matchesPriority && matchesIssueType;
+  });
+
+  // Filter options for dropdowns
+  const filterOptions = {
+    stages: [...new Set(tasksData.map(t => t.currentStage))].map(s => ({ 
+      label: s, 
+      value: s, 
+      count: tasksData.filter(t => t.currentStage === s).length 
+    })),
+    priorities: [...new Set(tasksData.map(t => t.priority))].map(p => ({ 
+      label: p, 
+      value: p, 
+      count: tasksData.filter(t => t.priority === p).length 
+    })),
+    issueTypes: [...new Set(tasksData.map(t => t.issueType))].map(i => ({ 
+      label: i, 
+      value: i, 
+      count: tasksData.filter(t => t.issueType === i).length 
+    }))
+  };
+
+  const activeFiltersCount = selectedStages.length + selectedPriorities.length + selectedIssueTypes.length;
+
+  const clearAllFilters = () => {
+    setSelectedStages([]);
+    setSelectedPriorities([]);
+    setSelectedIssueTypes([]);
+    setSearchTerm("");
   };
 
   const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "Critical": return "bg-red-100 text-red-800 border-red-200";
-      case "High": return "bg-orange-100 text-orange-800 border-orange-200";
-      case "Medium": return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "Low": return "bg-green-100 text-green-800 border-green-200";
+    const normalizedPriority = priority.toLowerCase();
+    switch (normalizedPriority) {
+      case "critical": return "bg-red-100 text-red-800 border-red-200";
+      case "high": 
+      case "hig": return "bg-orange-100 text-orange-800 border-orange-200";
+      case "medium": return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "low": return "bg-green-100 text-green-800 border-green-200";
       default: return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
@@ -166,124 +154,65 @@ const Tasks = () => {
   const getStageColor = (stage: string) => {
     switch (stage) {
       case "Planning": return "bg-blue-100 text-blue-800 border-blue-200";
-      case "Development": return "bg-purple-100 text-purple-800 border-purple-200";
+      case "Development":
+      case "DEV": return "bg-purple-100 text-purple-800 border-purple-200";
       case "Review": return "bg-orange-100 text-orange-800 border-orange-200";
-      case "Testing": return "bg-indigo-100 text-indigo-800 border-indigo-200";
-      case "HOLD": return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "Testing":
+      case "SIT": return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "HOLD": return "bg-red-100 text-red-800 border-red-200";
       case "Completed": return "bg-green-100 text-green-800 border-green-200";
       default: return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
 
-  const getIssueTypeColor = (type: string) => {
-    switch (type) {
-      case "Feature": return "bg-blue-100 text-blue-800 border-blue-200";
-      case "Bug": return "bg-red-100 text-red-800 border-red-200";
-      case "Task": return "bg-gray-100 text-gray-800 border-gray-200";
-      case "Enhancement": return "bg-purple-100 text-purple-800 border-purple-200";
+  const getIssueTypeColor = (issueType: string) => {
+    const normalizedType = issueType.toLowerCase();
+    switch (normalizedType) {
+      case "bug": return "bg-red-100 text-red-800 border-red-200";
+      case "feature": return "bg-blue-100 text-blue-800 border-blue-200";
+      case "task": return "bg-green-100 text-green-800 border-green-200";
+      case "enhancement": return "bg-purple-100 text-purple-800 border-purple-200";
       default: return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
 
-  const handleTeammateToggle = (teammateName: string) => {
-    setSelectedTeammates(prev =>
-      prev.includes(teammateName)
-        ? prev.filter(name => name !== teammateName)
-        : [...prev, teammateName]
-    );
-  };
-
-  const validateTaskForm = () => {
-    if (!taskName.trim()) {
-      toast({
-        title: "Validation Error",
-        description: "Task name is required.",
-        variant: "destructive"
-      });
-      return false;
-    }
-    if (!issueType) {
-      toast({
-        title: "Validation Error",
-        description: "Issue type is required.",
-        variant: "destructive"
-      });
-      return false;
-    }
-    if (!priority) {
-      toast({
-        title: "Validation Error",
-        description: "Priority is required.",
-        variant: "destructive"
-      });
-      return false;
-    }
-    if (!selectedDate) {
-      toast({
-        title: "Validation Error",
-        description: "Due date is required.",
-        variant: "destructive"
-      });
-      return false;
-    }
-    if (!stage) {
-      toast({
-        title: "Validation Error",
-        description: "Current stage is required.",
-        variant: "destructive"
-      });
-      return false;
-    }
-    if (selectedTeammates.length === 0) {
-      toast({
-        title: "Validation Error",
-        description: "At least one teammate must be assigned.",
-        variant: "destructive"
-      });
-      return false;
-    }
-    return true;
-  };
-
-  const resetTaskForm = () => {
-    setTaskName("");
-    setIssueType("");
-    setPriority("");
-    setSelectedDate(undefined);
-    setStage("");
-    setSelectedTeammates([]);
-    setTaskDescription("");
-  };
-
-  const handleCreateTask = () => {
-    if (!validateTaskForm()) {
-      return;
-    }
-
-    toast({
-      title: "Task Created",
-      description: "New task has been created successfully.",
-    });
-    resetTaskForm();
-    setIsCreateModalOpen(false);
-  };
-
-  const handleEditTask = (task: any) => {
+  const handleEditTask = (task: Task) => {
     setEditingTask(task);
-    setIsEditDialogOpen(true);
+    setIsEditModalOpen(true);
   };
 
-  const handleSaveTask = (updatedTask: any) => {
-    setTasks(tasks.map(task => task.id === updatedTask.id ? updatedTask : task));
+  const handleDeleteTask = (task: Task) => {
+    deleteTaskMutation.mutate(task.name);
   };
 
-  const handleDeleteTask = (taskId: number) => {
-    setTasks(tasks.filter(task => task.id !== taskId));
-    toast({
-      title: "Task Deleted",
-      description: "Task has been deleted successfully.",
-    });
+  const handleSaveTask = (updatedTask: Task) => {
+    setTasksData(tasksData.map(task => 
+      task.id === updatedTask.id ? updatedTask : task
+    ));
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
+          <p className="text-slate-600">Loading tasks...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <div className="text-red-600 mb-4">
+          <AlertCircle className="h-12 w-12 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold mb-2">Failed to load tasks</h3>
+          <p className="text-slate-600 mb-4">{error.message}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -291,160 +220,34 @@ const Tasks = () => {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Tasks</h1>
-          <p className="text-slate-600 mt-1">Manage and track all your project tasks</p>
+          <p className="text-slate-600 mt-1">Manage and track your project tasks</p>
         </div>
 
-        <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="h-4 w-4 mr-2" />
-              Add New Task
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px]">
-            <DialogHeader>
-              <DialogTitle>Create New Task</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto">
-              <div className="grid gap-2">
-                <Label htmlFor="taskNumber">Task Number</Label>
-                <div className="flex items-center">
-                  <div className="bg-gray-800 text-white px-2 py-1 rounded font-mono text-xs font-bold border border-gray-600">
-                    {generateTaskNumber()}
-                  </div>
-                </div>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="taskName">Task Name *</Label>
-                <Input 
-                  id="taskName" 
-                  placeholder="Enter task name" 
-                  value={taskName}
-                  onChange={(e) => setTaskName(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="issueType">Issue Type *</Label>
-                <Select value={issueType} onValueChange={setIssueType} required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select issue type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {issueTypes.map((type) => (
-                      <SelectItem key={type} value={type}>{type}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="priority">Priority *</Label>
-                <Select value={priority} onValueChange={setPriority} required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select priority" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {priorities.map((priority) => (
-                      <SelectItem key={priority} value={priority}>{priority}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-2">
-                <Label>Due Date *</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "justify-start text-left font-normal",
-                        !selectedDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={selectedDate}
-                      onSelect={setSelectedDate}
-                      initialFocus
-                      className="pointer-events-auto"
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="stage">Current Stage *</Label>
-                <Select value={stage} onValueChange={setStage} required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select stage" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {stages.map((stage, index) => (
-                      <SelectItem key={stage} value={stage}>{index + 1}. {stage}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <TeammateSelector
-                teammates={teammates}
-                selectedTeammates={selectedTeammates}
-                onTeammateToggle={handleTeammateToggle}
-                label="Assign Teammates *"
-              />
-              <div className="grid gap-2">
-                <Label htmlFor="taskDescription">Description</Label>
-                <Textarea 
-                  id="taskDescription" 
-                  placeholder="Enter task description (max 1000 words)" 
-                  value={taskDescription}
-                  onChange={(e) => setTaskDescription(e.target.value)}
-                  maxLength={1000}
-                  className="min-h-[100px]"
-                />
-                <p className="text-xs text-slate-500">{taskDescription.length}/1000 characters</p>
-              </div>
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => {
-                resetTaskForm();
-                setIsCreateModalOpen(false);
-              }}>
-                Cancel
-              </Button>
-              <Button onClick={handleCreateTask} className="bg-blue-600 hover:bg-blue-700">
-                Create Task
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <div className="flex items-center space-x-2">
+          <Button 
+            className="bg-blue-600 hover:bg-blue-700"
+            onClick={() => setIsCreateModalOpen(true)}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Task
+          </Button>
+        </div>
       </div>
 
-      {/* Search and Advanced Filters */}
+      {/* Search and Filters */}
       <div className="space-y-4">
-        <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
-            <Input
-              placeholder="Search tasks..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
+          <Input
+            placeholder="Search tasks by name or task number..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
         </div>
 
         {/* Filter Bar */}
         <div className="flex flex-wrap gap-3 items-center">
-          <FilterDropdown
-            title="Priority"
-            options={filterOptions.priorities}
-            selectedValues={selectedPriorities}
-            onSelectionChange={setSelectedPriorities}
-          />
           <FilterDropdown
             title="Stage"
             options={filterOptions.stages}
@@ -452,35 +255,17 @@ const Tasks = () => {
             onSelectionChange={setSelectedStages}
           />
           <FilterDropdown
+            title="Priority"
+            options={filterOptions.priorities}
+            selectedValues={selectedPriorities}
+            onSelectionChange={setSelectedPriorities}
+          />
+          <FilterDropdown
             title="Issue Type"
             options={filterOptions.issueTypes}
             selectedValues={selectedIssueTypes}
             onSelectionChange={setSelectedIssueTypes}
           />
-          <FilterDropdown
-            title="Assignee"
-            options={filterOptions.teammates}
-            selectedValues={filterSelectedTeammates}
-            onSelectionChange={setFilterSelectedTeammates}
-          />
-
-          {/* Special Filters */}
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="completed"
-              checked={showCompletedOnly}
-              onCheckedChange={setShowCompletedOnly}
-            />
-            <label htmlFor="completed" className="text-sm">Completed Only</label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="cmc"
-              checked={showCmcDoneOnly}
-              onCheckedChange={setShowCmcDoneOnly}
-            />
-            <label htmlFor="cmc" className="text-sm">CMC Done</label>
-          </div>
 
           {/* Clear Filters */}
           {activeFiltersCount > 0 && (
@@ -498,136 +283,164 @@ const Tasks = () => {
 
         {/* Results Count */}
         <div className="text-sm text-slate-600">
-          Showing {filteredTasks.length} of {tasks.length} tasks
+          Showing {filteredTasks.length} of {tasksData.length} tasks
         </div>
       </div>
 
-      {/* Tasks Grid */}
-      <div className="grid gap-6">
-        {filteredTasks.map((task) => (
-          <Card 
-            key={task.id} 
-            className={cn(
-              "hover:shadow-md transition-shadow",
-              task.isCompleted && "bg-green-50 border-green-200"
-            )}
-          >
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-3 mb-3">
-                    <div className="bg-gray-800 text-white px-2 py-1 rounded font-mono text-xs font-bold border border-gray-600">
-                      {task.taskNumber}
+      {/* Task Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-2xl font-bold text-slate-900">{tasksApiData?.totalTasksCount || 0}</div>
+            <p className="text-sm text-slate-600">Total Tasks</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-2xl font-bold text-blue-600">
+              {tasksData.filter(t => t.currentStage === "Development" || t.currentStage === "DEV").length}
+            </div>
+            <p className="text-sm text-slate-600">In Development</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-2xl font-bold text-yellow-600">
+              {tasksData.filter(t => t.currentStage === "Testing" || t.currentStage === "SIT").length}
+            </div>
+            <p className="text-sm text-slate-600">In Testing</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-2xl font-bold text-green-600">
+              {tasksData.filter(t => t.currentStage === "Completed").length}
+            </div>
+            <p className="text-sm text-slate-600">Completed</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Tasks Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>All Tasks</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Task</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Priority</TableHead>
+                <TableHead>Stage</TableHead>
+                <TableHead>Assigned To</TableHead>
+                <TableHead>Due Date</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredTasks.map((task) => (
+                <TableRow key={task.id}>
+                  <TableCell>
+                    <div>
+                      <div className="font-medium">{task.taskNumber}</div>
+                      <div className="text-sm text-slate-600 truncate max-w-[200px]">{task.name}</div>
                     </div>
-                    <h3 className="text-lg font-semibold text-slate-900">{task.name}</h3>
+                  </TableCell>
+                  <TableCell>
                     <Badge className={getIssueTypeColor(task.issueType)}>
                       {task.issueType}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
                     <Badge className={getPriorityColor(task.priority)}>
                       {task.priority}
                     </Badge>
-                  </div>
-
-                  {task.description && (
-                    <p className="text-sm text-slate-600 mb-3 line-clamp-2">
-                      {task.description}
-                    </p>
-                  )}
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                    <div>
-                      <p className="text-slate-600 font-medium mb-1">Current Stage</p>
-                      <Badge className={getStageColor(task.currentStage)}>
-                        {task.currentStage}
-                      </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={getStageColor(task.currentStage)}>
+                      {task.currentStage}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {task.assignedTeammates.map((teammate, index) => (
+                        <Badge key={index} variant="outline" className="text-xs">
+                          {teammate}
+                        </Badge>
+                      ))}
                     </div>
-                    <div>
-                      <p className="text-slate-600 font-medium mb-1">Due Date</p>
-                      <div className="flex items-center text-slate-700">
-                        <CalendarIcon className="h-3 w-3 mr-1" />
-                        {task.dueDate}
-                      </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-sm">
+                      {format(new Date(task.dueDate), "MMM dd, yyyy")}
                     </div>
-                    <div>
-                      <p className="text-slate-600 font-medium mb-1">Assigned To</p>
-                      <div className="flex flex-wrap gap-1">
-                        {task.assignedTeammates.map((teammate, index) => (
-                          <Badge key={index} variant="outline" className="text-xs">
-                            {teammate}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 text-xs text-slate-500 flex items-center space-x-4">
-                    <span>Received: {task.receivedDate}</span>
-                    <span>Started: {task.developmentStartDate}</span>
-                    <div className="flex items-center">
-                      <span className="mr-2">CMC Done:</span>
-                      <div 
-                        className={cn(
-                          "w-3 h-3 rounded-full",
-                          task.isCmcDone ? "bg-green-500" : "bg-red-500"
-                        )}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-2 ml-4">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleEditTask(task)}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
-                        <Trash2 className="h-4 w-4" />
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEditTask(task)}
+                      >
+                        <Edit className="h-4 w-4" />
                       </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Task</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Are you sure you want to delete "{task.name}"? This action cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => handleDeleteTask(task.id)}
-                          className="bg-red-600 hover:bg-red-700"
-                        >
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Task</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete "{task.taskNumber}"? This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDeleteTask(task)}
+                              className="bg-red-600 hover:bg-red-700"
+                              disabled={deleteTaskMutation.isPending}
+                            >
+                              {deleteTaskMutation.isPending ? "Deleting..." : "Delete"}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Add Task Dialog */}
+      <AddTaskDialog
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        teammates={teammates}
+      />
 
       {/* Edit Task Dialog */}
       <EditTaskDialog
-        isOpen={isEditDialogOpen}
-        onClose={() => setIsEditDialogOpen(false)}
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
         task={editingTask}
         onSave={handleSaveTask}
         teammates={teammates}
       />
 
-      {filteredTasks.length === 0 && (
+      {filteredTasks.length === 0 && !isLoading && (
         <div className="text-center py-12">
           <Clock className="h-12 w-12 text-slate-400 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-slate-900 mb-2">No tasks found</h3>
-          <p className="text-slate-600">Try adjusting your search criteria or create a new task.</p>
+          <p className="text-slate-600">Try adjusting your search criteria or add a new task.</p>
         </div>
       )}
     </div>

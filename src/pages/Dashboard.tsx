@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -12,11 +11,13 @@ import {
   AlertCircle,
   Calendar,
   Plus,
-  RefreshCw
+  RefreshCw,
+  WifiOff
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { DashboardLoading } from "@/components/DashboardLoading";
+import { mockDashboardData } from "@/services/mockDashboardData";
 
 const Dashboard = () => {
   const { data: dashboardData, isLoading, error, refetch, isRefetching } = useDashboardData();
@@ -25,11 +26,15 @@ const Dashboard = () => {
     return <DashboardLoading />;
   }
 
+  // Use mock data as fallback when API fails
+  const displayData = dashboardData || mockDashboardData;
+  const isUsingMockData = !dashboardData;
+
   if (error) {
     console.error('Dashboard data fetch error:', error);
   }
 
-  if (!dashboardData) {
+  if (!displayData) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center space-y-4">
@@ -45,12 +50,13 @@ const Dashboard = () => {
     );
   }
 
-  // Calculate completion rate using tasksByStage data
   const calculateCompletionRate = () => {
-    const completedTasks = dashboardData.tasksByStage["Completed"] || 0;
-    return dashboardData.totalTasks > 0 
-      ? Math.round((completedTasks / dashboardData.totalTasks) * 100)
-      : 0;
+    if (!displayData?.tasksByStage || !displayData?.totalTasks || displayData.totalTasks === 0) {
+      return 0;
+    }
+    
+    const completedTasks = displayData.tasksByStage["Completed"] || 0;
+    return Math.round((completedTasks / displayData.totalTasks) * 100);
   };
 
   const completionRate = calculateCompletionRate();
@@ -79,11 +85,30 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-8">
+      {/* Only show offline data banner when using mock data */}
+      {isUsingMockData && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-center space-x-3">
+          <WifiOff className="h-5 w-5 text-yellow-600" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-yellow-800">
+              Using offline data - API connection failed
+            </p>
+            <p className="text-xs text-yellow-700 mt-1">
+              Check if your backend server is running on localhost:8085
+            </p>
+          </div>
+          <Button onClick={() => refetch()} variant="outline" size="sm">
+            <RefreshCw className={`h-4 w-4 mr-2 ${isRefetching ? 'animate-spin' : ''}`} />
+            Test Connection
+          </Button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
-          <p className="text-slate-600 mt-1">🏦 Welcome back! Here's what's happening with your Kotak project:</p>
+          <p className="text-slate-600 mt-1">Welcome back! Here's what's happening with your Kotak project:</p>
         </div>
         <div className="flex items-center space-x-2">
           <Button
@@ -113,7 +138,7 @@ const Dashboard = () => {
             <CheckSquare className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-900">{dashboardData.totalTasks}</div>
+            <div className="text-2xl font-bold text-slate-900">{displayData.totalTasks}</div>
             <p className="text-xs text-slate-600 mt-1">All tasks in system</p>
           </CardContent>
         </Card>
@@ -127,17 +152,17 @@ const Dashboard = () => {
                 <Clock className="h-4 w-4 text-orange-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-slate-900">{dashboardData.activeTasks}</div>
+                <div className="text-2xl font-bold text-slate-900">{displayData.activeTasks}</div>
                 <p className="text-xs text-slate-600 mt-1">In progress</p>
               </CardContent>
             </Card>
           </DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Active Tasks ({dashboardData.activeTasks})</DialogTitle>
+              <DialogTitle>Active Tasks ({displayData.activeTasks})</DialogTitle>
             </DialogHeader>
             <div className="space-y-3">
-              {dashboardData.activeTasksList.map((task) => (
+              {displayData.activeTasksList.map((task) => (
                 <div key={task.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-1">
@@ -180,17 +205,17 @@ const Dashboard = () => {
                 <Users className="h-4 w-4 text-green-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-slate-900">{dashboardData.totalTeammates}</div>
-                <p className="text-xs text-slate-600 mt-1">{dashboardData.freeTeammates} free, {dashboardData.occupiedTeammates} occupied</p>
+                <div className="text-2xl font-bold text-slate-900">{displayData.totalTeammates}</div>
+                <p className="text-xs text-slate-600 mt-1">{displayData.freeTeammates} free, {displayData.occupiedTeammates} occupied</p>
               </CardContent>
             </Card>
           </DialogTrigger>
           <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Team Members ({dashboardData.totalTeammates})</DialogTitle>
+              <DialogTitle>Team Members ({displayData.totalTeammates})</DialogTitle>
             </DialogHeader>
             <div className="space-y-3">
-              {dashboardData.teamMembersSummary.map((member) => (
+              {displayData.teamMembersSummary.map((member) => (
                 <div key={member.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                   <div className="flex-1">
                     <h3 className="font-medium text-slate-900 mb-1">{member.name}</h3>
@@ -219,7 +244,7 @@ const Dashboard = () => {
             <div className="text-2xl font-bold text-slate-900">{completionRate}%</div>
             <Progress value={completionRate} className="mt-2" />
             <p className="text-xs text-slate-600 mt-1">
-              {dashboardData.tasksByStage["Completed"] || 0} of {dashboardData.totalTasks} tasks completed
+              {displayData.tasksByStage?.["Completed"] || 0} of {displayData.totalTasks} tasks completed
             </p>
           </CardContent>
         </Card>
@@ -237,7 +262,7 @@ const Dashboard = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {dashboardData.recentTasks.map((task) => (
+            {displayData.recentTasks.map((task) => (
               <div key={task.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-1">
