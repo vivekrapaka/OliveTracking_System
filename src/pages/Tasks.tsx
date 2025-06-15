@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,6 +30,7 @@ import { useTasksData, BackendTask } from "@/hooks/useTasksData";
 import { useTeammatesData } from "@/hooks/useTeammatesData";
 import { EditTaskDialog } from "@/components/EditTaskDialog";
 import { AddTaskDialog } from "@/components/AddTaskDialog";
+import { useDeleteTask } from "@/hooks/useDeleteTask";
 
 interface Task {
   id: number;
@@ -51,6 +51,7 @@ interface Task {
 export const Tasks = () => {
   const { data: tasksApiData, isLoading, error } = useTasksData();
   const { data: teammatesApiData } = useTeammatesData();
+  const deleteTaskMutation = useDeleteTask();
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -180,12 +181,8 @@ export const Tasks = () => {
     setIsEditModalOpen(true);
   };
 
-  const handleDeleteTask = (taskId: number) => {
-    setTasksData(tasksData.filter(task => task.id !== taskId));
-    toast({
-      title: "Task Deleted",
-      description: "Task has been deleted successfully.",
-    });
+  const handleDeleteTask = (task: Task) => {
+    deleteTaskMutation.mutate(task.name);
   };
 
   const handleSaveTask = (updatedTask: Task) => {
@@ -405,10 +402,11 @@ export const Tasks = () => {
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction
-                              onClick={() => handleDeleteTask(task.id)}
+                              onClick={() => handleDeleteTask(task)}
                               className="bg-red-600 hover:bg-red-700"
+                              disabled={deleteTaskMutation.isPending}
                             >
-                              Delete
+                              {deleteTaskMutation.isPending ? "Deleting..." : "Delete"}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
