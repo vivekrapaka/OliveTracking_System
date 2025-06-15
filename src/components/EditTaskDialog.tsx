@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -10,8 +11,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { toast } from "@/hooks/use-toast";
 import { TeammateSelector } from "./TeammateSelector";
+import { useEditTask } from "@/hooks/useEditTask";
 
 interface Task {
   id: number;
@@ -46,22 +47,32 @@ interface EditTaskDialogProps {
 export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: EditTaskDialogProps) => {
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedStartDate, setSelectedStartDate] = useState<Date>();
+  const [selectedReceivedDate, setSelectedReceivedDate] = useState<Date>();
+  const [selectedDevelopmentStartDate, setSelectedDevelopmentStartDate] = useState<Date>();
   const [editData, setEditData] = useState<Partial<Task>>({});
   const [selectedTeammates, setSelectedTeammates] = useState<string[]>([]);
+  const [isCodeReviewDone, setIsCodeReviewDone] = useState(false);
 
-  const stages = ["Planning", "Development", "Review", "Testing", "HOLD", "Completed"];
-  const issueTypes = ["Feature", "Bug", "Task", "Enhancement"];
-  const priorities = ["Low", "Medium", "High", "Critical"];
+  const editTaskMutation = useEditTask();
+
+  const stages = ["SIT", "DEV", "Pre-Prod", "Prod", "FSD", "UAT"];
+  const issueTypes = ["Feature", "Bug", "Enhancement"];
+  const priorities = ["HIGH", "MEDIUM", "LOW"];
 
   useEffect(() => {
     if (task) {
       setEditData(task);
       setSelectedTeammates(task.assignedTeammates || []);
+      setIsCodeReviewDone(false); // Default value since it's not in the task interface
+      
       if (task.dueDate) {
         setSelectedDate(new Date(task.dueDate));
       }
       if (task.developmentStartDate) {
-        setSelectedStartDate(new Date(task.developmentStartDate));
+        setSelectedDevelopmentStartDate(new Date(task.developmentStartDate));
+      }
+      if (task.receivedDate) {
+        setSelectedReceivedDate(new Date(task.receivedDate));
       }
     }
   }, [task]);
@@ -80,20 +91,30 @@ export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: Edi
   const handleSave = () => {
     if (!task) return;
     
-    const updatedTask = {
-      ...task,
-      ...editData,
-      assignedTeammates: selectedTeammates,
+    const taskData = {
+      taskName: editData.name || task.name,
+      description: editData.description || task.description || "",
+      currentStage: editData.currentStage || task.currentStage,
+      startDate: selectedStartDate ? format(selectedStartDate, "yyyy-MM-dd") : "",
       dueDate: selectedDate ? format(selectedDate, "yyyy-MM-dd") : task.dueDate,
-      developmentStartDate: selectedStartDate ? format(selectedStartDate, "yyyy-MM-dd") : task.developmentStartDate,
-      isCompleted: editData.currentStage === "Completed"
+      isCompleted: editData.currentStage === "Completed" || editData.isCompleted || false,
+      issueType: editData.issueType || task.issueType,
+      receivedDate: selectedReceivedDate ? format(selectedReceivedDate, "yyyy-MM-dd") : task.receivedDate,
+      developmentStartDate: selectedDevelopmentStartDate ? format(selectedDevelopmentStartDate, "yyyy-MM-dd") : task.developmentStartDate,
+      isCodeReviewDone: isCodeReviewDone,
+      isCmcDone: editData.isCmcDone !== undefined ? editData.isCmcDone : task.isCmcDone,
+      assignedTeammateNames: selectedTeammates,
+      priority: editData.priority || task.priority,
     };
-    onSave(updatedTask);
-    toast({
-      title: "Task Updated",
-      description: "Task has been updated successfully.",
+
+    editTaskMutation.mutate({
+      taskName: task.name, // Use original task name for the API call
+      taskData
+    }, {
+      onSuccess: () => {
+        onClose();
+      }
     });
-    onClose();
   };
 
   if (!task) return null;
@@ -148,6 +169,88 @@ export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: Edi
               </SelectContent>
             </Select>
           </div>
+          
+          <div className="grid gap-2">
+            <Label>Received Date</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "justify-start text-left font-normal",
+                    !selectedReceivedDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {selectedReceivedDate ? format(selectedReceivedDate, "PPP") : <span>Pick received date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={selectedReceivedDate}
+                  onSelect={setSelectedReceivedDate}
+                  initialFocus
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <div className="grid gap-2">
+            <Label>Start Date</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "justify-start text-left font-normal",
+                    !selectedStartDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {selectedStartDate ? format(selectedStartDate, "PPP") : <span>Pick start date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={selectedStartDate}
+                  onSelect={setSelectedStartDate}
+                  initialFocus
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <div className="grid gap-2">
+            <Label>Development Start Date</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "justify-start text-left font-normal",
+                    !selectedDevelopmentStartDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {selectedDevelopmentStartDate ? format(selectedDevelopmentStartDate, "PPP") : <span>Pick development start date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={selectedDevelopmentStartDate}
+                  onSelect={setSelectedDevelopmentStartDate}
+                  initialFocus
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
           <div className="grid gap-2">
             <Label>Due Date</Label>
             <Popover>
@@ -174,6 +277,7 @@ export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: Edi
               </PopoverContent>
             </Popover>
           </div>
+          
           <div className="grid gap-2">
             <Label htmlFor="editStage">Current Stage</Label>
             <Select defaultValue={task.currentStage} onValueChange={(value) => setEditData({...editData, currentStage: value})}>
@@ -187,37 +291,26 @@ export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: Edi
               </SelectContent>
             </Select>
           </div>
+          
           <TeammateSelector
             teammates={teammates}
             selectedTeammates={selectedTeammates}
             onTeammateToggle={handleTeammateToggle}
           />
+          
           <div className="grid gap-2">
-            <Label>Started Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "justify-start text-left font-normal",
-                    !selectedStartDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {selectedStartDate ? format(selectedStartDate, "PPP") : <span>Pick a date</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={selectedStartDate}
-                  onSelect={setSelectedStartDate}
-                  initialFocus
-                  className="pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
+            <Label htmlFor="editIsCodeReviewDone">Code Review Done</Label>
+            <Select value={isCodeReviewDone ? "true" : "false"} onValueChange={(value) => setIsCodeReviewDone(value === "true")}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="true">True</SelectItem>
+                <SelectItem value="false">False</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+
           <div className="grid gap-2">
             <Label htmlFor="editIsCmcDone">CMC Done</Label>
             <Select defaultValue={task.isCmcDone ? "true" : "false"} onValueChange={(value) => setEditData({...editData, isCmcDone: value === "true"})}>
@@ -230,6 +323,7 @@ export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: Edi
               </SelectContent>
             </Select>
           </div>
+          
           <div className="grid gap-2">
             <Label htmlFor="editTaskDescription">Description</Label>
             <Textarea
@@ -247,8 +341,12 @@ export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: Edi
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700">
-            Save Changes
+          <Button 
+            onClick={handleSave} 
+            className="bg-blue-600 hover:bg-blue-700"
+            disabled={editTaskMutation.isPending}
+          >
+            {editTaskMutation.isPending ? "Saving..." : "Save Changes"}
           </Button>
         </div>
       </DialogContent>
