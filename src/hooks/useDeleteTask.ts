@@ -21,7 +21,19 @@ const deleteTask = async (taskName: string) => {
     throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
   }
   
-  return response.json();
+  // For DELETE requests, don't expect JSON response
+  // Some APIs return 204 No Content, others return empty response
+  if (response.status === 204) {
+    return { success: true };
+  }
+  
+  // Only try to parse JSON if there's content
+  const contentType = response.headers.get('content-type');
+  if (contentType && contentType.includes('application/json')) {
+    return response.json();
+  }
+  
+  return { success: true };
 };
 
 export const useDeleteTask = () => {
