@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -60,7 +59,7 @@ export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: Edi
 
   const editTaskMutation = useEditTask();
 
-  const stages = ["SIT", "DEV", "Pre-Prod", "Prod", "FSD", "UAT"];
+  const stages = ["SIT", "DEV", "Pre-Prod", "Prod", "FSD", "UAT", "Completed"];
   const issueTypes = ["Feature", "Bug", "Enhancement"];
   const priorities = ["HIGH", "MEDIUM", "LOW"];
 
