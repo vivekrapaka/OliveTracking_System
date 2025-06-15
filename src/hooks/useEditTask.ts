@@ -19,8 +19,8 @@ interface EditTaskRequest {
   priority: string;
 }
 
-const editTask = async (taskSequenceNumber: string, taskData: EditTaskRequest) => {
-  const url = `${API_BASE_URL}/api/tasks/${encodeURIComponent(taskSequenceNumber)}`;
+const editTask = async (taskName: string, taskData: EditTaskRequest) => {
+  const url = `${API_BASE_URL}/api/tasks/${encodeURIComponent(taskName)}`;
   
   console.log('Editing task at:', url);
   console.log('Task data:', taskData);
@@ -46,8 +46,8 @@ export const useEditTask = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: ({ taskSequenceNumber, taskData }: { taskSequenceNumber: string; taskData: EditTaskRequest }) => 
-      editTask(taskSequenceNumber, taskData),
+    mutationFn: ({ taskName, taskData }: { taskName: string; taskData: EditTaskRequest }) => 
+      editTask(taskName, taskData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks-data'] });
       toast({

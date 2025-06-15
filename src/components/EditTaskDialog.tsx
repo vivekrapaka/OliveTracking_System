@@ -114,7 +114,7 @@ export const EditTaskDialog = ({ isOpen, onClose, task, onSave, teammates }: Edi
     };
 
     editTaskMutation.mutate({
-      taskSequenceNumber: task.taskNumber, // Use task sequence number instead of task name
+      taskName: task.name, // Use task name instead of task sequence number
       taskData
     }, {
       onSuccess: () => {
