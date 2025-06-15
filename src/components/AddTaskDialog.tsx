@@ -114,17 +114,6 @@ export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Enter task description"
-              className="min-h-[100px]"
-            />
-          </div>
-
-          <div className="grid gap-2">
             <Label>Current Stage *</Label>
             <Select value={currentStage} onValueChange={setCurrentStage}>
               <SelectTrigger>
@@ -275,6 +264,17 @@ export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps
             selectedTeammates={selectedTeammates}
             onTeammateToggle={handleTeammateToggle}
           />
+
+          <div className="grid gap-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Enter task description"
+              className="min-h-[100px]"
+            />
+          </div>
         </div>
         <div className="flex justify-end space-x-2">
           <Button variant="outline" onClick={handleClose}>
