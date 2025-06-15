@@ -3,12 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import {
   Table,
@@ -23,13 +17,7 @@ import {
   Search,
   Edit,
   Trash2,
-  Calendar as CalendarIcon,
-  User,
-  Clock,
-  CheckCircle,
-  AlertCircle,
   RefreshCw,
-  Filter,
   X
 } from "lucide-react";
 import { format } from "date-fns";
@@ -38,6 +26,8 @@ import { toast } from "@/hooks/use-toast";
 import { FilterDropdown } from "@/components/FilterDropdown";
 import { useTasksData, BackendTask } from "@/hooks/useTasksData";
 import { useTeammatesData } from "@/hooks/useTeammatesData";
+import { EditTaskDialog } from "@/components/EditTaskDialog";
+import { AddTaskDialog } from "@/components/AddTaskDialog";
 
 interface Task {
   id: number;
@@ -97,18 +87,12 @@ export const Tasks = () => {
     }
   }, [apiTasksData]);
 
-  // Form states for task creation/editing
-  const [taskName, setTaskName] = useState("");
-  const [taskDescription, setTaskDescription] = useState("");
-  const [issueType, setIssueType] = useState("");
-  const [priority, setPriority] = useState("");
-  const [currentStage, setCurrentStage] = useState("");
-  const [dueDate, setDueDate] = useState<Date>();
-  const [startDate, setStartDate] = useState<Date>();
-
-  const stages = ["Planning", "Development", "Review", "Testing", "SIT", "DEV", "HOLD", "Completed"];
-  const issueTypes = ["Feature", "Bug", "Task", "Enhancement", "BUG", "FEATURE"];
-  const priorities = ["Low", "Medium", "High", "Critical", "HIGH", "HIGh"];
+  // Convert teammates data for the dialog
+  const teammates = teammatesApiData?.teammates?.map(teammate => ({
+    id: teammate.id,
+    name: teammate.name,
+    role: teammate.role
+  })) || [];
 
   // Filter tasks based on search and filters
   const filteredTasks = tasksData.filter(task => {
@@ -201,6 +185,12 @@ export const Tasks = () => {
     });
   };
 
+  const handleSaveTask = (updatedTask: Task) => {
+    setTasksData(tasksData.map(task => 
+      task.id === updatedTask.id ? updatedTask : task
+    ));
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -234,7 +224,10 @@ export const Tasks = () => {
         </div>
 
         <div className="flex items-center space-x-2">
-          <Button className="bg-blue-600 hover:bg-blue-700">
+          <Button 
+            className="bg-blue-600 hover:bg-blue-700"
+            onClick={() => setIsCreateModalOpen(true)}
+          >
             <Plus className="h-4 w-4 mr-2" />
             Add Task
           </Button>
@@ -425,6 +418,22 @@ export const Tasks = () => {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Add Task Dialog */}
+      <AddTaskDialog
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        teammates={teammates}
+      />
+
+      {/* Edit Task Dialog */}
+      <EditTaskDialog
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        task={editingTask}
+        onSave={handleSaveTask}
+        teammates={teammates}
+      />
 
       {filteredTasks.length === 0 && !isLoading && (
         <div className="text-center py-12">
