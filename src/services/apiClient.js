@@ -2,18 +2,19 @@ import axios from 'axios';
 
 // Create an Axios instance
 const apiClient = axios.create({
-  baseURL: 'http://localhost:8085/api', // Replace with your actual backend URL
+  baseURL: 'http://localhost:8085', // Replace with your actual backend URL
   headers: {
     'Content-Type': 'application/json',
+    'Accept': 'application/json', // Added Accept header
   },
 });
 
 // Request Interceptor: Add JWT to Authorization header
 apiClient.interceptors.request.use(
   (config) => {
-    const user = JSON.parse(localStorage.getItem('user')); // Retrieve stored user data
-    if (user && user.token) {
-      config.headers['Authorization'] = `Bearer ${user.token}`;
+    const token = localStorage.getItem('jwtToken'); // Retrieve stored token
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
     }
     return config;
   },
@@ -30,6 +31,7 @@ apiClient.interceptors.response.use(
     if (error.response && error.response.status === 401) {
       console.error('Unauthorized access. Token expired or invalid.');
       // Clear stored user data (logout)
+      localStorage.removeItem('jwtToken');
       localStorage.removeItem('user');
       // Update your global authentication state to logged out
       // Example: dispatch(logoutUser());

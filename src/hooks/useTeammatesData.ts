@@ -1,6 +1,6 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { API_ENDPOINTS, buildApiUrl } from '@/config/api';
+import apiClient from '@/services/apiClient'; // Import apiClient
 
 export interface BackendTeammate {
   id: number;
@@ -28,21 +28,8 @@ const fetchTeammatesData = async (): Promise<TeammatesApiResponse> => {
   const url = buildApiUrl(API_ENDPOINTS.TEAMMATES);
   
   try {
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      mode: 'cors',
-    });
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
-    }
-    
-    const data = await response.json();
-    return data;
+    const response = await apiClient.get(url); // Use apiClient.get
+    return response.data;
   } catch (error) {
     console.error('Teammates data fetch error:', error);
     throw error;
@@ -62,3 +49,4 @@ export const useTeammatesData = () => {
     },
   });
 };
+

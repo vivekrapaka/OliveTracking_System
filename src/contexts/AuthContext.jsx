@@ -17,7 +17,8 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     const response = await AuthService.signin(email, password);
-    const userData = response.data;
+    const { token, ...userData } = response.data;
+    localStorage.setItem('jwtToken', token);
     localStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);
     return userData;
