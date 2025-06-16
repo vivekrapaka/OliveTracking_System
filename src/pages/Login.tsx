@@ -138,11 +138,11 @@ const Login = () => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <img 
-            src="/lovable-uploads/ee53a353-0042-45dd-90f5-826c4841d71f.png" 
-            alt="Olive Tracking System" 
+            src="OliveTracking_System/public/lovable-uploads/Gemini_Generated_Image_s8vpzis8vpzis8vp.png" 
+            alt="KARYA" 
             className="h-16 w-auto mx-auto mb-4"
           />
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">OliveTrackingSystem</h1>
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">K A R Y A</h1>
           <p className="text-slate-600">Welcome back! Please sign in to your account.</p>
         </div>
 
