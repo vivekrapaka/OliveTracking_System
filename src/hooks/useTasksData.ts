@@ -1,6 +1,6 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { API_ENDPOINTS, buildApiUrl } from '@/config/api';
+import apiClient from '@/services/apiClient'; // Import apiClient
 
 export interface BackendTask {
   id: number;
@@ -27,21 +27,8 @@ const fetchTasksData = async (): Promise<TasksApiResponse> => {
   const url = buildApiUrl(API_ENDPOINTS.TASKS);
   
   try {
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      mode: 'cors',
-    });
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
-    }
-    
-    const data = await response.json();
-    return data;
+    const response = await apiClient.get(url); // Use apiClient.get
+    return response.data;
   } catch (error) {
     console.error('Tasks data fetch error:', error);
     throw error;
@@ -61,3 +48,4 @@ export const useTasksData = () => {
     },
   });
 };
+
