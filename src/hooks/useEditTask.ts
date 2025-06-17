@@ -1,7 +1,6 @@
-
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { API_BASE_URL } from '@/config/api';
 import { toast } from '@/hooks/use-toast';
+import apiClient from '@/services/apiClient'; // Import apiClient
 
 interface EditTaskRequest {
   taskName: string;
@@ -20,26 +19,14 @@ interface EditTaskRequest {
 }
 
 const editTask = async (taskName: string, taskData: EditTaskRequest) => {
-  const url = `${API_BASE_URL}/api/tasks/${encodeURIComponent(taskName)}`;
+  const url = `/api/tasks/${encodeURIComponent(taskName)}`; // Relative path, apiClient handles base URL
   
   console.log('Editing task at:', url);
   console.log('Task data:', taskData);
   
-  const response = await fetch(url, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    mode: 'cors',
-    body: JSON.stringify(taskData),
-  });
+  const response = await apiClient.put(url, taskData); // Use apiClient.put
   
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
-  }
-  
-  return response.json();
+  return response.data;
 };
 
 export const useEditTask = () => {
@@ -65,3 +52,4 @@ export const useEditTask = () => {
     },
   });
 };
+
