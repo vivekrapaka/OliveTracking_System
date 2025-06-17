@@ -33,6 +33,7 @@ import { useTeammatesData } from "@/hooks/useTeammatesData";
 import { EditTaskDialog } from "@/components/EditTaskDialog";
 import { AddTaskDialog } from "@/components/AddTaskDialog";
 import { useDeleteTask } from "@/hooks/useDeleteTask";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Task {
   id: number;
@@ -51,6 +52,7 @@ interface Task {
 }
 
 export const Tasks = () => {
+  const { user } = useAuth();
   const { data: tasksApiData, isLoading, error } = useTasksData();
   const { data: teammatesApiData } = useTeammatesData();
   const deleteTaskMutation = useDeleteTask();
@@ -226,13 +228,16 @@ export const Tasks = () => {
         </div>
 
         <div className="flex items-center space-x-2">
-          <Button 
-            className="bg-blue-600 hover:bg-blue-700"
-            onClick={() => setIsCreateModalOpen(true)}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Task
-          </Button>
+          {/* Only show Add Task button for ADMIN, MANAGER, BA */}
+          {user?.role && ['ADMIN', 'MANAGER', 'BA'].includes(user.role) && (
+            <Button 
+              className="bg-blue-600 hover:bg-blue-700"
+              onClick={() => setIsCreateModalOpen(true)}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Task
+            </Button>
+          )}
         </div>
       </div>
 
@@ -386,6 +391,7 @@ export const Tasks = () => {
                     {task.currentStage}
                   </Badge>
                   <div className="flex items-center space-x-1">
+                    {/* Edit button - visible to all roles but with different permissions */}
                     <Button
                       variant="ghost"
                       size="sm"
@@ -393,30 +399,33 @@ export const Tasks = () => {
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This will permanently delete the task "{task.name}". This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => handleDeleteTask(task)}
-                            className="bg-red-600 hover:bg-red-700"
-                          >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                    {/* Delete button - only visible to ADMIN, MANAGER, BA */}
+                    {user?.role && ['ADMIN', 'MANAGER', 'BA'].includes(user.role) && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will permanently delete the task "{task.name}". This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDeleteTask(task)}
+                              className="bg-red-600 hover:bg-red-700"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
                   </div>
                 </div>
               </div>

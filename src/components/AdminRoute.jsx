@@ -1,8 +1,8 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 
-export const ProtectedRoute = ({ children, requiredRole = null }) => {
+export const AdminRoute = ({ children }) => {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -17,13 +17,10 @@ export const ProtectedRoute = ({ children, requiredRole = null }) => {
   }
 
   if (!user) {
-    // User is not authenticated, redirect to the login page
     return <Navigate to="/login" replace />;
   }
 
-  // Check role-based access if requiredRole is specified
-  if (requiredRole && user.role !== requiredRole) {
-    // User doesn't have the required role, redirect to dashboard
+  if (user.role !== 'ADMIN') {
     return <Navigate to="/" replace />;
   }
 

@@ -4,12 +4,15 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { AdminRoute } from "./components/AdminRoute";
 import { Layout } from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
 import Tasks from "./pages/Tasks";
 import Teammates from "./pages/Teammates";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import ProjectManagement from "./pages/admin/ProjectManagement";
+import UserManagement from "./pages/admin/UserManagement";
 
 const queryClient = new QueryClient();
 
@@ -43,6 +46,20 @@ function App() {
                 </Layout>
               </ProtectedRoute>
             } />
+            <Route path="/admin/projects" element={
+              <AdminRoute>
+                <Layout>
+                  <ProjectManagement />
+                </Layout>
+              </AdminRoute>
+            } />
+            <Route path="/admin/users" element={
+              <AdminRoute>
+                <Layout>
+                  <UserManagement />
+                </Layout>
+              </AdminRoute>
+            } />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Router>
@@ -52,5 +69,4 @@ function App() {
 }
 
 export default App;
-
 
