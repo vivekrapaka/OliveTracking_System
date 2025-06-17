@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,7 +34,7 @@ const Login = () => {
   }
 
   // Password validation function
-  const validatePassword = (password: string) => {
+  const validatePassword = (password) => {
     const minLength = password.length >= 8;
     const hasCapital = /[A-Z]/.test(password);
     const hasNumber = /\d/.test(password);
@@ -50,7 +49,7 @@ const Login = () => {
     };
   };
 
-  const handleSignIn = async (e: React.FormEvent) => {
+  const handleSignIn = async (e) => {
     e.preventDefault();
     if (!signInData.email || !signInData.password) {
       toast({
@@ -62,24 +61,23 @@ const Login = () => {
     }
 
     setIsLoading(true);
-    const success = await login(signInData.email, signInData.password);
-    
-    if (success) {
+    try {
+      await login(signInData.email, signInData.password);
       toast({
         title: "Success",
         description: "Signed in successfully!"
       });
-    } else {
+    } catch (error) {
       toast({
         title: "Error",
-        description: "Invalid credentials",
+        description: error.response?.data?.message || "Invalid credentials",
         variant: "destructive"
       });
     }
     setIsLoading(false);
   };
 
-  const handleSignUp = async (e: React.FormEvent) => {
+  const handleSignUp = async (e) => {
     e.preventDefault();
     if (!signUpData.name || !signUpData.email || !signUpData.password || !signUpData.confirmPassword) {
       toast({
@@ -116,17 +114,16 @@ const Login = () => {
     }
 
     setIsLoading(true);
-    const success = await signup(signUpData.name, signUpData.email, signUpData.password);
-    
-    if (success) {
+    try {
+      await signup(signUpData.name, signUpData.email, signUpData.password);
       toast({
         title: "Success",
         description: "Account created successfully!"
       });
-    } else {
+    } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to create account",
+        description: error.response?.data?.message || "Failed to create account",
         variant: "destructive"
       });
     }
@@ -138,11 +135,11 @@ const Login = () => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <img 
-            src="/lovable-uploads/ee53a353-0042-45dd-90f5-826c4841d71f.png" 
-            alt="Olive Tracking System" 
+            src="OliveTracking_System/public/lovable-uploads/Gemini_Generated_Image_s8vpzis8vpzis8vp.png" 
+            alt="KARYA" 
             className="h-16 w-auto mx-auto mb-4"
           />
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">OliveTrackingSystem</h1>
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">K A R Y A</h1>
           <p className="text-slate-600">Welcome back! Please sign in to your account.</p>
         </div>
 
@@ -272,3 +269,5 @@ const Login = () => {
 };
 
 export default Login;
+
+

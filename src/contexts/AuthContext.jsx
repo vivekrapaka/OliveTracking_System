@@ -1,71 +1,45 @@
+import React, { createContext, useState, useEffect, useContext } from 'react';
+import AuthService from '../services/auth';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-
-const AuthContext = createContext(undefined);
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is already logged in (from localStorage)
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
+    const storedUser = AuthService.getCurrentUser();
+    if (storedUser) {
+      setUser(storedUser);
     }
-    setIsLoading(false);
+    setLoading(false);
   }, []);
 
   const login = async (email, password) => {
-    // Mock authentication - in real app, this would call an API
-    if (email && password) {
-      const mockUser = {
-        id: '1',
-        name: email.split('@')[0],
-        email: email
-      };
-      setUser(mockUser);
-      localStorage.setItem('user', JSON.stringify(mockUser));
-      return true;
-    }
-    return false;
-  };
-
-  const signup = async (name, email, password) => {
-    // Mock signup - in real app, this would call an API
-    if (name && email && password) {
-      const mockUser = {
-        id: Date.now().toString(),
-        name: name,
-        email: email
-      };
-      setUser(mockUser);
-      localStorage.setItem('user', JSON.stringify(mockUser));
-      return true;
-    }
-    return false;
+    const response = await AuthService.signin(email, password);
+    const { token, ...userData } = response.data;
+    localStorage.setItem('jwtToken', token);
+    localStorage.setItem('user', JSON.stringify(userData));
+    setUser(userData);
+    return userData;
   };
 
   const logout = () => {
+    AuthService.logout();
     setUser(null);
-    localStorage.removeItem('user');
   };
 
-  const value = {
-    user,
-    login,
-    signup,
-    logout,
-    isLoading
+  const signup = async (fullName, email, password) => {
+    const response = await AuthService.signup(fullName, email, password);
+    return response.data;
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ user, loading, login, logout, signup }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
+
+export const useAuth = () => useContext(AuthContext);
+

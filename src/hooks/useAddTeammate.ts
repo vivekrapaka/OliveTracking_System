@@ -1,6 +1,6 @@
-
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { API_ENDPOINTS, buildApiUrl } from '@/config/api';
+import apiClient from '@/services/apiClient'; // Import apiClient
 
 export interface AddTeammateRequest {
   fullName: string;
@@ -17,20 +17,9 @@ const addTeammate = async (teammateData: AddTeammateRequest) => {
   
   console.log('Adding teammate:', teammateData);
   
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(teammateData),
-  });
+  const response = await apiClient.post(url, teammateData); // Use apiClient.post
   
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
-  }
-  
-  return response.json();
+  return response.data;
 };
 
 export const useAddTeammate = () => {
@@ -47,3 +36,4 @@ export const useAddTeammate = () => {
     },
   });
 };
+

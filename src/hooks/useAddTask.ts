@@ -1,7 +1,6 @@
-
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
-import { API_ENDPOINTS, buildApiUrl } from '@/config/api';
+import apiClient from '@/services/apiClient'; // Import apiClient
 
 export interface AddTaskRequest {
   taskName: string;
@@ -17,28 +16,14 @@ export interface AddTaskRequest {
 }
 
 const addTask = async (taskData: AddTaskRequest) => {
-  const url = buildApiUrl(API_ENDPOINTS.TASKS);
+  const url = '/api/tasks'; // Relative path, apiClient handles base URL
   
   console.log('Adding task with data:', taskData);
   
   try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      mode: 'cors',
-      body: JSON.stringify(taskData),
-    });
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
-    }
-    
-    const result = await response.json();
-    console.log('Task added successfully:', result);
-    return result;
+    const response = await apiClient.post(url, taskData); // Use apiClient.post
+    console.log('Task added successfully:', response.data);
+    return response.data;
   } catch (error) {
     console.error('Add task error:', error);
     throw error;
@@ -68,3 +53,4 @@ export const useAddTask = () => {
     },
   });
 };
+
