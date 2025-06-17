@@ -1,11 +1,10 @@
-
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, CheckSquare, Users, Menu, LogOut, User } from "lucide-react";
+import { LayoutDashboard, CheckSquare, Users, Menu, LogOut, User, Settings, FolderOpen } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
 export const Navigation = () => {
   const location = useLocation();
@@ -16,6 +15,12 @@ export const Navigation = () => {
     { path: "/", label: "Dashboard", icon: LayoutDashboard },
     { path: "/tasks", label: "Tasks", icon: CheckSquare },
     { path: "/teammates", label: "Teammates", icon: Users },
+  ];
+
+  // Admin-only navigation items
+  const adminNavItems = [
+    { path: "/admin/projects", label: "Projects", icon: FolderOpen },
+    { path: "/admin/users", label: "Users", icon: Settings },
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -65,6 +70,27 @@ export const Navigation = () => {
                   </Link>
                 );
               })}
+              
+              {/* Admin Navigation Items */}
+              {user?.role === 'ADMIN' && adminNavItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link key={item.path} to={item.path}>
+                    <Button
+                      variant={isActive(item.path) ? "default" : "ghost"}
+                      className={cn(
+                        "flex items-center space-x-2",
+                        isActive(item.path) 
+                          ? "bg-blue-600 hover:bg-blue-700 text-white" 
+                          : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />
+                      <span>{item.label}</span>
+                    </Button>
+                  </Link>
+                );
+              })}
             </div>
 
             {/* User Menu */}
@@ -72,10 +98,20 @@ export const Navigation = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center space-x-2">
                   <User className="h-4 w-4" />
-                  <span className="hidden lg:inline">{user?.name}</span>
+                  <span className="hidden lg:inline">{user?.fullName}</span>
+                  <span className="text-xs text-slate-500">({user?.role})</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
+                <div className="px-2 py-1.5 text-sm text-slate-600">
+                  <div className="font-medium">{user?.fullName}</div>
+                  <div className="text-xs text-slate-500">{user?.email}</div>
+                  <div className="text-xs text-slate-500">Role: {user?.role}</div>
+                  {user?.projectId && (
+                    <div className="text-xs text-slate-500">Project: {user?.projectId}</div>
+                  )}
+                </div>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
                   <LogOut className="h-4 w-4 mr-2" />
                   Logout
@@ -93,6 +129,15 @@ export const Navigation = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <div className="px-2 py-1.5 text-sm text-slate-600">
+                  <div className="font-medium">{user?.fullName}</div>
+                  <div className="text-xs text-slate-500">{user?.email}</div>
+                  <div className="text-xs text-slate-500">Role: {user?.role}</div>
+                  {user?.projectId && (
+                    <div className="text-xs text-slate-500">Project: {user?.projectId}</div>
+                  )}
+                </div>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
                   <LogOut className="h-4 w-4 mr-2" />
                   Logout
@@ -137,6 +182,31 @@ export const Navigation = () => {
                   </Link>
                 );
               })}
+              
+              {/* Admin Navigation Items for Mobile */}
+              {user?.role === 'ADMIN' && adminNavItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link 
+                    key={item.path} 
+                    to={item.path}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <Button
+                      variant={isActive(item.path) ? "default" : "ghost"}
+                      className={cn(
+                        "w-full justify-start flex items-center space-x-2",
+                        isActive(item.path) 
+                          ? "bg-blue-600 hover:bg-blue-700 text-white" 
+                          : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />
+                      <span>{item.label}</span>
+                    </Button>
+                  </Link>
+                );
+              })}
             </div>
           </div>
         )}
@@ -144,3 +214,4 @@ export const Navigation = () => {
     </nav>
   );
 };
+

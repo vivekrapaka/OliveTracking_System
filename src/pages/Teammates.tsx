@@ -29,6 +29,7 @@ import { useTeammatesData, BackendTeammate } from "@/hooks/useTeammatesData";
 import { AddTeammateForm } from "@/components/AddTeammateForm";
 import { EditTeammateForm } from "@/components/EditTeammateForm";
 import { useDeleteTeammate } from "@/hooks/useDeleteTeammate";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Teammate {
   id: number;
@@ -45,6 +46,7 @@ interface Teammate {
 }
 
 export const Teammates = () => {
+  const { user } = useAuth();
   const { data: teammatesApiData, isLoading, error } = useTeammatesData();
   const deleteTeammateMutation = useDeleteTeammate();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -196,15 +198,18 @@ export const Teammates = () => {
         </div>
 
         <div className="flex items-center space-x-2">
-          <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-blue-600 hover:bg-blue-700">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Teammate
-              </Button>
-            </DialogTrigger>
-            <AddTeammateForm onSuccess={handleAddSuccess} />
-          </Dialog>
+          {/* Only show Add Teammate button for ADMIN */}
+          {user?.role === 'ADMIN' && (
+            <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-blue-600 hover:bg-blue-700">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Teammate
+                </Button>
+              </DialogTrigger>
+              <AddTeammateForm onSuccess={handleAddSuccess} />
+            </Dialog>
+          )}
         </div>
       </div>
 
@@ -325,24 +330,29 @@ export const Teammates = () => {
                   <TableCell>{teammate.tasksAssigned}</TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-2">
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => handleEditTeammate(teammate)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete Teammate</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Are you sure you want to delete "{teammate.name}"? This action cannot be undone.
+                      {/* Edit button - only visible to ADMIN */}
+                      {user?.role === 'ADMIN' && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleEditTeammate(teammate)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {/* Delete button - only visible to ADMIN */}
+                      {user?.role === 'ADMIN' && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Teammate</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete "{teammate.name}"? This action cannot be undone.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
@@ -357,6 +367,7 @@ export const Teammates = () => {
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

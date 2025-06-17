@@ -17,8 +17,9 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     const response = await AuthService.signin(email, password);
-    const { token, ...userData } = response.data;
+    const { token, id, email: userEmail, fullName, role, teamId } = response.data; // Extract role and teamId
     localStorage.setItem('jwtToken', token);
+    const userData = { id, email: userEmail, fullName, role, projectId: teamId }; // Map teamId to projectId
     localStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);
     return userData;
