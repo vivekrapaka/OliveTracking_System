@@ -17,9 +17,9 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     const response = await AuthService.signin(email, password);
-    const { token, id, email: userEmail, fullName, role, teamId } = response.data; // Extract role and teamId
+    const { token, id, email: userEmail, fullName, role, projectIds, projectNames } = response.data; // Extract new fields
     localStorage.setItem('jwtToken', token);
-    const userData = { id, email: userEmail, fullName, role, projectId: teamId }; // Map teamId to projectId
+    const userData = { id, email: userEmail, fullName, role, projectIds, projectNames }; // Store new fields
     localStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);
     return userData;
@@ -43,4 +43,5 @@ export const AuthProvider = ({ children }) => {
 };
 
 export const useAuth = () => useContext(AuthContext);
+
 

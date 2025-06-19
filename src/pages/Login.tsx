@@ -20,10 +20,12 @@ const Login = () => {
     password: ''
   });
 
-  // Sign up form state
+  // Sign up form state - updated with new required fields
   const [signUpData, setSignUpData] = useState({
-    name: '',
+    fullName: '',
     email: '',
+    phone: '',
+    location: '',
     password: '',
     confirmPassword: ''
   });
@@ -79,7 +81,7 @@ const Login = () => {
 
   const handleSignUp = async (e) => {
     e.preventDefault();
-    if (!signUpData.name || !signUpData.email || !signUpData.password || !signUpData.confirmPassword) {
+    if (!signUpData.fullName || !signUpData.email || !signUpData.phone || !signUpData.location || !signUpData.password || !signUpData.confirmPassword) {
       toast({
         title: "Error",
         description: "Please fill in all fields",
@@ -115,10 +117,19 @@ const Login = () => {
 
     setIsLoading(true);
     try {
-      await signup(signUpData.name, signUpData.email, signUpData.password);
+      await signup(signUpData.fullName, signUpData.email, signUpData.phone, signUpData.location, signUpData.password);
       toast({
         title: "Success",
-        description: "Account created successfully!"
+        description: "Account created successfully! Please sign in with your credentials."
+      });
+      // Reset form after successful signup
+      setSignUpData({
+        fullName: '',
+        email: '',
+        phone: '',
+        location: '',
+        password: '',
+        confirmPassword: ''
       });
     } catch (error) {
       toast({
@@ -198,18 +209,18 @@ const Login = () => {
               <TabsContent value="signup">
                 <form onSubmit={handleSignUp} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signup-name">Full Name</Label>
+                    <Label htmlFor="signup-fullname">Full Name *</Label>
                     <Input
-                      id="signup-name"
+                      id="signup-fullname"
                       type="text"
                       placeholder="Enter your full name"
-                      value={signUpData.name}
-                      onChange={(e) => setSignUpData({...signUpData, name: e.target.value})}
+                      value={signUpData.fullName}
+                      onChange={(e) => setSignUpData({...signUpData, fullName: e.target.value})}
                       required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
+                    <Label htmlFor="signup-email">Email *</Label>
                     <Input
                       id="signup-email"
                       type="email"
@@ -220,7 +231,29 @@ const Login = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-password">Password</Label>
+                    <Label htmlFor="signup-phone">Phone Number *</Label>
+                    <Input
+                      id="signup-phone"
+                      type="tel"
+                      placeholder="Enter your phone number"
+                      value={signUpData.phone}
+                      onChange={(e) => setSignUpData({...signUpData, phone: e.target.value})}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-location">Location *</Label>
+                    <Input
+                      id="signup-location"
+                      type="text"
+                      placeholder="Enter your location"
+                      value={signUpData.location}
+                      onChange={(e) => setSignUpData({...signUpData, location: e.target.value})}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-password">Password *</Label>
                     <div className="relative">
                       <Input
                         id="signup-password"
@@ -245,7 +278,7 @@ const Login = () => {
                     </p>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-confirm-password">Confirm Password</Label>
+                    <Label htmlFor="signup-confirm-password">Confirm Password *</Label>
                     <Input
                       id="signup-confirm-password"
                       type={showPassword ? "text" : "password"}
@@ -269,5 +302,4 @@ const Login = () => {
 };
 
 export default Login;
-
 

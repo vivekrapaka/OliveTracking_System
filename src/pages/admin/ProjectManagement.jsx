@@ -6,20 +6,24 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Plus, Edit, Trash2, Search } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from '@/hooks/use-toast';
-import apiClient from '@/services/apiClient';
+import { useProjects, useCreateProject, useUpdateProject, useDeleteProject } from '@/hooks/useProjects';
 
 const ProjectManagement = () => {
   const { user } = useAuth();
-  const [projects, setProjects] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
   const [formData, setFormData] = useState({ name: '', description: '' });
-  const [loading, setLoading] = useState(false);
+
+  // React Query hooks
+  const { data: projects = [], isLoading, error } = useProjects();
+  const createProjectMutation = useCreateProject();
+  const updateProjectMutation = useUpdateProject();
+  const deleteProjectMutation = useDeleteProject();
 
   // Check if user is admin
   if (user?.role !== 'ADMIN') {
@@ -33,108 +37,71 @@ const ProjectManagement = () => {
     );
   }
 
-  const fetchProjects = async () => {
-    try {
-      setLoading(true);
-      const response = await apiClient.get('/api/projects');
-      setProjects(response.data);
-    } catch (error) {
-      console.error('Error fetching projects:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch projects",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  React.useEffect(() => {
-    fetchProjects();
-  }, []);
-
   const handleCreateProject = async (e) => {
     e.preventDefault();
     try {
-      setLoading(true);
-      await apiClient.post('/api/projects', formData);
-      toast({
-        title: "Success",
-        description: "Project created successfully",
-      });
+      await createProjectMutation.mutateAsync(formData);
       setIsCreateDialogOpen(false);
       setFormData({ name: '', description: '' });
-      fetchProjects();
     } catch (error) {
-      console.error('Error creating project:', error);
-      toast({
-        title: "Error",
-        description: error.response?.data?.message || "Failed to create project",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+      // Error handling is done in the mutation
     }
   };
 
   const handleEditProject = async (e) => {
     e.preventDefault();
     try {
-      setLoading(true);
-      await apiClient.put(`/api/projects/${editingProject.id}`, formData);
-      toast({
-        title: "Success",
-        description: "Project updated successfully",
+      await updateProjectMutation.mutateAsync({ 
+        id: editingProject.id, 
+        projectData: formData 
       });
       setIsEditDialogOpen(false);
       setEditingProject(null);
       setFormData({ name: '', description: '' });
-      fetchProjects();
     } catch (error) {
-      console.error('Error updating project:', error);
-      toast({
-        title: "Error",
-        description: error.response?.data?.message || "Failed to update project",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+      // Error handling is done in the mutation
     }
   };
 
   const handleDeleteProject = async (projectId) => {
-    if (!confirm('Are you sure you want to delete this project?')) return;
-    
     try {
-      setLoading(true);
-      await apiClient.delete(`/api/projects/${projectId}`);
-      toast({
-        title: "Success",
-        description: "Project deleted successfully",
-      });
-      fetchProjects();
+      await deleteProjectMutation.mutateAsync(projectId);
     } catch (error) {
-      console.error('Error deleting project:', error);
-      toast({
-        title: "Error",
-        description: error.response?.data?.message || "Failed to delete project",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+      // Error handling is done in the mutation
     }
   };
 
   const openEditDialog = (project) => {
     setEditingProject(project);
-    setFormData({ name: project.name, description: project.description });
+    setFormData({ name: project.name, description: project.description || '' });
     setIsEditDialogOpen(true);
   };
 
   const filteredProjects = projects.filter(project =>
-    project.name.toLowerCase().includes(searchTerm.toLowerCase())
+    project.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="h-8 w-8 animate-spin mx-auto mb-4 border-4 border-blue-600 border-t-transparent rounded-full" />
+          <p className="text-slate-600">Loading projects...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-slate-900">Error Loading Projects</h2>
+          <p className="text-slate-600">{error.message}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -173,8 +140,8 @@ const ProjectManagement = () => {
                 <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={loading}>
-                  {loading ? 'Creating...' : 'Create Project'}
+                <Button type="submit" disabled={createProjectMutation.isPending}>
+                  {createProjectMutation.isPending ? 'Creating...' : 'Create Project'}
                 </Button>
               </div>
             </form>
@@ -206,31 +173,57 @@ const ProjectManagement = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredProjects.map((project) => (
-                <TableRow key={project.id}>
-                  <TableCell>{project.id}</TableCell>
-                  <TableCell className="font-medium">{project.name}</TableCell>
-                  <TableCell>{project.description || 'No description'}</TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openEditDialog(project)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDeleteProject(project.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+              {filteredProjects.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center text-slate-500">
+                    No projects found
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                filteredProjects.map((project) => (
+                  <TableRow key={project.id}>
+                    <TableCell>{project.id}</TableCell>
+                    <TableCell className="font-medium">{project.name}</TableCell>
+                    <TableCell>{project.description || 'No description'}</TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openEditDialog(project)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Project</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete "{project.name}"? This action cannot be undone and may affect associated data.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteProject(project.id)}
+                                className="bg-red-600 hover:bg-red-700"
+                                disabled={deleteProjectMutation.isPending}
+                              >
+                                {deleteProjectMutation.isPending ? "Deleting..." : "Delete"}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>
@@ -264,8 +257,8 @@ const ProjectManagement = () => {
               <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? 'Updating...' : 'Update Project'}
+              <Button type="submit" disabled={updateProjectMutation.isPending}>
+                {updateProjectMutation.isPending ? 'Updating...' : 'Update Project'}
               </Button>
             </div>
           </form>

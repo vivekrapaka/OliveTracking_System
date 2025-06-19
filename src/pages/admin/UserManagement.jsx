@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,16 +6,15 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Edit, Trash2, Search } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from '@/hooks/use-toast';
-import apiClient from '@/services/apiClient';
+import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from '@/hooks/useUsers';
+import { useProjects } from '@/hooks/useProjects';
 
 const UserManagement = () => {
   const { user } = useAuth();
-  const [users, setUsers] = useState([]);
-  const [projects, setProjects] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -23,11 +22,19 @@ const UserManagement = () => {
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
+    phone: '',
+    location: '',
     password: '',
     role: '',
-    projectId: ''
+    projectIds: []
   });
-  const [loading, setLoading] = useState(false);
+
+  // React Query hooks
+  const { data: users = [], isLoading: usersLoading, error: usersError } = useUsers();
+  const { data: projects = [], isLoading: projectsLoading } = useProjects();
+  const createUserMutation = useCreateUser();
+  const updateUserMutation = useUpdateUser();
+  const deleteUserMutation = useDeleteUser();
 
   // Check if user is admin
   if (user?.role !== 'ADMIN') {
@@ -41,47 +48,15 @@ const UserManagement = () => {
     );
   }
 
-  const fetchUsers = async () => {
-    try {
-      setLoading(true);
-      const response = await apiClient.get('/api/users');
-      setUsers(response.data);
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch users",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchProjects = async () => {
-    try {
-      const response = await apiClient.get('/api/projects');
-      setProjects(response.data);
-    } catch (error) {
-      console.error('Error fetching projects:', error);
-    }
-  };
-
-  useEffect(() => {
-    fetchUsers();
-    fetchProjects();
-  }, []);
-
   const handleCreateUser = async (e) => {
     e.preventDefault();
     try {
-      setLoading(true);
       const userData = { ...formData };
       
       // Handle project assignment based on role
       if (formData.role === 'ADMIN') {
-        userData.projectId = null;
-      } else if (!formData.projectId) {
+        userData.projectIds = [];
+      } else if (!formData.projectIds || formData.projectIds.length === 0) {
         toast({
           title: "Error",
           description: "Project assignment is required for non-admin roles",
@@ -90,30 +65,17 @@ const UserManagement = () => {
         return;
       }
 
-      await apiClient.post('/api/users', userData);
-      toast({
-        title: "Success",
-        description: "User created successfully",
-      });
+      await createUserMutation.mutateAsync(userData);
       setIsCreateDialogOpen(false);
-      setFormData({ fullName: '', email: '', password: '', role: '', projectId: '' });
-      fetchUsers();
+      setFormData({ fullName: '', email: '', phone: '', location: '', password: '', role: '', projectIds: [] });
     } catch (error) {
-      console.error('Error creating user:', error);
-      toast({
-        title: "Error",
-        description: error.response?.data?.message || "Failed to create user",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+      // Error handling is done in the mutation
     }
   };
 
   const handleEditUser = async (e) => {
     e.preventDefault();
     try {
-      setLoading(true);
       const userData = { ...formData };
       
       // Remove password if empty (optional for update)
@@ -123,8 +85,8 @@ const UserManagement = () => {
 
       // Handle project assignment based on role
       if (formData.role === 'ADMIN') {
-        userData.projectId = null;
-      } else if (!formData.projectId) {
+        userData.projectIds = [];
+      } else if (!formData.projectIds || formData.projectIds.length === 0) {
         toast({
           title: "Error",
           description: "Project assignment is required for non-admin roles",
@@ -133,66 +95,47 @@ const UserManagement = () => {
         return;
       }
 
-      await apiClient.put(`/api/users/${editingUser.id}`, userData);
-      toast({
-        title: "Success",
-        description: "User updated successfully",
+      await updateUserMutation.mutateAsync({ 
+        id: editingUser.id, 
+        userData 
       });
       setIsEditDialogOpen(false);
       setEditingUser(null);
-      setFormData({ fullName: '', email: '', password: '', role: '', projectId: '' });
-      fetchUsers();
+      setFormData({ fullName: '', email: '', phone: '', location: '', password: '', role: '', projectIds: [] });
     } catch (error) {
-      console.error('Error updating user:', error);
-      toast({
-        title: "Error",
-        description: error.response?.data?.message || "Failed to update user",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+      // Error handling is done in the mutation
     }
   };
 
   const handleDeleteUser = async (userId) => {
-    if (!confirm('Are you sure you want to delete this user?')) return;
-    
     try {
-      setLoading(true);
-      await apiClient.delete(`/api/users/${userId}`);
-      toast({
-        title: "Success",
-        description: "User deleted successfully",
-      });
-      fetchUsers();
+      await deleteUserMutation.mutateAsync(userId);
     } catch (error) {
-      console.error('Error deleting user:', error);
-      toast({
-        title: "Error",
-        description: error.response?.data?.message || "Failed to delete user",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+      // Error handling is done in the mutation
     }
   };
 
   const openEditDialog = (userToEdit) => {
     setEditingUser(userToEdit);
     setFormData({
-      fullName: userToEdit.fullName,
-      email: userToEdit.email,
+      fullName: userToEdit.fullName || '',
+      email: userToEdit.email || '',
+      phone: userToEdit.phone || '',
+      location: userToEdit.location || '',
       password: '',
-      role: userToEdit.role,
-      projectId: userToEdit.projectId || ''
+      role: userToEdit.role || '',
+      projectIds: userToEdit.projectIds || []
     });
     setIsEditDialogOpen(true);
   };
 
-  const getProjectName = (projectId) => {
-    if (!projectId) return 'Global / N/A';
-    const project = projects.find(p => p.id === projectId);
-    return project ? project.name : 'Unknown Project';
+  const getProjectNames = (projectIds) => {
+    if (!projectIds || projectIds.length === 0) return 'Global / N/A';
+    const projectNames = projectIds.map(id => {
+      const project = projects.find(p => p.id === id);
+      return project ? project.name : 'Unknown';
+    });
+    return projectNames.join(', ');
   };
 
   const getRoleBadgeColor = (role) => {
@@ -206,10 +149,32 @@ const UserManagement = () => {
   };
 
   const filteredUsers = users.filter(user =>
-    user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.role.toLowerCase().includes(searchTerm.toLowerCase())
+    user.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.role?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  if (usersLoading || projectsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="h-8 w-8 animate-spin mx-auto mb-4 border-4 border-blue-600 border-t-transparent rounded-full" />
+          <p className="text-slate-600">Loading users...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (usersError) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-slate-900">Error Loading Users</h2>
+          <p className="text-slate-600">{usersError.message}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -222,7 +187,7 @@ const UserManagement = () => {
               Add New User
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create New User</DialogTitle>
             </DialogHeader>
@@ -247,6 +212,25 @@ const UserManagement = () => {
                 />
               </div>
               <div>
+                <Label htmlFor="phone">Phone Number *</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="location">Location *</Label>
+                <Input
+                  id="location"
+                  value={formData.location}
+                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  required
+                />
+              </div>
+              <div>
                 <Label htmlFor="password">Password *</Label>
                 <Input
                   id="password"
@@ -258,7 +242,7 @@ const UserManagement = () => {
               </div>
               <div>
                 <Label htmlFor="role">Role *</Label>
-                <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value, projectId: value === 'ADMIN' ? '' : formData.projectId })}>
+                <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value, projectIds: value === 'ADMIN' ? [] : formData.projectIds })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
@@ -272,8 +256,11 @@ const UserManagement = () => {
               </div>
               {formData.role && formData.role !== 'ADMIN' && (
                 <div>
-                  <Label htmlFor="projectId">Assigned Project *</Label>
-                  <Select value={formData.projectId} onValueChange={(value) => setFormData({ ...formData, projectId: value })}>
+                  <Label htmlFor="projectIds">Assigned Projects *</Label>
+                  <Select 
+                    value={formData.projectIds[0] || ''} 
+                    onValueChange={(value) => setFormData({ ...formData, projectIds: [parseInt(value)] })}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select project" />
                     </SelectTrigger>
@@ -291,8 +278,8 @@ const UserManagement = () => {
                 <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={loading}>
-                  {loading ? 'Creating...' : 'Create User'}
+                <Button type="submit" disabled={createUserMutation.isPending}>
+                  {createUserMutation.isPending ? 'Creating...' : 'Create User'}
                 </Button>
               </div>
             </form>
@@ -320,43 +307,73 @@ const UserManagement = () => {
                 <TableHead>ID</TableHead>
                 <TableHead>Full Name</TableHead>
                 <TableHead>Email</TableHead>
+                <TableHead>Phone</TableHead>
+                <TableHead>Location</TableHead>
                 <TableHead>Role</TableHead>
-                <TableHead>Assigned Project</TableHead>
+                <TableHead>Assigned Projects</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredUsers.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell>{user.id}</TableCell>
-                  <TableCell className="font-medium">{user.fullName}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>
-                    <Badge className={getRoleBadgeColor(user.role)}>
-                      {user.role}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{getProjectName(user.projectId)}</TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openEditDialog(user)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDeleteUser(user.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+              {filteredUsers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center text-slate-500">
+                    No users found
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                filteredUsers.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell>{user.id}</TableCell>
+                    <TableCell className="font-medium">{user.fullName}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>{user.phone || 'N/A'}</TableCell>
+                    <TableCell>{user.location || 'N/A'}</TableCell>
+                    <TableCell>
+                      <Badge className={getRoleBadgeColor(user.role)}>
+                        {user.role}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{getProjectNames(user.projectIds)}</TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openEditDialog(user)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete User</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete "{user.fullName}"? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteUser(user.id)}
+                                className="bg-red-600 hover:bg-red-700"
+                                disabled={deleteUserMutation.isPending}
+                              >
+                                {deleteUserMutation.isPending ? "Deleting..." : "Delete"}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>
@@ -364,7 +381,7 @@ const UserManagement = () => {
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit User</DialogTitle>
           </DialogHeader>
@@ -389,6 +406,25 @@ const UserManagement = () => {
               />
             </div>
             <div>
+              <Label htmlFor="edit-phone">Phone Number *</Label>
+              <Input
+                id="edit-phone"
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-location">Location *</Label>
+              <Input
+                id="edit-location"
+                value={formData.location}
+                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                required
+              />
+            </div>
+            <div>
               <Label htmlFor="edit-password">Password (leave empty to keep current)</Label>
               <Input
                 id="edit-password"
@@ -399,7 +435,7 @@ const UserManagement = () => {
             </div>
             <div>
               <Label htmlFor="edit-role">Role *</Label>
-              <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value, projectId: value === 'ADMIN' ? '' : formData.projectId })}>
+              <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value, projectIds: value === 'ADMIN' ? [] : formData.projectIds })}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
@@ -413,8 +449,11 @@ const UserManagement = () => {
             </div>
             {formData.role && formData.role !== 'ADMIN' && (
               <div>
-                <Label htmlFor="edit-projectId">Assigned Project *</Label>
-                <Select value={formData.projectId} onValueChange={(value) => setFormData({ ...formData, projectId: value })}>
+                <Label htmlFor="edit-projectIds">Assigned Projects *</Label>
+                <Select 
+                  value={formData.projectIds[0]?.toString() || ''} 
+                  onValueChange={(value) => setFormData({ ...formData, projectIds: [parseInt(value)] })}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select project" />
                   </SelectTrigger>
@@ -432,8 +471,8 @@ const UserManagement = () => {
               <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? 'Updating...' : 'Update User'}
+              <Button type="submit" disabled={updateUserMutation.isPending}>
+                {updateUserMutation.isPending ? 'Updating...' : 'Update User'}
               </Button>
             </div>
           </form>
