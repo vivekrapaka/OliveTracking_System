@@ -44,7 +44,7 @@ export interface DashboardData {
 }
 
 const fetchDashboardData = async (): Promise<DashboardData> => {
-  const url = buildApiUrl(API_ENDPOINTS.DASHBOARD_SUMMARY);
+  const url = `/api/dashboard`;
   
   try {
     const response = await apiClient.get(url); // Use apiClient.get

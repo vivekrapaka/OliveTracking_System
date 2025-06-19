@@ -25,7 +25,7 @@ export interface TeammatesApiResponse {
 }
 
 const fetchTeammatesData = async (): Promise<TeammatesApiResponse> => {
-  const url = buildApiUrl(API_ENDPOINTS.TEAMMATES);
+  const url = `/api/teammates`;
   
   try {
     const response = await apiClient.get(url); // Use apiClient.get

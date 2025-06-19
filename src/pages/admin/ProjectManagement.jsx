@@ -18,7 +18,7 @@ const ProjectManagement = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
-  const [formData, setFormData] = useState({ name: '', description: '' });
+  const [formData, setFormData] = useState({ projectName: '', description: '' });
   const [loading, setLoading] = useState(false);
 
   // Check if user is admin
@@ -37,6 +37,7 @@ const ProjectManagement = () => {
     try {
       setLoading(true);
       const response = await apiClient.get('/api/projects');
+      console.log("response data :" ,response.data)
       setProjects(response.data);
     } catch (error) {
       console.error('Error fetching projects:', error);
@@ -64,7 +65,7 @@ const ProjectManagement = () => {
         description: "Project created successfully",
       });
       setIsCreateDialogOpen(false);
-      setFormData({ name: '', description: '' });
+      setFormData({ projectName: '', description: '' });
       fetchProjects();
     } catch (error) {
       console.error('Error creating project:', error);
@@ -82,6 +83,7 @@ const ProjectManagement = () => {
     e.preventDefault();
     try {
       setLoading(true);
+      console.log("Updating project with data:", formData);
       await apiClient.put(`/api/projects/${editingProject.id}`, formData);
       toast({
         title: "Success",
@@ -89,7 +91,7 @@ const ProjectManagement = () => {
       });
       setIsEditDialogOpen(false);
       setEditingProject(null);
-      setFormData({ name: '', description: '' });
+      setFormData({ projectName: '', description: '' });
       fetchProjects();
     } catch (error) {
       console.error('Error updating project:', error);
@@ -127,13 +129,14 @@ const ProjectManagement = () => {
   };
 
   const openEditDialog = (project) => {
+     console.log("Editing project object:", project.projectName);
     setEditingProject(project);
-    setFormData({ name: project.name, description: project.description });
+    setFormData({ projectName: project.projectName, description: project.description });
     setIsEditDialogOpen(true);
   };
 
   const filteredProjects = projects.filter(project =>
-    project.name.toLowerCase().includes(searchTerm.toLowerCase())
+    project.projectName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -155,9 +158,9 @@ const ProjectManagement = () => {
               <div>
                 <Label htmlFor="name">Project Name *</Label>
                 <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  id="projectName"
+                  value={formData.projectName}
+                  onChange={(e) => setFormData({ ...formData, projectName: e.target.value })}
                   required
                 />
               </div>
@@ -209,7 +212,7 @@ const ProjectManagement = () => {
               {filteredProjects.map((project) => (
                 <TableRow key={project.id}>
                   <TableCell>{project.id}</TableCell>
-                  <TableCell className="font-medium">{project.name}</TableCell>
+                  <TableCell className="font-medium">{project.projectName}</TableCell>
                   <TableCell>{project.description || 'No description'}</TableCell>
                   <TableCell>
                     <div className="flex space-x-2">
@@ -247,8 +250,8 @@ const ProjectManagement = () => {
               <Label htmlFor="edit-name">Project Name *</Label>
               <Input
                 id="edit-name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                value={formData.projectName}
+                onChange={(e) => setFormData({ ...formData, projectName: e.target.value })}
                 required
               />
             </div>
