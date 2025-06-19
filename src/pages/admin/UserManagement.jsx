@@ -264,6 +264,7 @@ const UserManagement = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="ADMIN">Admin</SelectItem>
+                    <SelectItem value="HR">Team Member</SelectItem>
                     <SelectItem value="MANAGER">Manager</SelectItem>
                     <SelectItem value="BA">Business Analyst</SelectItem>
                     <SelectItem value="TEAM_MEMBER">Team Member</SelectItem>
@@ -280,7 +281,7 @@ const UserManagement = () => {
                     <SelectContent>
                       {projects.map((project) => (
                         <SelectItem key={project.id} value={project.id.toString()}>
-                          {project.name}
+                          {project.projectName}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -405,6 +406,7 @@ const UserManagement = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ADMIN">Admin</SelectItem>
+                  <SelectItem value="HR">HR</SelectItem>
                   <SelectItem value="MANAGER">Manager</SelectItem>
                   <SelectItem value="BA">Business Analyst</SelectItem>
                   <SelectItem value="TEAM_MEMBER">Team Member</SelectItem>
@@ -421,7 +423,7 @@ const UserManagement = () => {
                   <SelectContent>
                     {projects.map((project) => (
                       <SelectItem key={project.id} value={project.id.toString()}>
-                        {project.name}
+                        {project.projectName}
                       </SelectItem>
                     ))}
                   </SelectContent>
