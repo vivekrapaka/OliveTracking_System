@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { TeammateSelector } from "./TeammateSelector";
 import { useAddTask } from "@/hooks/useAddTask";
 import { useTaskSequenceNumber } from "@/hooks/useTaskSequenceNumber";
+import { useAuth } from "@/contexts/AuthContext"; // Import useAuth
 
 interface Teammate {
   id: number;
@@ -28,6 +29,8 @@ interface AddTaskDialogProps {
 }
 
 export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps) => {
+  const { user } = useAuth(); // Get user from AuthContext
+
   const [taskName, setTaskName] = useState("");
   const [description, setDescription] = useState("");
   const [currentStage, setCurrentStage] = useState("");
@@ -38,6 +41,7 @@ export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps
   const [startDate, setStartDate] = useState<Date>();
   const [dueDate, setDueDate] = useState<Date>();
   const [developmentStartDate, setDevelopmentStartDate] = useState<Date>();
+  const [documentPath, setDocumentPath] = useState(""); // NEW: documentPath
 
   const addTaskMutation = useAddTask();
   const { data: taskSequenceNumber, isLoading: isLoadingSequence, refetch: refetchSequence } = useTaskSequenceNumber();
@@ -65,10 +69,12 @@ export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps
     setStartDate(undefined);
     setDueDate(undefined);
     setDevelopmentStartDate(undefined);
+    setDocumentPath(""); // NEW: reset documentPath
   };
 
   const handleSave = () => {
-    if (!taskName || !currentStage || !issueType || !priority || !receivedDate || !dueDate) {
+    if (!taskName || !currentStage || !issueType || !priority || !receivedDate || !dueDate || user?.projectId === undefined) {
+      // Added user?.projectId check
       return;
     }
 
@@ -76,13 +82,15 @@ export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps
       taskName,
       description,
       currentStage,
-      startDate: startDate ? format(startDate, "yyyy-MM-dd") : "",
+      startDate: startDate ? format(startDate, "yyyy-MM-dd") : undefined, // Changed to undefined if not present
       dueDate: format(dueDate, "yyyy-MM-dd"),
       issueType,
       receivedDate: format(receivedDate, "yyyy-MM-dd"),
-      developmentStartDate: developmentStartDate ? format(developmentStartDate, "yyyy-MM-dd") : "",
+      developmentStartDate: developmentStartDate ? format(developmentStartDate, "yyyy-MM-dd") : undefined, // Changed to undefined if not present
       assignedTeammateNames: selectedTeammates,
       priority,
+      projectId: user.projectId, // NEW: Pass projectId from user context
+      documentPath: documentPath || undefined, // NEW: Pass documentPath, or undefined if empty
     };
 
     addTaskMutation.mutate(taskData, {
@@ -135,12 +143,13 @@ export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps
               value={taskName}
               onChange={(e) => setTaskName(e.target.value)}
               placeholder="Enter task name"
+              required
             />
           </div>
 
           <div className="grid gap-2">
             <Label>Current Stage *</Label>
-            <Select value={currentStage} onValueChange={setCurrentStage}>
+            <Select value={currentStage} onValueChange={setCurrentStage} required>
               <SelectTrigger>
                 <SelectValue placeholder="Select stage" />
               </SelectTrigger>
@@ -154,7 +163,7 @@ export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps
 
           <div className="grid gap-2">
             <Label>Issue Type *</Label>
-            <Select value={issueType} onValueChange={setIssueType}>
+            <Select value={issueType} onValueChange={setIssueType} required>
               <SelectTrigger>
                 <SelectValue placeholder="Select issue type" />
               </SelectTrigger>
@@ -168,7 +177,7 @@ export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps
 
           <div className="grid gap-2">
             <Label>Priority *</Label>
-            <Select value={priority} onValueChange={setPriority}>
+            <Select value={priority} onValueChange={setPriority} required>
               <SelectTrigger>
                 <SelectValue placeholder="Select priority" />
               </SelectTrigger>
@@ -291,12 +300,22 @@ export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps
           />
 
           <div className="grid gap-2">
+            <Label htmlFor="documentPath">Document Path</Label>
+            <Input
+              id="documentPath"
+              value={documentPath}
+              onChange={(e) => setDocumentPath(e.target.value)}
+              placeholder="Enter document path (optional)"
+            />
+          </div>
+
+          <div className="grid gap-2">
             <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Enter task description"
+              placeholder="Enter task description (optional)"
               className="min-h-[100px]"
             />
           </div>
@@ -317,3 +336,5 @@ export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps
     </Dialog>
   );
 };
+
+

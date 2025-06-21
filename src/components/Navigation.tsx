@@ -12,9 +12,9 @@ export const Navigation = () => {
   const { user, logout } = useAuth();
 
   const navItems = [
-    { path: "/", label: "Dashboard", icon: LayoutDashboard },
-    { path: "/tasks", label: "Tasks", icon: CheckSquare },
-    { path: "/teammates", label: "Teammates", icon: Users },
+    { path: "/", label: "Dashboard", icon: LayoutDashboard, roles: ["ADMIN", "MANAGER", "BA", "TEAM_MEMBER"] }, // HR role excluded
+    { path: "/tasks", label: "Tasks", icon: CheckSquare, roles: ["ADMIN", "MANAGER", "BA", "TEAM_MEMBER"] }, // HR role excluded
+    { path: "/teammates", label: "Teammates", icon: Users, roles: ["ADMIN", "MANAGER", "BA", "HR"] }, // TEAM_MEMBER role excluded
   ];
 
   // Admin-only navigation items
@@ -53,22 +53,26 @@ export const Navigation = () => {
             <div className="flex items-center space-x-1">
               {navItems.map((item) => {
                 const Icon = item.icon;
-                return (
-                  <Link key={item.path} to={item.path}>
-                    <Button
-                      variant={isActive(item.path) ? "default" : "ghost"}
-                      className={cn(
-                        "flex items-center space-x-2",
-                        isActive(item.path) 
-                          ? "bg-blue-600 hover:bg-blue-700 text-white" 
-                          : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                      )}
-                    >
-                      <Icon className="h-4 w-4" />
-                      <span>{item.label}</span>
-                    </Button>
-                  </Link>
-                );
+                // Conditionally render based on user role
+                if (user?.role && item.roles.includes(user.role)) {
+                  return (
+                    <Link key={item.path} to={item.path}>
+                      <Button
+                        variant={isActive(item.path) ? "default" : "ghost"}
+                        className={cn(
+                          "flex items-center space-x-2",
+                          isActive(item.path) 
+                            ? "bg-blue-600 hover:bg-blue-700 text-white" 
+                            : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                        )}
+                      >
+                        <Icon className="h-4 w-4" />
+                        <span>{item.label}</span>
+                      </Button>
+                    </Link>
+                  );
+                }
+                return null;
               })}
               
               {/* Admin Navigation Items */}
@@ -161,26 +165,30 @@ export const Navigation = () => {
             <div className="flex flex-col space-y-2">
               {navItems.map((item) => {
                 const Icon = item.icon;
-                return (
-                  <Link 
-                    key={item.path} 
-                    to={item.path}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <Button
-                      variant={isActive(item.path) ? "default" : "ghost"}
-                      className={cn(
-                        "w-full justify-start flex items-center space-x-2",
-                        isActive(item.path) 
-                          ? "bg-blue-600 hover:bg-blue-700 text-white" 
-                          : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                      )}
+                // Conditionally render based on user role for mobile
+                if (user?.role && item.roles.includes(user.role)) {
+                  return (
+                    <Link 
+                      key={item.path} 
+                      to={item.path}
+                      onClick={() => setIsMobileMenuOpen(false)}
                     >
-                      <Icon className="h-4 w-4" />
-                      <span>{item.label}</span>
-                    </Button>
-                  </Link>
-                );
+                      <Button
+                        variant={isActive(item.path) ? "default" : "ghost"}
+                        className={cn(
+                          "w-full justify-start flex items-center space-x-2",
+                          isActive(item.path) 
+                            ? "bg-blue-600 hover:bg-blue-700 text-white" 
+                            : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                        )}
+                      >
+                        <Icon className="h-4 w-4" />
+                        <span>{item.label}</span>
+                      </Button>
+                    </Link>
+                  );
+                }
+                return null;
               })}
               
               {/* Admin Navigation Items for Mobile */}
@@ -214,4 +222,5 @@ export const Navigation = () => {
     </nav>
   );
 };
+
 

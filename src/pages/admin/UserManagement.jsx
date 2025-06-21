@@ -12,6 +12,7 @@ import { Plus, Edit, Trash2, Search } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from '@/hooks/useUsers';
 import { useProjects } from '@/hooks/useProjects';
+import { toast } from '@/hooks/use-toast';
 
 const UserManagement = () => {
   const { user } = useAuth();
@@ -68,8 +69,16 @@ const UserManagement = () => {
       await createUserMutation.mutateAsync(userData);
       setIsCreateDialogOpen(false);
       setFormData({ fullName: '', email: '', phone: '', location: '', password: '', role: '', projectIds: [] });
+      toast({
+        title: "User Created",
+        description: "User has been created successfully.",
+      });
     } catch (error) {
-      // Error handling is done in the mutation
+      toast({
+        title: "Error",
+        description: "Failed to create user. " + error.message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -102,16 +111,32 @@ const UserManagement = () => {
       setIsEditDialogOpen(false);
       setEditingUser(null);
       setFormData({ fullName: '', email: '', phone: '', location: '', password: '', role: '', projectIds: [] });
+      toast({
+        title: "User Updated",
+        description: "User has been updated successfully.",
+      });
     } catch (error) {
-      // Error handling is done in the mutation
+      toast({
+        title: "Error",
+        description: "Failed to update user. " + error.message,
+        variant: "destructive",
+      });
     }
   };
 
   const handleDeleteUser = async (userId) => {
     try {
       await deleteUserMutation.mutateAsync(userId);
+      toast({
+        title: "User Deleted",
+        description: "User has been deleted successfully.",
+      });
     } catch (error) {
-      // Error handling is done in the mutation
+      toast({
+        title: "Error",
+        description: "Failed to delete user. " + error.message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -122,7 +147,7 @@ const UserManagement = () => {
       email: userToEdit.email || '',
       phone: userToEdit.phone || '',
       location: userToEdit.location || '',
-      password: '',
+      password: '', // Password should not be pre-filled for security
       role: userToEdit.role || '',
       projectIds: userToEdit.projectIds || []
     });
@@ -144,6 +169,7 @@ const UserManagement = () => {
       case 'MANAGER': return 'bg-blue-100 text-blue-800';
       case 'BA': return 'bg-green-100 text-green-800';
       case 'TEAM_MEMBER': return 'bg-gray-100 text-gray-800';
+      case 'HR': return 'bg-purple-100 text-purple-800'; // Added HR role color
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -151,7 +177,9 @@ const UserManagement = () => {
   const filteredUsers = users.filter(user =>
     user.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.role?.toLowerCase().includes(searchTerm.toLowerCase())
+    user.role?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.phone?.toLowerCase().includes(searchTerm.toLowerCase()) || // Search by phone
+    user.location?.toLowerCase().includes(searchTerm.toLowerCase()) // Search by location
   );
 
   if (usersLoading || projectsLoading) {
@@ -251,6 +279,7 @@ const UserManagement = () => {
                     <SelectItem value="MANAGER">Manager</SelectItem>
                     <SelectItem value="BA">Business Analyst</SelectItem>
                     <SelectItem value="TEAM_MEMBER">Team Member</SelectItem>
+                    <SelectItem value="HR">HR</SelectItem> {/* Added HR role */}
                   </SelectContent>
                 </Select>
               </div>
@@ -425,12 +454,13 @@ const UserManagement = () => {
               />
             </div>
             <div>
-              <Label htmlFor="edit-password">Password (leave empty to keep current)</Label>
+              <Label htmlFor="edit-password">Password</Label>
               <Input
                 id="edit-password"
                 type="password"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                placeholder="Leave blank to keep current password"
               />
             </div>
             <div>
@@ -444,6 +474,7 @@ const UserManagement = () => {
                   <SelectItem value="MANAGER">Manager</SelectItem>
                   <SelectItem value="BA">Business Analyst</SelectItem>
                   <SelectItem value="TEAM_MEMBER">Team Member</SelectItem>
+                  <SelectItem value="HR">HR</SelectItem> {/* Added HR role */}
                 </SelectContent>
               </Select>
             </div>
@@ -451,7 +482,7 @@ const UserManagement = () => {
               <div>
                 <Label htmlFor="edit-projectIds">Assigned Projects *</Label>
                 <Select 
-                  value={formData.projectIds[0]?.toString() || ''} 
+                  value={formData.projectIds[0] || ''} 
                   onValueChange={(value) => setFormData({ ...formData, projectIds: [parseInt(value)] })}
                 >
                   <SelectTrigger>
@@ -483,4 +514,5 @@ const UserManagement = () => {
 };
 
 export default UserManagement;
+
 

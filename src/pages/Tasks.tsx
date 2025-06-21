@@ -49,6 +49,8 @@ interface Task {
   priority: string;
   isCompleted: boolean;
   isCmcDone: boolean;
+  projectId: number; // Added projectId
+  documentPath?: string; // Added documentPath
 }
 
 export const Tasks = () => {
@@ -80,7 +82,9 @@ export const Tasks = () => {
       assignedTeammates: backendTask.assignedTeammates,
       priority: backendTask.priority,
       isCompleted: backendTask.isCompleted,
-      isCmcDone: backendTask.isCmcDone
+      isCmcDone: backendTask.isCmcDone,
+      projectId: backendTask.projectId, // Added projectId
+      documentPath: backendTask.documentPath // Added documentPath
     };
   };
 
@@ -229,7 +233,7 @@ export const Tasks = () => {
 
         <div className="flex items-center space-x-2">
           {/* Only show Add Task button for ADMIN, MANAGER, BA */}
-          {user?.role && ['ADMIN', 'MANAGER', 'BA'].includes(user.role) && (
+          {user?.role && ["ADMIN", "MANAGER", "BA"].includes(user.role) && (
             <Button 
               className="bg-blue-600 hover:bg-blue-700"
               onClick={() => setIsCreateModalOpen(true)}
@@ -400,7 +404,7 @@ export const Tasks = () => {
                       <Edit className="h-4 w-4" />
                     </Button>
                     {/* Delete button - only visible to ADMIN, MANAGER, BA */}
-                    {user?.role && ['ADMIN', 'MANAGER', 'BA'].includes(user.role) && (
+                    {user?.role && ["ADMIN", "MANAGER", "BA"].includes(user.role) && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button variant="ghost" size="sm">
@@ -409,9 +413,9 @@ export const Tasks = () => {
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogTitle>Delete Task</AlertDialogTitle>
                             <AlertDialogDescription>
-                              This will permanently delete the task "{task.name}". This action cannot be undone.
+                              Are you sure you want to delete task "{task.name}"? This action cannot be undone.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
@@ -419,8 +423,9 @@ export const Tasks = () => {
                             <AlertDialogAction
                               onClick={() => handleDeleteTask(task)}
                               className="bg-red-600 hover:bg-red-700"
+                              disabled={deleteTaskMutation.isPending}
                             >
-                              Delete
+                              {deleteTaskMutation.isPending ? "Deleting..." : "Delete"}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
@@ -434,25 +439,15 @@ export const Tasks = () => {
         </CardContent>
       </Card>
 
-      {/* Add Task Dialog */}
-      <AddTaskDialog
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        teammates={teammates}
-      />
+      {/* Add Task Modal */}
+      <AddTaskDialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen} />
 
-      {/* Edit Task Dialog */}
-      <EditTaskDialog
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        task={editingTask}
-        onSave={handleSaveTask}
-        teammates={teammates}
-      />
+      {/* Edit Task Modal */}
+      <EditTaskDialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen} task={editingTask} />
 
       {filteredTasks.length === 0 && !isLoading && (
         <div className="text-center py-12">
-          <Clock className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+          <Users className="h-12 w-12 text-slate-400 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-slate-900 mb-2">No tasks found</h3>
           <p className="text-slate-600">Try adjusting your search criteria or add a new task.</p>
         </div>
@@ -462,3 +457,5 @@ export const Tasks = () => {
 };
 
 export default Tasks;
+
+

@@ -36,7 +36,7 @@ interface Teammate {
   name: string;
   email: string;
   role: string;
-  phone: string;
+  phone: string; // Added phone
   department: string;
   location: string;
   avatar: string;
@@ -64,7 +64,7 @@ export const Teammates = () => {
       name: backendTeammate.name,
       email: backendTeammate.email,
       role: backendTeammate.role,
-      phone: backendTeammate.phone,
+      phone: backendTeammate.phone, // Added phone
       department: backendTeammate.department,
       location: backendTeammate.location,
       avatar: backendTeammate.avatar,
@@ -198,18 +198,16 @@ export const Teammates = () => {
         </div>
 
         <div className="flex items-center space-x-2">
-          {/* Only show Add Teammate button for ADMIN */}
-          {user?.role === 'ADMIN' && (
-            <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-              <DialogTrigger asChild>
-                <Button className="bg-blue-600 hover:bg-blue-700">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Teammate
-                </Button>
-              </DialogTrigger>
-              <AddTeammateForm onSuccess={handleAddSuccess} />
-            </Dialog>
-          )}
+          {/* Add Teammate button - disabled for everyone */}
+          <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-blue-600 hover:bg-blue-700" disabled>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Teammate
+              </Button>
+            </DialogTrigger>
+            <AddTeammateForm onSuccess={handleAddSuccess} />
+          </Dialog>
         </div>
       </div>
 
@@ -300,6 +298,7 @@ export const Teammates = () => {
                 <TableHead>Name</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Department</TableHead>
+                <TableHead>Phone</TableHead> {/* Added Phone column */}
                 <TableHead>Status</TableHead>
                 <TableHead>Tasks Assigned</TableHead>
                 <TableHead>Actions</TableHead>
@@ -322,6 +321,7 @@ export const Teammates = () => {
                   </TableCell>
                   <TableCell>{teammate.role}</TableCell>
                   <TableCell>{teammate.department}</TableCell>
+                  <TableCell>{teammate.phone}</TableCell> {/* Display Phone */}
                   <TableCell>
                     <Badge className={getStatusColor(teammate.availabilityStatus)}>
                       {teammate.availabilityStatus}
@@ -399,3 +399,5 @@ export const Teammates = () => {
 };
 
 export default Teammates;
+
+

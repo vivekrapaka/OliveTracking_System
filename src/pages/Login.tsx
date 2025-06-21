@@ -13,6 +13,7 @@ const Login = () => {
   const { user, login, signup } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [activeTab, setActiveTab] = useState('signin'); // State to control active tab
 
   // Sign in form state
   const [signInData, setSignInData] = useState({
@@ -37,7 +38,7 @@ const Login = () => {
 
   // Password validation function
   const validatePassword = (password) => {
-    const minLength = password.length >= 8;
+    const minLength = password.length >= 6; // Changed to 6 as per backend
     const hasCapital = /[A-Z]/.test(password);
     const hasNumber = /\d/.test(password);
     
@@ -94,7 +95,7 @@ const Login = () => {
     const passwordValidation = validatePassword(signUpData.password);
     if (!passwordValidation.isValid) {
       let errorMessage = "Password must contain:";
-      if (!passwordValidation.errors.minLength) errorMessage += "\n• At least 8 characters";
+      if (!passwordValidation.errors.minLength) errorMessage += "\n• At least 6 characters"; // Updated minLength message
       if (!passwordValidation.errors.hasCapital) errorMessage += "\n• At least one capital letter";
       if (!passwordValidation.errors.hasNumber) errorMessage += "\n• At least one number";
       
@@ -131,6 +132,7 @@ const Login = () => {
         password: '',
         confirmPassword: ''
       });
+      setActiveTab('signin'); // Switch to signin tab after successful signup
     } catch (error) {
       toast({
         title: "Error",
@@ -159,7 +161,7 @@ const Login = () => {
             <CardTitle className="text-center text-2xl">Authentication</CardTitle>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="signin" className="w-full">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="signin">Sign In</TabsTrigger>
                 <TabsTrigger value="signup">Sign Up</TabsTrigger>
@@ -274,7 +276,7 @@ const Login = () => {
                       </Button>
                     </div>
                     <p className="text-xs text-gray-600">
-                      Password must be at least 8 characters long and contain at least one capital letter and one number.
+                      Password must be at least 6 characters long and contain at least one capital letter and one number.
                     </p>
                   </div>
                   <div className="space-y-2">
