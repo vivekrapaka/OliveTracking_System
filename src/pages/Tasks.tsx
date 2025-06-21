@@ -309,7 +309,7 @@ export const Tasks = () => {
         <Card>
           <CardContent className="p-6">
             <div className="text-2xl font-bold text-blue-600">
-              {tasksData.filter(t => t.currentStage === "Development" || t.currentStage === "DEV").length}
+              {tasksData.filter(t => t.currentStage === "Development" || t.currentStage === "DEV" || t.currentStage === "SIT").length}
             </div>
             <p className="text-sm text-slate-600">In Development</p>
           </CardContent>
@@ -317,7 +317,7 @@ export const Tasks = () => {
         <Card>
           <CardContent className="p-6">
             <div className="text-2xl font-bold text-yellow-600">
-              {tasksData.filter(t => t.currentStage === "Testing" || t.currentStage === "SIT").length}
+              {tasksData.filter(t => t.currentStage === "Testing"  || t.currentStage === "UAT").length}
             </div>
             <p className="text-sm text-slate-600">In Testing</p>
           </CardContent>

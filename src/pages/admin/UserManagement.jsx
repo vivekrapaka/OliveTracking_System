@@ -38,12 +38,16 @@ const UserManagement = () => {
   const deleteUserMutation = useDeleteUser();
 
   // Check if user is admin
-  if (user?.role !== 'ADMIN') {
+  if (user?.role !== "ADMIN") {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <h2 className="text-xl font-semibold text-slate-900">Access Denied</h2>
-          <p className="text-slate-600">You don't have permission to access this page.</p>
+          <h2 className="text-xl font-semibold text-slate-900">
+            Access Denied
+          </h2>
+          <p className="text-slate-600">
+            You don't have permission to access this page.
+          </p>
         </div>
       </div>
     );
@@ -53,14 +57,14 @@ const UserManagement = () => {
     e.preventDefault();
     try {
       const userData = { ...formData };
-      
+
       // Handle project assignment based on role
-      if (formData.role === 'ADMIN') {
+      if (formData.role === "ADMIN" || formData.role === "HR") {
         userData.projectIds = [];
       } else if (!formData.projectIds || formData.projectIds.length === 0) {
         toast({
           title: "Error",
-          description: "Project assignment is required for non-admin roles",
+          description: "Project assignment is required for non-admin/HR roles",
           variant: "destructive",
         });
         return;
@@ -69,16 +73,8 @@ const UserManagement = () => {
       await createUserMutation.mutateAsync(userData);
       setIsCreateDialogOpen(false);
       setFormData({ fullName: '', email: '', phone: '', location: '', password: '', role: '', projectIds: [] });
-      toast({
-        title: "User Created",
-        description: "User has been created successfully.",
-      });
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to create user. " + error.message,
-        variant: "destructive",
-      });
+      // Error handling is done in the mutation
     }
   };
 
@@ -86,19 +82,19 @@ const UserManagement = () => {
     e.preventDefault();
     try {
       const userData = { ...formData };
-      
+
       // Remove password if empty (optional for update)
       if (!userData.password) {
         delete userData.password;
       }
 
       // Handle project assignment based on role
-      if (formData.role === 'ADMIN') {
+      if (formData.role === "ADMIN" || formData.role === "HR") {
         userData.projectIds = [];
       } else if (!formData.projectIds || formData.projectIds.length === 0) {
         toast({
           title: "Error",
-          description: "Project assignment is required for non-admin roles",
+          description: "Project assignment is required for non-admin/HR roles",
           variant: "destructive",
         });
         return;
@@ -111,32 +107,16 @@ const UserManagement = () => {
       setIsEditDialogOpen(false);
       setEditingUser(null);
       setFormData({ fullName: '', email: '', phone: '', location: '', password: '', role: '', projectIds: [] });
-      toast({
-        title: "User Updated",
-        description: "User has been updated successfully.",
-      });
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update user. " + error.message,
-        variant: "destructive",
-      });
+      // Error handling is done in the mutation
     }
   };
 
   const handleDeleteUser = async (userId) => {
     try {
       await deleteUserMutation.mutateAsync(userId);
-      toast({
-        title: "User Deleted",
-        description: "User has been deleted successfully.",
-      });
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to delete user. " + error.message,
-        variant: "destructive",
-      });
+      // Error handling is done in the mutation
     }
   };
 
@@ -147,7 +127,7 @@ const UserManagement = () => {
       email: userToEdit.email || '',
       phone: userToEdit.phone || '',
       location: userToEdit.location || '',
-      password: '', // Password should not be pre-filled for security
+      password: '',
       role: userToEdit.role || '',
       projectIds: userToEdit.projectIds || []
     });
@@ -156,21 +136,26 @@ const UserManagement = () => {
 
   const getProjectNames = (projectIds) => {
     if (!projectIds || projectIds.length === 0) return 'Global / N/A';
-    const projectNames = projectIds.map(id => {
-      const project = projects.find(p => p.id === id);
-      return project ? project.name : 'Unknown';
-    });
-    return projectNames.join(', ');
+    const names = projectIds
+      .map((id) => projects.find((p) => p.id === id)?.name)
+      .filter(Boolean);
+    return names.length ? names.join(", ") : "Unknown Project(s)";
   };
 
   const getRoleBadgeColor = (role) => {
     switch (role) {
-      case 'ADMIN': return 'bg-red-100 text-red-800';
-      case 'MANAGER': return 'bg-blue-100 text-blue-800';
-      case 'BA': return 'bg-green-100 text-green-800';
-      case 'TEAM_MEMBER': return 'bg-gray-100 text-gray-800';
-      case 'HR': return 'bg-purple-100 text-purple-800'; // Added HR role color
-      default: return 'bg-gray-100 text-gray-800';
+      case "ADMIN":
+        return "bg-red-100 text-red-800";
+      case "HR":
+        return "bg-purple-100 text-purple-800";
+      case "MANAGER":
+        return "bg-blue-100 text-blue-800";
+      case "BA":
+        return "bg-green-100 text-green-800";
+      case "TEAM_MEMBER":
+        return "bg-gray-100 text-gray-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -178,8 +163,8 @@ const UserManagement = () => {
     user.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.role?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.phone?.toLowerCase().includes(searchTerm.toLowerCase()) || // Search by phone
-    user.location?.toLowerCase().includes(searchTerm.toLowerCase()) // Search by location
+    user.phone?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.location?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (usersLoading || projectsLoading) {
@@ -225,7 +210,9 @@ const UserManagement = () => {
                 <Input
                   id="fullName"
                   value={formData.fullName}
-                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, fullName: e.target.value })
+                  }
                   required
                 />
               </div>
@@ -235,7 +222,9 @@ const UserManagement = () => {
                   id="email"
                   type="email"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
                   required
                 />
               </div>
@@ -264,43 +253,50 @@ const UserManagement = () => {
                   id="password"
                   type="password"
                   value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, password: e.target.value })
+                  }
                   required
                 />
               </div>
               <div>
                 <Label htmlFor="role">Role *</Label>
-                <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value, projectIds: value === 'ADMIN' ? [] : formData.projectIds })}>
+                <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value, projectIds: (value === 'ADMIN' || value === 'HR') ? [] : formData.projectIds })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="ADMIN">Admin</SelectItem>
+                    <SelectItem value="HR">HR</SelectItem>
                     <SelectItem value="MANAGER">Manager</SelectItem>
                     <SelectItem value="BA">Business Analyst</SelectItem>
                     <SelectItem value="TEAM_MEMBER">Team Member</SelectItem>
-                    <SelectItem value="HR">HR</SelectItem> {/* Added HR role */}
                   </SelectContent>
                 </Select>
               </div>
-              {formData.role && formData.role !== 'ADMIN' && (
+              {formData.role && formData.role !== "ADMIN" && formData.role !== "HR" && (
                 <div>
-                  <Label htmlFor="projectIds">Assigned Projects *</Label>
-                  <Select 
-                    value={formData.projectIds[0] || ''} 
-                    onValueChange={(value) => setFormData({ ...formData, projectIds: [parseInt(value)] })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select project" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {projects.map((project) => (
-                        <SelectItem key={project.id} value={project.id.toString()}>
-                          {project.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label>Assigned Projects *</Label>
+                  <div className="max-h-48 overflow-y-auto border rounded-md p-2 space-y-2">
+                    {projects.map((project) => (
+                      <label
+                        key={project.id}
+                        className="flex items-center space-x-2"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={formData.projectIds.includes(project.id)}
+                          onChange={(e) => {
+                            const newProjectIds = e.target.checked
+                              ? [...formData.projectIds, project.id]
+                              : formData.projectIds.filter((id) => id !== project.id);
+                            setFormData({ ...formData, projectIds: newProjectIds });
+                          }}
+                        />
+                        <span>{project.name}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
               )}
               <div className="flex justify-end space-x-2">
@@ -339,7 +335,7 @@ const UserManagement = () => {
                 <TableHead>Phone</TableHead>
                 <TableHead>Location</TableHead>
                 <TableHead>Role</TableHead>
-                <TableHead>Assigned Projects</TableHead>
+                <TableHead>Projects</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -359,9 +355,7 @@ const UserManagement = () => {
                     <TableCell>{user.phone || 'N/A'}</TableCell>
                     <TableCell>{user.location || 'N/A'}</TableCell>
                     <TableCell>
-                      <Badge className={getRoleBadgeColor(user.role)}>
-                        {user.role}
-                      </Badge>
+                      <Badge className={getRoleBadgeColor(user.role)}>{user.role}</Badge>
                     </TableCell>
                     <TableCell>{getProjectNames(user.projectIds)}</TableCell>
                     <TableCell>
@@ -420,7 +414,9 @@ const UserManagement = () => {
               <Input
                 id="edit-fullName"
                 value={formData.fullName}
-                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, fullName: e.target.value })
+                }
                 required
               />
             </div>
@@ -430,7 +426,9 @@ const UserManagement = () => {
                 id="edit-email"
                 type="email"
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
                 required
               />
             </div>
@@ -459,43 +457,50 @@ const UserManagement = () => {
                 id="edit-password"
                 type="password"
                 value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, password: e.target.value })
+                }
                 placeholder="Leave blank to keep current password"
               />
             </div>
             <div>
               <Label htmlFor="edit-role">Role *</Label>
-              <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value, projectIds: value === 'ADMIN' ? [] : formData.projectIds })}>
+              <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value, projectIds: (value === 'ADMIN' || value === 'HR') ? [] : formData.projectIds })}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ADMIN">Admin</SelectItem>
+                  <SelectItem value="HR">HR</SelectItem>
                   <SelectItem value="MANAGER">Manager</SelectItem>
                   <SelectItem value="BA">Business Analyst</SelectItem>
                   <SelectItem value="TEAM_MEMBER">Team Member</SelectItem>
-                  <SelectItem value="HR">HR</SelectItem> {/* Added HR role */}
                 </SelectContent>
               </Select>
             </div>
-            {formData.role && formData.role !== 'ADMIN' && (
+            {formData.role && formData.role !== "ADMIN" && formData.role !== "HR" && (
               <div>
-                <Label htmlFor="edit-projectIds">Assigned Projects *</Label>
-                <Select 
-                  value={formData.projectIds[0] || ''} 
-                  onValueChange={(value) => setFormData({ ...formData, projectIds: [parseInt(value)] })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select project" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {projects.map((project) => (
-                      <SelectItem key={project.id} value={project.id.toString()}>
-                        {project.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>Assigned Projects *</Label>
+                <div className="max-h-48 overflow-y-auto border rounded-md p-2 space-y-2">
+                  {projects.map((project) => (
+                    <label
+                      key={project.id}
+                      className="flex items-center space-x-2"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={formData.projectIds.includes(project.id)}
+                        onChange={(e) => {
+                          const newProjectIds = e.target.checked
+                            ? [...formData.projectIds, project.id]
+                            : formData.projectIds.filter((id) => id !== project.id);
+                          setFormData({ ...formData, projectIds: newProjectIds });
+                        }}
+                      />
+                      <span>{project.name}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
             )}
             <div className="flex justify-end space-x-2">
