@@ -135,7 +135,7 @@ const Login = () => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <img 
-            src="OliveTracking_System/public/lovable-uploads/Gemini_Generated_Image_s8vpzis8vpzis8vp.png" 
+            src="OliveTracking_System/public/lovable-uploads/karya_logo.png" 
             alt="KARYA" 
             className="h-16 w-auto mx-auto mb-4"
           />

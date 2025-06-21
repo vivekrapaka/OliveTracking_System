@@ -1,41 +1,64 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, Search } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { toast } from '@/hooks/use-toast';
-import apiClient from '@/services/apiClient';
+import React, { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Edit, Trash2, Search } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "@/hooks/use-toast";
+import apiClient from "@/services/apiClient";
 
 const UserManagement = () => {
   const { user } = useAuth();
   const [users, setUsers] = useState([]);
   const [projects, setProjects] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    password: '',
-    role: '',
-    projectId: ''
+    fullName: "",
+    email: "",
+    password: "",
+    role: "",
+    projectIds: [],
   });
   const [loading, setLoading] = useState(false);
 
   // Check if user is admin
-  if (user?.role !== 'ADMIN') {
+  if (user?.role !== "ADMIN") {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <h2 className="text-xl font-semibold text-slate-900">Access Denied</h2>
-          <p className="text-slate-600">You don't have permission to access this page.</p>
+          <h2 className="text-xl font-semibold text-slate-900">
+            Access Denied
+          </h2>
+          <p className="text-slate-600">
+            You don't have permission to access this page.
+          </p>
         </div>
       </div>
     );
@@ -44,10 +67,10 @@ const UserManagement = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get('/api/users');
+      const response = await apiClient.get("/api/users");
       setUsers(response.data);
     } catch (error) {
-      console.error('Error fetching users:', error);
+      console.error("Error fetching users:", error);
       toast({
         title: "Error",
         description: "Failed to fetch users",
@@ -60,10 +83,10 @@ const UserManagement = () => {
 
   const fetchProjects = async () => {
     try {
-      const response = await apiClient.get('/api/projects');
+      const response = await apiClient.get("/api/projects");
       setProjects(response.data);
     } catch (error) {
-      console.error('Error fetching projects:', error);
+      console.error("Error fetching projects:", error);
     }
   };
 
@@ -77,11 +100,11 @@ const UserManagement = () => {
     try {
       setLoading(true);
       const userData = { ...formData };
-      
+
       // Handle project assignment based on role
-      if (formData.role === 'ADMIN') {
-        userData.projectId = null;
-      } else if (!formData.projectId) {
+      if (formData.role === "ADMIN" || formData.role === "HR") {
+        userData.projectIds = [];
+      } else if (!formData.projectIds || formData.projectIds.length === 0) {
         toast({
           title: "Error",
           description: "Project assignment is required for non-admin roles",
@@ -90,16 +113,22 @@ const UserManagement = () => {
         return;
       }
 
-      await apiClient.post('/api/users', userData);
+      await apiClient.post("/api/users", userData);
       toast({
         title: "Success",
         description: "User created successfully",
       });
       setIsCreateDialogOpen(false);
-      setFormData({ fullName: '', email: '', password: '', role: '', projectId: '' });
+      setFormData({
+        fullName: "",
+        email: "",
+        password: "",
+        role: "",
+        projectId: "",
+      });
       fetchUsers();
     } catch (error) {
-      console.error('Error creating user:', error);
+      console.error("Error creating user:", error);
       toast({
         title: "Error",
         description: error.response?.data?.message || "Failed to create user",
@@ -115,16 +144,16 @@ const UserManagement = () => {
     try {
       setLoading(true);
       const userData = { ...formData };
-      
+
       // Remove password if empty (optional for update)
       if (!userData.password) {
         delete userData.password;
       }
 
       // Handle project assignment based on role
-      if (formData.role === 'ADMIN') {
-        userData.projectId = null;
-      } else if (!formData.projectId) {
+      if (formData.role === "ADMIN" || formData.role === "HR") {
+        userData.projectIds = [];
+      } else if (!formData.projectIds || formData.projectIds.length === 0) {
         toast({
           title: "Error",
           description: "Project assignment is required for non-admin roles",
@@ -140,10 +169,16 @@ const UserManagement = () => {
       });
       setIsEditDialogOpen(false);
       setEditingUser(null);
-      setFormData({ fullName: '', email: '', password: '', role: '', projectId: '' });
+      setFormData({
+        fullName: "",
+        email: "",
+        password: "",
+        role: "",
+        projectId: "",
+      });
       fetchUsers();
     } catch (error) {
-      console.error('Error updating user:', error);
+      console.error("Error updating user:", error);
       toast({
         title: "Error",
         description: error.response?.data?.message || "Failed to update user",
@@ -155,8 +190,8 @@ const UserManagement = () => {
   };
 
   const handleDeleteUser = async (userId) => {
-    if (!confirm('Are you sure you want to delete this user?')) return;
-    
+    if (!confirm("Are you sure you want to delete this user?")) return;
+
     try {
       setLoading(true);
       await apiClient.delete(`/api/users/${userId}`);
@@ -166,7 +201,7 @@ const UserManagement = () => {
       });
       fetchUsers();
     } catch (error) {
-      console.error('Error deleting user:', error);
+      console.error("Error deleting user:", error);
       toast({
         title: "Error",
         description: error.response?.data?.message || "Failed to delete user",
@@ -182,33 +217,41 @@ const UserManagement = () => {
     setFormData({
       fullName: userToEdit.fullName,
       email: userToEdit.email,
-      password: '',
+      password: "",
       role: userToEdit.role,
-      projectId: userToEdit.projectId || ''
+      projectIds: userToEdit.projectIds || [],
     });
     setIsEditDialogOpen(true);
   };
 
-  const getProjectName = (projectId) => {
-    if (!projectId) return 'Global / N/A';
-    const project = projects.find(p => p.id === projectId);
-    return project ? project.name : 'Unknown Project';
+  const getProjectNames = (projectIds) => {
+    if (!projectIds || projectIds.length === 0) return "Global / N/A";
+    const names = projectIds
+      .map((id) => projects.find((p) => p.id === id)?.projectName)
+      .filter(Boolean);
+    return names.length ? names.join(", ") : "Unknown Project(s)";
   };
 
   const getRoleBadgeColor = (role) => {
     switch (role) {
-      case 'ADMIN': return 'bg-red-100 text-red-800';
-      case 'MANAGER': return 'bg-blue-100 text-blue-800';
-      case 'BA': return 'bg-green-100 text-green-800';
-      case 'TEAM_MEMBER': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case "ADMIN":
+        return "bg-red-100 text-red-800";
+      case "MANAGER":
+        return "bg-blue-100 text-blue-800";
+      case "BA":
+        return "bg-green-100 text-green-800";
+      case "TEAM_MEMBER":
+        return "bg-gray-100 text-gray-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
-  const filteredUsers = users.filter(user =>
-    user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.role.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredUsers = users.filter(
+    (user) =>
+      user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.role.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -232,7 +275,9 @@ const UserManagement = () => {
                 <Input
                   id="fullName"
                   value={formData.fullName}
-                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, fullName: e.target.value })
+                  }
                   required
                 />
               </div>
@@ -242,7 +287,9 @@ const UserManagement = () => {
                   id="email"
                   type="email"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
                   required
                 />
               </div>
@@ -252,48 +299,77 @@ const UserManagement = () => {
                   id="password"
                   type="password"
                   value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, password: e.target.value })
+                  }
                   required
                 />
               </div>
               <div>
                 <Label htmlFor="role">Role *</Label>
-                <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value, projectId: value === 'ADMIN' ? '' : formData.projectId })}>
+                <Select
+                  value={formData.role}
+                  onValueChange={(value) =>
+                    setFormData({
+                      ...formData,
+                      role: value,
+                      projectId: value === "ADMIN" ? "" : formData.projectId,
+                    })
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="ADMIN">Admin</SelectItem>
-                    <SelectItem value="HR">Team Member</SelectItem>
+                    <SelectItem value="HR">HR</SelectItem>
                     <SelectItem value="MANAGER">Manager</SelectItem>
                     <SelectItem value="BA">Business Analyst</SelectItem>
                     <SelectItem value="TEAM_MEMBER">Team Member</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              {formData.role && formData.role !== 'ADMIN' && (
+              {formData.role && formData.role !== "ADMIN" && formData.role !== "HR" && (
                 <div>
-                  <Label htmlFor="projectId">Assigned Project *</Label>
-                  <Select value={formData.projectId} onValueChange={(value) => setFormData({ ...formData, projectId: value })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select project" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {projects.map((project) => (
-                        <SelectItem key={project.id} value={project.id.toString()}>
-                          {project.projectName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label>Assigned Projects *</Label>
+                  <div className="max-h-48 overflow-y-auto border rounded-md p-2 space-y-2">
+                    {projects.map((project) => (
+                      <label
+                        key={project.id}
+                        className="flex items-center space-x-2"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={formData.projectIds.includes(project.id)}
+                          onChange={() => {
+                            const id = Number(project.id);
+                            const selected = formData.projectIds.includes(id);
+                            const updatedIds = selected
+                              ? formData.projectIds.filter((pid) => pid !== id)
+                              : [...formData.projectIds, id];
+                            setFormData({
+                              ...formData,
+                              projectIds: updatedIds,
+                            });
+                          }}
+                        />
+                        <span>{project.projectName}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
               )}
+
               <div className="flex justify-end space-x-2">
-                <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsCreateDialogOpen(false)}
+                >
                   Cancel
                 </Button>
                 <Button type="submit" disabled={loading}>
-                  {loading ? 'Creating...' : 'Create User'}
+                  {loading ? "Creating..." : "Create User"}
                 </Button>
               </div>
             </form>
@@ -337,7 +413,7 @@ const UserManagement = () => {
                       {user.role}
                     </Badge>
                   </TableCell>
-                  <TableCell>{getProjectName(user.projectId)}</TableCell>
+                  <TableCell>{getProjectNames(user.projectIds)}</TableCell>
                   <TableCell>
                     <div className="flex space-x-2">
                       <Button
@@ -375,7 +451,9 @@ const UserManagement = () => {
               <Input
                 id="edit-fullName"
                 value={formData.fullName}
-                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, fullName: e.target.value })
+                }
                 required
               />
             </div>
@@ -385,22 +463,37 @@ const UserManagement = () => {
                 id="edit-email"
                 type="email"
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
                 required
               />
             </div>
             <div>
-              <Label htmlFor="edit-password">Password (leave empty to keep current)</Label>
+              <Label htmlFor="edit-password">
+                Password (leave empty to keep current)
+              </Label>
               <Input
                 id="edit-password"
                 type="password"
                 value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, password: e.target.value })
+                }
               />
             </div>
             <div>
               <Label htmlFor="edit-role">Role *</Label>
-              <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value, projectId: value === 'ADMIN' ? '' : formData.projectId })}>
+              <Select
+                value={formData.role}
+                onValueChange={(value) =>
+                  setFormData({
+                    ...formData,
+                    role: value,
+                    projectId: value === "ADMIN" || value === "HR" ? [] : formData.projectIds,
+                  })
+                }
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
@@ -413,29 +506,44 @@ const UserManagement = () => {
                 </SelectContent>
               </Select>
             </div>
-            {formData.role && formData.role !== 'ADMIN' && (
+            {formData.role && formData.role !== "ADMIN" && formData.role !== "HR" && (
               <div>
-                <Label htmlFor="edit-projectId">Assigned Project *</Label>
-                <Select value={formData.projectId} onValueChange={(value) => setFormData({ ...formData, projectId: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select project" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {projects.map((project) => (
-                      <SelectItem key={project.id} value={project.id.toString()}>
-                        {project.projectName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>Assigned Projects *</Label>
+                <div className="max-h-48 overflow-y-auto border rounded-md p-2 space-y-2">
+                  {projects.map((project) => (
+                    <label
+                      key={project.id}
+                      className="flex items-center space-x-2"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={formData.projectIds.includes(project.id)}
+                        onChange={() => {
+                          const id = Number(project.id);
+                          const selected = formData.projectIds.includes(id);
+                          const updatedIds = selected
+                            ? formData.projectIds.filter((pid) => pid !== id)
+                            : [...formData.projectIds, id];
+                          setFormData({ ...formData, projectIds: updatedIds });
+                        }}
+                      />
+                      <span>{project.projectName}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
             )}
+
             <div className="flex justify-end space-x-2">
-              <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsEditDialogOpen(false)}
+              >
                 Cancel
               </Button>
               <Button type="submit" disabled={loading}>
-                {loading ? 'Updating...' : 'Update User'}
+                {loading ? "Updating..." : "Update User"}
               </Button>
             </div>
           </form>
@@ -446,4 +554,3 @@ const UserManagement = () => {
 };
 
 export default UserManagement;
-
