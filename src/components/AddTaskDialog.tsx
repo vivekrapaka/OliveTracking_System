@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Textarea } => from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
@@ -73,8 +73,8 @@ export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps
   };
 
   const handleSave = () => {
-    if (!taskName || !currentStage || !issueType || !priority || !receivedDate || !dueDate || user?.projectId === undefined) {
-      // Added user?.projectId check
+    if (!taskName || !currentStage || !issueType || !priority || !receivedDate || !dueDate || !user?.projectId) {
+      // Changed condition to check for falsy values (null, undefined, empty string)
       return;
     }
 
@@ -336,5 +336,6 @@ export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps
     </Dialog>
   );
 };
+
 
 
