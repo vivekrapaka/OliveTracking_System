@@ -38,7 +38,7 @@ const UserManagement = () => {
   const deleteUserMutation = useDeleteUser();
 
   // Check if user is admin
-  if (user?.role !== "ADMIN") {
+  if (user?.role !== "ADMIN"  && user?.role !== "HR") {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
@@ -107,7 +107,7 @@ const UserManagement = () => {
       setIsEditDialogOpen(false);
       setEditingUser(null);
       setFormData({ fullName: '', email: '', phone: '', location: '', password: '', role: '', projectIds: [] });
-    } catch (error) {
+    } catch  {
       // Error handling is done in the mutation
     }
   };
@@ -137,7 +137,7 @@ const UserManagement = () => {
   const getProjectNames = (projectIds) => {
     if (!projectIds || projectIds.length === 0) return 'Global / N/A';
     const names = projectIds
-      .map((id) => projects.find((p) => p.id === id)?.name)
+      .map((id) => projects.find((p) => p.id === id)?.projectName)
       .filter(Boolean);
     return names.length ? names.join(", ") : "Unknown Project(s)";
   };
@@ -261,7 +261,7 @@ const UserManagement = () => {
               </div>
               <div>
                 <Label htmlFor="role">Role *</Label>
-                <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value, projectIds: (value === 'ADMIN' || value === 'HR') ? [] : formData.projectIds })}>
+                <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value, projectIds: (value === 'ADMIN' && value === 'HR') ? [] : formData.projectIds })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
@@ -497,7 +497,7 @@ const UserManagement = () => {
                           setFormData({ ...formData, projectIds: newProjectIds });
                         }}
                       />
-                      <span>{project.name}</span>
+                      <span>{project.projectName}</span>
                     </label>
                   ))}
                 </div>

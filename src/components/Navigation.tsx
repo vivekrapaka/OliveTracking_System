@@ -37,14 +37,14 @@ export const Navigation = () => {
           <Link to="/" className="flex items-center space-x-3 group">
             <div className="relative">
               <img 
-                src="/lovable-uploads/ee53a353-0042-45dd-90f5-826c4841d71f.png" 
-                alt="Olive Tracking System" 
+                src="public/lovable-uploads/karya_logo.png" 
+                alt="K A R Y A" 
                 className="h-12 w-auto transition-transform duration-300 group-hover:scale-110 drop-shadow-lg"
               />
               <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-xl"></div>
             </div>
             <span className="text-xl font-bold text-slate-900 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              OliveTrackingSystem
+              K A R Y A 
             </span>
           </Link>
 

@@ -233,7 +233,7 @@ export const Tasks = () => {
 
         <div className="flex items-center space-x-2">
           {/* Only show Add Task button for ADMIN, MANAGER, BA */}
-          {user?.role && ["ADMIN", "MANAGER", "BA"].includes(user.role) && (
+          {user?.role && ["ADMIN", "MANAGER", "BA","TEAMLEAD"].includes(user.role) && (
             <Button 
               className="bg-blue-600 hover:bg-blue-700"
               onClick={() => setIsCreateModalOpen(true)}
