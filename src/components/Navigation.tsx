@@ -76,7 +76,7 @@ export const Navigation = () => {
               })}
               
               {/* Admin Navigation Items */}
-              {user?.role === 'ADMIN' && adminNavItems.map((item) => {
+              {(user?.role === 'ADMIN' || user?.role === 'HR') && adminNavItems.map((item) => {
                 const Icon = item.icon;
                 return (
                   <Link key={item.path} to={item.path}>
@@ -192,7 +192,7 @@ export const Navigation = () => {
               })}
               
               {/* Admin Navigation Items for Mobile */}
-              {user?.role === 'ADMIN' && adminNavItems.map((item) => {
+              {(user?.role === 'ADMIN' || user?.role === 'HR') && adminNavItems.map((item) => {
                 const Icon = item.icon;
                 return (
                   <Link 
@@ -222,5 +222,6 @@ export const Navigation = () => {
     </nav>
   );
 };
+
 
 
