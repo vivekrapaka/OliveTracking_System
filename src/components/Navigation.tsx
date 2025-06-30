@@ -4,8 +4,8 @@ import { LayoutDashboard, CheckSquare, Users, Menu, LogOut, User, Settings, Fold
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import karyaLogo from "@/assets/karya_logo.png";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-
 export const Navigation = () => {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -19,12 +19,11 @@ export const Navigation = () => {
 
   // Admin-only navigation items
   const adminNavItems = [
-    { path: "/admin/projects", label: "Projects", icon: FolderOpen },
-    { path: "/admin/users", label: "Users", icon: Settings },
+    { path: "/admin/projects", label: "Projects", icon: FolderOpen},
+    { path: "/admin/users", label: "Users", icon: Settings  },
   ];
 
   const isActive = (path: string) => location.pathname === path;
-
   const handleLogout = () => {
     logout();
   };
@@ -37,14 +36,14 @@ export const Navigation = () => {
           <Link to="/" className="flex items-center space-x-3 group">
             <div className="relative">
               <img 
-                src="public/lovable-uploads/karya_logo.png" 
+                src={karyaLogo}
                 alt="K A R Y A" 
                 className="h-12 w-auto transition-transform duration-300 group-hover:scale-110 drop-shadow-lg"
               />
               <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-xl"></div>
             </div>
             <span className="text-xl font-bold text-slate-900 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              K A R Y A 
+              K A R Y A
             </span>
           </Link>
 
@@ -88,6 +87,7 @@ export const Navigation = () => {
                           ? "bg-blue-600 hover:bg-blue-700 text-white" 
                           : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                       )}
+                      
                     >
                       <Icon className="h-4 w-4" />
                       <span>{item.label}</span>

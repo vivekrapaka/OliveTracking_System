@@ -43,6 +43,7 @@ interface Teammate {
   availabilityStatus: string;
   tasksAssigned: number;
   tasksCompleted: number;
+  projectName: string;
 }
 
 export const Teammates = () => {
@@ -70,7 +71,8 @@ export const Teammates = () => {
       avatar: backendTeammate.avatar,
       availabilityStatus: backendTeammate.availabilityStatus,
       tasksAssigned: backendTeammate.tasksAssigned,
-      tasksCompleted: backendTeammate.tasksCompleted
+      tasksCompleted: backendTeammate.tasksCompleted,
+      projectName:backendTeammate.projectName
     };
   };
 
@@ -297,7 +299,7 @@ export const Teammates = () => {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Role</TableHead>
-                <TableHead>Department</TableHead>
+                <TableHead>ProjectName</TableHead>
                 <TableHead>Phone</TableHead> {/* Added Phone column */}
                 <TableHead>Status</TableHead>
                 <TableHead>Tasks Assigned</TableHead>
@@ -320,7 +322,7 @@ export const Teammates = () => {
                     </div>
                   </TableCell>
                   <TableCell>{teammate.role}</TableCell>
-                  <TableCell>{teammate.department}</TableCell>
+                  <TableCell>{teammate.projectName}</TableCell>
                   <TableCell>{teammate.phone}</TableCell> {/* Display Phone */}
                   <TableCell>
                     <Badge className={getStatusColor(teammate.availabilityStatus)}>
@@ -331,7 +333,7 @@ export const Teammates = () => {
                   <TableCell>
                     <div className="flex items-center space-x-2">
                       {/* Edit button - only visible to ADMIN */}
-                      {user?.role === 'ADMIN' && (
+                      {user?.role === 'ADMIN' ||  user?.role === 'HR' && (
                         <Button 
                           variant="ghost" 
                           size="sm"
@@ -341,7 +343,7 @@ export const Teammates = () => {
                         </Button>
                       )}
                       {/* Delete button - only visible to ADMIN */}
-                      {user?.role === 'ADMIN' && (
+                      {user?.role === 'ADMIN' ||  user?.role === 'HR'  && (
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">

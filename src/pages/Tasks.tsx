@@ -185,6 +185,7 @@ export const Tasks = () => {
   };
 
   const handleEditTask = (task: Task) => {
+    console.log("calling here");
     setEditingTask(task);
     setIsEditModalOpen(true);
   };
@@ -224,26 +225,36 @@ export const Tasks = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">Tasks</h1>
-          <p className="text-slate-600 mt-1">Manage and track your project tasks</p>
-        </div>
+  {/* Header */}
+  <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+    <div>
+      <h1 className="text-3xl font-bold text-slate-900">Tasks</h1>
+      <p className="text-slate-600 mt-1">Manage and track your project tasks</p>
+    </div>
 
-        <div className="flex items-center space-x-2">
-          {/* Only show Add Task button for ADMIN, MANAGER, BA */}
-          {user?.role && ["ADMIN", "MANAGER", "BA","TEAMLEAD"].includes(user.role) && (
-            <Button 
-              className="bg-blue-600 hover:bg-blue-700"
-              onClick={() => setIsCreateModalOpen(true)}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Task
-            </Button>
-          )}
-        </div>
-      </div>
+    <div className="flex items-center space-x-2">
+      {/* Debug log for user role */}
+      {//console.log('Current user role:', user?.role
+      }
+      
+      {/* Only show Add Task button for ADMIN, MANAGER, BA */}
+      {user?.role && ["ADMIN", "MANAGER", "BA","TEAMLEAD"].includes(user.role) && (
+        <Button 
+          className="bg-blue-600 hover:bg-blue-700"
+          onClick={() => {
+            console.log('Add Task button clicked - before state update');
+            console.log('Current isCreateModalOpen value:', isCreateModalOpen);
+            setIsCreateModalOpen(true);
+            console.log('Add Task button clicked - after state update');
+          }}
+          data-testid="add-task-button" // Added for testing
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Add Task
+        </Button>
+      )}
+    </div>
+  </div>
 
       {/* Search and Filters */}
       <div className="space-y-4">
@@ -399,7 +410,9 @@ export const Tasks = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleEditTask(task)}
+                      onClick={() => {
+                        console.log("clicking this button");
+                        handleEditTask(task)}}
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
@@ -440,7 +453,11 @@ export const Tasks = () => {
       </Card>
 
       {/* Add Task Modal */}
-      <AddTaskDialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen} />
+      <AddTaskDialog 
+  isOpen={isCreateModalOpen} 
+  onClose={() => setIsCreateModalOpen(false)}   
+  teammates={teammates}
+/>
 
       {/* Edit Task Modal */}
       <EditTaskDialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen} task={editingTask} />

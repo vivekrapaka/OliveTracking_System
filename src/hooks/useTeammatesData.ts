@@ -14,6 +14,7 @@ export interface BackendTeammate {
   availabilityStatus: string;
   tasksAssigned: number;
   tasksCompleted: number;
+  projectName : string;
 }
 
 export interface TeammatesApiResponse {
@@ -22,6 +23,7 @@ export interface TeammatesApiResponse {
   occupiedTeamMembersCount: number;
   activeTasksCount: number;
   teammates: BackendTeammate[];
+  
 }
 
 const fetchTeammatesData = async (): Promise<TeammatesApiResponse> => {
