@@ -29,22 +29,25 @@ import { useTeammatesData, BackendTeammate } from "@/hooks/useTeammatesData";
 import { AddTeammateForm } from "@/components/AddTeammateForm";
 import { EditTeammateForm } from "@/components/EditTeammateForm";
 import { useDeleteTeammate } from "@/hooks/useDeleteTeammate";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Teammate {
   id: number;
   name: string;
   email: string;
   role: string;
-  phone: string;
+  phone: string; // Added phone
   department: string;
   location: string;
   avatar: string;
   availabilityStatus: string;
   tasksAssigned: number;
   tasksCompleted: number;
+  projectName: string;
 }
 
 export const Teammates = () => {
+  const { user } = useAuth();
   const { data: teammatesApiData, isLoading, error } = useTeammatesData();
   const deleteTeammateMutation = useDeleteTeammate();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -62,13 +65,14 @@ export const Teammates = () => {
       name: backendTeammate.name,
       email: backendTeammate.email,
       role: backendTeammate.role,
-      phone: backendTeammate.phone,
+      phone: backendTeammate.phone, // Added phone
       department: backendTeammate.department,
       location: backendTeammate.location,
       avatar: backendTeammate.avatar,
       availabilityStatus: backendTeammate.availabilityStatus,
       tasksAssigned: backendTeammate.tasksAssigned,
-      tasksCompleted: backendTeammate.tasksCompleted
+      tasksCompleted: backendTeammate.tasksCompleted,
+      projectName:backendTeammate.projectName
     };
   };
 
@@ -196,9 +200,10 @@ export const Teammates = () => {
         </div>
 
         <div className="flex items-center space-x-2">
+          {/* Add Teammate button - disabled for everyone */}
           <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-blue-600 hover:bg-blue-700">
+              <Button className="bg-blue-600 hover:bg-blue-700" disabled>
                 <Plus className="h-4 w-4 mr-2" />
                 Add Teammate
               </Button>
@@ -294,7 +299,8 @@ export const Teammates = () => {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Role</TableHead>
-                <TableHead>Department</TableHead>
+                <TableHead>ProjectName</TableHead>
+                <TableHead>Phone</TableHead> {/* Added Phone column */}
                 <TableHead>Status</TableHead>
                 <TableHead>Tasks Assigned</TableHead>
                 <TableHead>Actions</TableHead>
@@ -316,7 +322,8 @@ export const Teammates = () => {
                     </div>
                   </TableCell>
                   <TableCell>{teammate.role}</TableCell>
-                  <TableCell>{teammate.department}</TableCell>
+                  <TableCell>{teammate.projectName}</TableCell>
+                  <TableCell>{teammate.phone}</TableCell> {/* Display Phone */}
                   <TableCell>
                     <Badge className={getStatusColor(teammate.availabilityStatus)}>
                       {teammate.availabilityStatus}
@@ -325,24 +332,29 @@ export const Teammates = () => {
                   <TableCell>{teammate.tasksAssigned}</TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-2">
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => handleEditTeammate(teammate)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete Teammate</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Are you sure you want to delete "{teammate.name}"? This action cannot be undone.
+                      {/* Edit button - only visible to ADMIN */}
+                      {user?.role === 'ADMIN' ||  user?.role === 'HR' && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleEditTeammate(teammate)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {/* Delete button - only visible to ADMIN */}
+                      {user?.role === 'ADMIN' ||  user?.role === 'HR'  && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Teammate</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete "{teammate.name}"? This action cannot be undone.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
@@ -357,6 +369,7 @@ export const Teammates = () => {
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -388,3 +401,5 @@ export const Teammates = () => {
 };
 
 export default Teammates;
+
+

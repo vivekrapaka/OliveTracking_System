@@ -1,8 +1,8 @@
 import apiClient from './apiClient';
 
 const AuthService = {
-  signup: (fullName, email, password) => {
-    return apiClient.post('/auth/signup', { fullName, email, password });
+  signup: (fullName, email, phone, location, password) => {
+    return apiClient.post('/auth/signup', { fullName, email, phone, location, password });
   },
 
   signin: (email, password) => {
@@ -11,6 +11,7 @@ const AuthService = {
 
   logout: () => {
     localStorage.removeItem('user');
+    localStorage.removeItem('jwtToken');
     // Optionally, invalidate token on backend if supported
   },
 
@@ -20,4 +21,5 @@ const AuthService = {
 };
 
 export default AuthService;
+
 

@@ -26,8 +26,7 @@ export const useTaskSequenceNumber = () => {
   return useQuery({
     queryKey: ['task-sequence-number'],
     queryFn: fetchTaskSequenceNumber,
-    staleTime: 0, // Always fetch fresh data
-    cacheTime: 0, // Don't cache the result
+    staleTime: 0 // Always fetch fresh data
   });
 };
 

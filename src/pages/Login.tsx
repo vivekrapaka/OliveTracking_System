@@ -13,6 +13,7 @@ const Login = () => {
   const { user, login, signup } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [activeTab, setActiveTab] = useState('signin'); // State to control active tab
 
   // Sign in form state
   const [signInData, setSignInData] = useState({
@@ -20,10 +21,12 @@ const Login = () => {
     password: ''
   });
 
-  // Sign up form state
+  // Sign up form state - updated with new required fields
   const [signUpData, setSignUpData] = useState({
-    name: '',
+    fullName: '',
     email: '',
+    phone: '',
+    location: '',
     password: '',
     confirmPassword: ''
   });
@@ -35,7 +38,7 @@ const Login = () => {
 
   // Password validation function
   const validatePassword = (password) => {
-    const minLength = password.length >= 8;
+    const minLength = password.length >= 6; // Changed to 6 as per backend
     const hasCapital = /[A-Z]/.test(password);
     const hasNumber = /\d/.test(password);
     
@@ -79,7 +82,7 @@ const Login = () => {
 
   const handleSignUp = async (e) => {
     e.preventDefault();
-    if (!signUpData.name || !signUpData.email || !signUpData.password || !signUpData.confirmPassword) {
+    if (!signUpData.fullName || !signUpData.email || !signUpData.phone || !signUpData.location || !signUpData.password || !signUpData.confirmPassword) {
       toast({
         title: "Error",
         description: "Please fill in all fields",
@@ -92,7 +95,7 @@ const Login = () => {
     const passwordValidation = validatePassword(signUpData.password);
     if (!passwordValidation.isValid) {
       let errorMessage = "Password must contain:";
-      if (!passwordValidation.errors.minLength) errorMessage += "\n• At least 8 characters";
+      if (!passwordValidation.errors.minLength) errorMessage += "\n• At least 6 characters"; // Updated minLength message
       if (!passwordValidation.errors.hasCapital) errorMessage += "\n• At least one capital letter";
       if (!passwordValidation.errors.hasNumber) errorMessage += "\n• At least one number";
       
@@ -115,11 +118,21 @@ const Login = () => {
 
     setIsLoading(true);
     try {
-      await signup(signUpData.name, signUpData.email, signUpData.password);
+      await signup(signUpData.fullName, signUpData.email, signUpData.phone, signUpData.location, signUpData.password);
       toast({
         title: "Success",
-        description: "Account created successfully!"
+        description: "Account created successfully! Please sign in with your credentials."
       });
+      // Reset form after successful signup
+      setSignUpData({
+        fullName: '',
+        email: '',
+        phone: '',
+        location: '',
+        password: '',
+        confirmPassword: ''
+      });
+      setActiveTab('signin'); // Switch to signin tab after successful signup
     } catch (error) {
       toast({
         title: "Error",
@@ -135,7 +148,7 @@ const Login = () => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <img 
-            src="OliveTracking_System/public/lovable-uploads/Gemini_Generated_Image_s8vpzis8vpzis8vp.png" 
+            src="OliveTracking_System/public/lovable-uploads/karya_logo.png" 
             alt="KARYA" 
             className="h-16 w-auto mx-auto mb-4"
           />
@@ -148,7 +161,7 @@ const Login = () => {
             <CardTitle className="text-center text-2xl">Authentication</CardTitle>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="signin" className="w-full">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="signin">Sign In</TabsTrigger>
                 <TabsTrigger value="signup">Sign Up</TabsTrigger>
@@ -198,18 +211,18 @@ const Login = () => {
               <TabsContent value="signup">
                 <form onSubmit={handleSignUp} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signup-name">Full Name</Label>
+                    <Label htmlFor="signup-fullname">Full Name *</Label>
                     <Input
-                      id="signup-name"
+                      id="signup-fullname"
                       type="text"
                       placeholder="Enter your full name"
-                      value={signUpData.name}
-                      onChange={(e) => setSignUpData({...signUpData, name: e.target.value})}
+                      value={signUpData.fullName}
+                      onChange={(e) => setSignUpData({...signUpData, fullName: e.target.value})}
                       required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
+                    <Label htmlFor="signup-email">Email *</Label>
                     <Input
                       id="signup-email"
                       type="email"
@@ -220,7 +233,29 @@ const Login = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-password">Password</Label>
+                    <Label htmlFor="signup-phone">Phone Number *</Label>
+                    <Input
+                      id="signup-phone"
+                      type="tel"
+                      placeholder="Enter your phone number"
+                      value={signUpData.phone}
+                      onChange={(e) => setSignUpData({...signUpData, phone: e.target.value})}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-location">Location *</Label>
+                    <Input
+                      id="signup-location"
+                      type="text"
+                      placeholder="Enter your location"
+                      value={signUpData.location}
+                      onChange={(e) => setSignUpData({...signUpData, location: e.target.value})}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-password">Password *</Label>
                     <div className="relative">
                       <Input
                         id="signup-password"
@@ -241,11 +276,11 @@ const Login = () => {
                       </Button>
                     </div>
                     <p className="text-xs text-gray-600">
-                      Password must be at least 8 characters long and contain at least one capital letter and one number.
+                      Password must be at least 6 characters long and contain at least one capital letter and one number.
                     </p>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-confirm-password">Confirm Password</Label>
+                    <Label htmlFor="signup-confirm-password">Confirm Password *</Label>
                     <Input
                       id="signup-confirm-password"
                       type={showPassword ? "text" : "password"}
@@ -269,5 +304,4 @@ const Login = () => {
 };
 
 export default Login;
-
 

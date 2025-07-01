@@ -18,8 +18,10 @@ import { Link } from "react-router-dom";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { DashboardLoading } from "@/components/DashboardLoading";
 import { mockDashboardData } from "@/services/mockDashboardData";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Dashboard = () => {
+  const { user } = useAuth();
   const { data: dashboardData, isLoading, error, refetch, isRefetching } = useDashboardData();
 
   if (isLoading) {
@@ -33,6 +35,14 @@ const Dashboard = () => {
   if (error) {
     console.error('Dashboard data fetch error:', error);
   }
+
+  // Get project context for display
+  const getProjectContext = () => {
+    if (user?.role === 'ADMIN') {
+      return user?.projectId ? `Dashboard for Project ${user.projectId}` : 'Global Dashboard';
+    }
+    return user?.projectId ? `Dashboard for Project ${user.projectId}` : 'Dashboard';
+  };
 
   if (!displayData) {
     return (
@@ -107,7 +117,7 @@ const Dashboard = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
+          <h1 className="text-3xl font-bold text-slate-900">{getProjectContext()}</h1>
           <p className="text-slate-600 mt-1">Welcome back! Here's what's happening with your Kotak project:</p>
         </div>
         <div className="flex items-center space-x-2">

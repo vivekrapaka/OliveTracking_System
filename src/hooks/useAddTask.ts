@@ -4,15 +4,17 @@ import apiClient from '@/services/apiClient'; // Import apiClient
 
 export interface AddTaskRequest {
   taskName: string;
-  description: string;
+  description?: string; // Made optional as per backend, if not @NotBlank
   currentStage: string;
-  startDate: string;
-  dueDate: string;
-  issueType: string;
-  receivedDate: string;
-  developmentStartDate: string;
-  assignedTeammateNames: string[];
-  priority: string;
+  startDate?: string; // Made optional as per backend, if not @NotBlank
+  dueDate?: string; // Made optional as per backend, if not @NotBlank
+  issueType?: string; // Made optional as per backend, if not @NotBlank
+  receivedDate?: string; // Made optional as per backend, if not @NotBlank
+  developmentStartDate?: string; // Made optional as per backend, if not @NotBlank
+  assignedTeammateNames?: string[]; // Made optional as per backend, if not @NotBlank
+  priority?: string; // Made optional as per backend, if not @NotBlank
+  projectId: number; // NEW: projectId is now required for task creation
+  documentPath?: string; // NEW: documentPath
 }
 
 const addTask = async (taskData: AddTaskRequest) => {
@@ -53,4 +55,5 @@ export const useAddTask = () => {
     },
   });
 };
+
 

@@ -17,8 +17,9 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     const response = await AuthService.signin(email, password);
-    const { token, ...userData } = response.data;
+    const { token, id, email: userEmail, fullName, role, projectIds, projectNames } = response.data; // Extract new fields
     localStorage.setItem('jwtToken', token);
+    const userData = { id, email: userEmail, fullName, role, projectIds, projectNames }; // Store new fields
     localStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);
     return userData;
@@ -29,8 +30,8 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
-  const signup = async (fullName, email, password) => {
-    const response = await AuthService.signup(fullName, email, password);
+  const signup = async (fullName, email, password,phone,location) => {
+    const response = await AuthService.signup(fullName, email, password,phone,location);
     return response.data;
   };
 
@@ -42,4 +43,5 @@ export const AuthProvider = ({ children }) => {
 };
 
 export const useAuth = () => useContext(AuthContext);
+
 

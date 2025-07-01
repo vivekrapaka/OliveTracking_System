@@ -33,6 +33,7 @@ import { useTeammatesData } from "@/hooks/useTeammatesData";
 import { EditTaskDialog } from "@/components/EditTaskDialog";
 import { AddTaskDialog } from "@/components/AddTaskDialog";
 import { useDeleteTask } from "@/hooks/useDeleteTask";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Task {
   id: number;
@@ -48,9 +49,12 @@ interface Task {
   priority: string;
   isCompleted: boolean;
   isCmcDone: boolean;
+  projectId: number; // Added projectId
+  documentPath?: string; // Added documentPath
 }
 
 export const Tasks = () => {
+  const { user } = useAuth();
   const { data: tasksApiData, isLoading, error } = useTasksData();
   const { data: teammatesApiData } = useTeammatesData();
   const deleteTaskMutation = useDeleteTask();
@@ -78,7 +82,9 @@ export const Tasks = () => {
       assignedTeammates: backendTask.assignedTeammates,
       priority: backendTask.priority,
       isCompleted: backendTask.isCompleted,
-      isCmcDone: backendTask.isCmcDone
+      isCmcDone: backendTask.isCmcDone,
+      projectId: backendTask.projectId, // Added projectId
+      documentPath: backendTask.documentPath // Added documentPath
     };
   };
 
@@ -179,6 +185,7 @@ export const Tasks = () => {
   };
 
   const handleEditTask = (task: Task) => {
+    console.log("calling here");
     setEditingTask(task);
     setIsEditModalOpen(true);
   };
@@ -218,23 +225,36 @@ export const Tasks = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">Tasks</h1>
-          <p className="text-slate-600 mt-1">Manage and track your project tasks</p>
-        </div>
+  {/* Header */}
+  <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+    <div>
+      <h1 className="text-3xl font-bold text-slate-900">Tasks</h1>
+      <p className="text-slate-600 mt-1">Manage and track your project tasks</p>
+    </div>
 
-        <div className="flex items-center space-x-2">
-          <Button 
-            className="bg-blue-600 hover:bg-blue-700"
-            onClick={() => setIsCreateModalOpen(true)}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Task
-          </Button>
-        </div>
-      </div>
+    <div className="flex items-center space-x-2">
+      {/* Debug log for user role */}
+      {//console.log('Current user role:', user?.role
+      }
+      
+      {/* Only show Add Task button for ADMIN, MANAGER, BA */}
+      {user?.role && ["ADMIN", "MANAGER", "BA","TEAMLEAD"].includes(user.role) && (
+        <Button 
+          className="bg-blue-600 hover:bg-blue-700"
+          onClick={() => {
+            console.log('Add Task button clicked - before state update');
+            console.log('Current isCreateModalOpen value:', isCreateModalOpen);
+            setIsCreateModalOpen(true);
+            console.log('Add Task button clicked - after state update');
+          }}
+          data-testid="add-task-button" // Added for testing
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Add Task
+        </Button>
+      )}
+    </div>
+  </div>
 
       {/* Search and Filters */}
       <div className="space-y-4">
@@ -386,37 +406,44 @@ export const Tasks = () => {
                     {task.currentStage}
                   </Badge>
                   <div className="flex items-center space-x-1">
+                    {/* Edit button - visible to all roles but with different permissions */}
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleEditTask(task)}
+                      onClick={() => {
+                        console.log("clicking this button");
+                        handleEditTask(task)}}
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This will permanently delete the task "{task.name}". This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => handleDeleteTask(task)}
-                            className="bg-red-600 hover:bg-red-700"
-                          >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                    {/* Delete button - only visible to ADMIN, MANAGER, BA */}
+                    {user?.role && ["ADMIN", "MANAGER", "BA"].includes(user.role) && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Task</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete task "{task.name}"? This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDeleteTask(task)}
+                              className="bg-red-600 hover:bg-red-700"
+                              disabled={deleteTaskMutation.isPending}
+                            >
+                              {deleteTaskMutation.isPending ? "Deleting..." : "Delete"}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
                   </div>
                 </div>
               </div>
@@ -425,25 +452,19 @@ export const Tasks = () => {
         </CardContent>
       </Card>
 
-      {/* Add Task Dialog */}
-      <AddTaskDialog
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        teammates={teammates}
-      />
+      {/* Add Task Modal */}
+      <AddTaskDialog 
+  isOpen={isCreateModalOpen} 
+  onClose={() => setIsCreateModalOpen(false)}   
+  teammates={teammates}
+/>
 
-      {/* Edit Task Dialog */}
-      <EditTaskDialog
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        task={editingTask}
-        onSave={handleSaveTask}
-        teammates={teammates}
-      />
+      {/* Edit Task Modal */}
+      <EditTaskDialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen} task={editingTask} />
 
       {filteredTasks.length === 0 && !isLoading && (
         <div className="text-center py-12">
-          <Clock className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+          <Users className="h-12 w-12 text-slate-400 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-slate-900 mb-2">No tasks found</h3>
           <p className="text-slate-600">Try adjusting your search criteria or add a new task.</p>
         </div>
@@ -453,3 +474,5 @@ export const Tasks = () => {
 };
 
 export default Tasks;
+
+
