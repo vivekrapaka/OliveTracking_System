@@ -6,9 +6,9 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AdminRoute } from "./components/AdminRoute";
 import { Layout } from "./components/Layout";
-import Dashboard from "./pages/Dashboard";
-import Tasks from "./pages/Tasks";
-import Teammates from "./pages/Teammates";
+import { default as Dashboard } from "./pages/Dashboard";
+import { Tasks } from "./pages/Tasks";
+import { default as Teammates } from "./pages/Teammates";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import ProjectManagement from "./pages/admin/ProjectManagement";
@@ -43,6 +43,7 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <Teammates />
+                /
                 </Layout>
               </ProtectedRoute>
             } />
@@ -69,4 +70,5 @@ function App() {
 }
 
 export default App;
+
 

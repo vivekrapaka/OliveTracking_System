@@ -14,6 +14,7 @@ export interface BackendTeammate {
   availabilityStatus: string;
   tasksAssigned: number;
   tasksCompleted: number;
+  projectName : string;
 }
 
 export interface TeammatesApiResponse {
@@ -22,10 +23,11 @@ export interface TeammatesApiResponse {
   occupiedTeamMembersCount: number;
   activeTasksCount: number;
   teammates: BackendTeammate[];
+  
 }
 
 const fetchTeammatesData = async (): Promise<TeammatesApiResponse> => {
-  const url = buildApiUrl(API_ENDPOINTS.TEAMMATES);
+  const url = `/api/teammates`;
   
   try {
     const response = await apiClient.get(url); // Use apiClient.get

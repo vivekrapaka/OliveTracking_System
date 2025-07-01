@@ -30,8 +30,8 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
-  const signup = async (fullName, email, password) => {
-    const response = await AuthService.signup(fullName, email, password);
+  const signup = async (fullName, email, password,phone,location) => {
+    const response = await AuthService.signup(fullName, email, password,phone,location);
     return response.data;
   };
 

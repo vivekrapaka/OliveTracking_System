@@ -17,7 +17,7 @@ const ProjectManagement = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
-  const [formData, setFormData] = useState({ name: '', description: '' });
+  const [formData, setFormData] = useState({ projectName: '', description: '' });
 
   // React Query hooks
   const { data: projects = [], isLoading, error } = useProjects();
@@ -42,7 +42,7 @@ const ProjectManagement = () => {
     try {
       await createProjectMutation.mutateAsync(formData);
       setIsCreateDialogOpen(false);
-      setFormData({ name: '', description: '' });
+      setFormData({ projectName: '', description: '' });
     } catch (error) {
       // Error handling is done in the mutation
     }
@@ -57,7 +57,7 @@ const ProjectManagement = () => {
       });
       setIsEditDialogOpen(false);
       setEditingProject(null);
-      setFormData({ name: '', description: '' });
+      setFormData({ projectName: '', description: '' });
     } catch (error) {
       // Error handling is done in the mutation
     }
@@ -73,12 +73,12 @@ const ProjectManagement = () => {
 
   const openEditDialog = (project) => {
     setEditingProject(project);
-    setFormData({ name: project.name, description: project.description || '' });
+    setFormData({ projectName: project.projectName, description: project.description || '' });
     setIsEditDialogOpen(true);
   };
 
   const filteredProjects = projects.filter(project =>
-    project.name?.toLowerCase().includes(searchTerm.toLowerCase())
+    project.projectName?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (isLoading) {
@@ -123,8 +123,8 @@ const ProjectManagement = () => {
                 <Label htmlFor="name">Project Name *</Label>
                 <Input
                   id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  value={formData.projectName}
+                  onChange={(e) => setFormData({ ...formData, projectName: e.target.value })}
                   required
                 />
               </div>
@@ -183,7 +183,7 @@ const ProjectManagement = () => {
                 filteredProjects.map((project) => (
                   <TableRow key={project.id}>
                     <TableCell>{project.id}</TableCell>
-                    <TableCell className="font-medium">{project.name}</TableCell>
+                    <TableCell className="font-medium">{project.projectName}</TableCell>
                     <TableCell>{project.description || 'No description'}</TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
@@ -204,7 +204,7 @@ const ProjectManagement = () => {
                             <AlertDialogHeader>
                               <AlertDialogTitle>Delete Project</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Are you sure you want to delete "{project.name}"? This action cannot be undone and may affect associated data.
+                                Are you sure you want to delete "{project.projectName}"? This action cannot be undone and may affect associated data.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
@@ -240,8 +240,8 @@ const ProjectManagement = () => {
               <Label htmlFor="edit-name">Project Name *</Label>
               <Input
                 id="edit-name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                value={formData.projectName}
+                onChange={(e) => setFormData({ ...formData, projectName: e.target.value })}
                 required
               />
             </div>
@@ -269,4 +269,5 @@ const ProjectManagement = () => {
 };
 
 export default ProjectManagement;
+
 

@@ -24,7 +24,7 @@ export interface TasksApiResponse {
 }
 
 const fetchTasksData = async (): Promise<TasksApiResponse> => {
-  const url = buildApiUrl(API_ENDPOINTS.TASKS);
+  const url = `/api/tasks`;
   
   try {
     const response = await apiClient.get(url); // Use apiClient.get
