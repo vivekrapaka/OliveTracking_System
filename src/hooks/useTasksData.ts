@@ -1,3 +1,4 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { API_ENDPOINTS, buildApiUrl } from '@/config/api';
 import apiClient from '@/services/apiClient'; // Import apiClient
@@ -7,15 +8,22 @@ export interface BackendTask {
   name: string;
   taskNumber: string;
   description: string;
+  status: string; // Changed from currentStage to status
+  taskType: string; // New field
+  parentId?: number; // New field
+  parentTaskTitle?: string; // New field for display
+  parentTaskSequenceNumber?: string; // New field for display
   issueType: string;
   receivedDate: string;
   developmentStartDate: string;
-  currentStage: string;
   dueDate: string;
-  assignedTeammates: string[];
+  assignedTeammateIds: number[]; // Changed from assignedTeammates to List<Long>
+  assignedTeammateNames: string[]; // New field for display
   priority: string;
   isCompleted: boolean;
   isCmcDone: boolean;
+  projectId: number;
+  documentPath?: string;
 }
 
 export interface TasksApiResponse {
@@ -48,4 +56,3 @@ export const useTasksData = () => {
     },
   });
 };
-

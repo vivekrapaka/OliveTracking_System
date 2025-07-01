@@ -5,14 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   Plus,
   Search,
   Edit,
@@ -22,7 +14,8 @@ import {
   Clock,
   AlertCircle,
   Calendar,
-  Users
+  Users,
+  Link
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -40,17 +33,22 @@ interface Task {
   taskNumber: string;
   name: string;
   description?: string;
+  status: string; // Changed from currentStage to status
+  taskType: string; // New field
+  parentId?: number; // New field
+  parentTaskTitle?: string; // New field
+  parentTaskSequenceNumber?: string; // New field
   issueType: string;
   receivedDate: string;
   developmentStartDate: string;
-  currentStage: string;
   dueDate: string;
-  assignedTeammates: string[];
+  assignedTeammates: string[]; // For display (from assignedTeammateNames)
+  assignedTeammateIds: number[]; // New field
   priority: string;
   isCompleted: boolean;
   isCmcDone: boolean;
-  projectId: number; // Added projectId
-  documentPath?: string; // Added documentPath
+  projectId: number;
+  documentPath?: string;
 }
 
 export const Tasks = () => {
@@ -63,7 +61,8 @@ export const Tasks = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedStages, setSelectedStages] = useState<string[]>([]);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]); // Changed from stages to statuses
+  const [selectedTaskTypes, setSelectedTaskTypes] = useState<string[]>([]); // New filter
   const [selectedPriorities, setSelectedPriorities] = useState<string[]>([]);
   const [selectedIssueTypes, setSelectedIssueTypes] = useState<string[]>([]);
 
@@ -74,17 +73,22 @@ export const Tasks = () => {
       taskNumber: backendTask.taskNumber,
       name: backendTask.name,
       description: backendTask.description,
+      status: backendTask.status, // Changed from currentStage
+      taskType: backendTask.taskType, // New field
+      parentId: backendTask.parentId, // New field
+      parentTaskTitle: backendTask.parentTaskTitle, // New field
+      parentTaskSequenceNumber: backendTask.parentTaskSequenceNumber, // New field
       issueType: backendTask.issueType,
       receivedDate: backendTask.receivedDate,
       developmentStartDate: backendTask.developmentStartDate,
-      currentStage: backendTask.currentStage,
       dueDate: backendTask.dueDate,
-      assignedTeammates: backendTask.assignedTeammates,
+      assignedTeammates: backendTask.assignedTeammateNames || [], // For display
+      assignedTeammateIds: backendTask.assignedTeammateIds || [], // New field
       priority: backendTask.priority,
       isCompleted: backendTask.isCompleted,
       isCmcDone: backendTask.isCmcDone,
-      projectId: backendTask.projectId, // Added projectId
-      documentPath: backendTask.documentPath // Added documentPath
+      projectId: backendTask.projectId,
+      documentPath: backendTask.documentPath
     };
   };
 
@@ -112,19 +116,25 @@ export const Tasks = () => {
       task.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       task.taskNumber.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesStage = selectedStages.length === 0 || selectedStages.includes(task.currentStage);
+    const matchesStatus = selectedStatuses.length === 0 || selectedStatuses.includes(task.status);
+    const matchesTaskType = selectedTaskTypes.length === 0 || selectedTaskTypes.includes(task.taskType);
     const matchesPriority = selectedPriorities.length === 0 || selectedPriorities.includes(task.priority);
     const matchesIssueType = selectedIssueTypes.length === 0 || selectedIssueTypes.includes(task.issueType);
 
-    return matchesSearch && matchesStage && matchesPriority && matchesIssueType;
+    return matchesSearch && matchesStatus && matchesTaskType && matchesPriority && matchesIssueType;
   });
 
   // Filter options for dropdowns
   const filterOptions = {
-    stages: [...new Set(tasksData.map(t => t.currentStage))].map(s => ({ 
+    statuses: [...new Set(tasksData.map(t => t.status))].map(s => ({ 
       label: s, 
       value: s, 
-      count: tasksData.filter(t => t.currentStage === s).length 
+      count: tasksData.filter(t => t.status === s).length 
+    })),
+    taskTypes: [...new Set(tasksData.map(t => t.taskType))].map(t => ({ 
+      label: t, 
+      value: t, 
+      count: tasksData.filter(task => task.taskType === t).length 
     })),
     priorities: [...new Set(tasksData.map(t => t.priority))].map(p => ({ 
       label: p, 
@@ -138,13 +148,45 @@ export const Tasks = () => {
     }))
   };
 
-  const activeFiltersCount = selectedStages.length + selectedPriorities.length + selectedIssueTypes.length;
+  const activeFiltersCount = selectedStatuses.length + selectedTaskTypes.length + selectedPriorities.length + selectedIssueTypes.length;
 
   const clearAllFilters = () => {
-    setSelectedStages([]);
+    setSelectedStatuses([]);
+    setSelectedTaskTypes([]);
     setSelectedPriorities([]);
     setSelectedIssueTypes([]);
     setSearchTerm("");
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "BACKLOG": return "bg-gray-100 text-gray-800 border-gray-200";
+      case "ANALYSIS": return "bg-blue-100 text-blue-800 border-blue-200";
+      case "DEVELOPMENT": return "bg-purple-100 text-purple-800 border-purple-200";
+      case "SIT_TESTING": return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "UAT_TESTING": return "bg-orange-100 text-orange-800 border-orange-200";
+      case "PREPROD": return "bg-indigo-100 text-indigo-800 border-indigo-200";
+      case "PROD": return "bg-green-100 text-green-800 border-green-200";
+      case "COMPLETED": return "bg-green-100 text-green-800 border-green-200";
+      case "CLOSED": return "bg-gray-100 text-gray-800 border-gray-200";
+      case "REOPENED": return "bg-red-100 text-red-800 border-red-200";
+      case "BLOCKED": return "bg-red-100 text-red-800 border-red-200";
+      case "SIT_FAILED": return "bg-red-100 text-red-800 border-red-200";
+      case "UAT_FAILED": return "bg-red-100 text-red-800 border-red-200";
+      default: return "bg-gray-100 text-gray-800 border-gray-200";
+    }
+  };
+
+  const getTaskTypeColor = (taskType: string) => {
+    switch (taskType) {
+      case "BRD": return "bg-blue-100 text-blue-800 border-blue-200";
+      case "EPIC": return "bg-purple-100 text-purple-800 border-purple-200";
+      case "STORY": return "bg-green-100 text-green-800 border-green-200";
+      case "TASK": return "bg-gray-100 text-gray-800 border-gray-200";
+      case "BUG": return "bg-red-100 text-red-800 border-red-200";
+      case "SUB_TASK": return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      default: return "bg-gray-100 text-gray-800 border-gray-200";
+    }
   };
 
   const getPriorityColor = (priority: string) => {
@@ -155,20 +197,6 @@ export const Tasks = () => {
       case "hig": return "bg-orange-100 text-orange-800 border-orange-200";
       case "medium": return "bg-yellow-100 text-yellow-800 border-yellow-200";
       case "low": return "bg-green-100 text-green-800 border-green-200";
-      default: return "bg-gray-100 text-gray-800 border-gray-200";
-    }
-  };
-
-  const getStageColor = (stage: string) => {
-    switch (stage) {
-      case "Planning": return "bg-blue-100 text-blue-800 border-blue-200";
-      case "Development":
-      case "DEV": return "bg-purple-100 text-purple-800 border-purple-200";
-      case "Review": return "bg-orange-100 text-orange-800 border-orange-200";
-      case "Testing":
-      case "SIT": return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "HOLD": return "bg-red-100 text-red-800 border-red-200";
-      case "Completed": return "bg-green-100 text-green-800 border-green-200";
       default: return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
@@ -225,36 +253,31 @@ export const Tasks = () => {
 
   return (
     <div className="space-y-6">
-  {/* Header */}
-  <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
-    <div>
-      <h1 className="text-3xl font-bold text-slate-900">Tasks</h1>
-      <p className="text-slate-600 mt-1">Manage and track your project tasks</p>
-    </div>
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">Tasks</h1>
+          <p className="text-slate-600 mt-1">Manage and track your project tasks</p>
+        </div>
 
-    <div className="flex items-center space-x-2">
-      {/* Debug log for user role */}
-      {//console.log('Current user role:', user?.role
-      }
-      
-      {/* Only show Add Task button for ADMIN, MANAGER, BA */}
-      {user?.role && ["ADMIN", "MANAGER", "BA","TEAMLEAD"].includes(user.role) && (
-        <Button 
-          className="bg-blue-600 hover:bg-blue-700"
-          onClick={() => {
-            console.log('Add Task button clicked - before state update');
-            console.log('Current isCreateModalOpen value:', isCreateModalOpen);
-            setIsCreateModalOpen(true);
-            console.log('Add Task button clicked - after state update');
-          }}
-          data-testid="add-task-button" // Added for testing
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add Task
-        </Button>
-      )}
-    </div>
-  </div>
+        <div className="flex items-center space-x-2">
+          {user?.role && ["ADMIN", "MANAGER", "BA","TEAMLEAD"].includes(user.role) && (
+            <Button 
+              className="bg-blue-600 hover:bg-blue-700"
+              onClick={() => {
+                console.log('Add Task button clicked - before state update');
+                console.log('Current isCreateModalOpen value:', isCreateModalOpen);
+                setIsCreateModalOpen(true);
+                console.log('Add Task button clicked - after state update');
+              }}
+              data-testid="add-task-button"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Task
+            </Button>
+          )}
+        </div>
+      </div>
 
       {/* Search and Filters */}
       <div className="space-y-4">
@@ -271,10 +294,16 @@ export const Tasks = () => {
         {/* Filter Bar */}
         <div className="flex flex-wrap gap-3 items-center">
           <FilterDropdown
-            title="Stage"
-            options={filterOptions.stages}
-            selectedValues={selectedStages}
-            onSelectionChange={setSelectedStages}
+            title="Status"
+            options={filterOptions.statuses}
+            selectedValues={selectedStatuses}
+            onSelectionChange={setSelectedStatuses}
+          />
+          <FilterDropdown
+            title="Task Type"
+            options={filterOptions.taskTypes}
+            selectedValues={selectedTaskTypes}
+            onSelectionChange={setSelectedTaskTypes}
           />
           <FilterDropdown
             title="Priority"
@@ -320,7 +349,7 @@ export const Tasks = () => {
         <Card>
           <CardContent className="p-6">
             <div className="text-2xl font-bold text-blue-600">
-              {tasksData.filter(t => t.currentStage === "Development" || t.currentStage === "DEV" || t.currentStage === "SIT").length}
+              {tasksData.filter(t => t.status === "DEVELOPMENT" || t.status === "SIT_TESTING").length}
             </div>
             <p className="text-sm text-slate-600">In Development</p>
           </CardContent>
@@ -328,7 +357,7 @@ export const Tasks = () => {
         <Card>
           <CardContent className="p-6">
             <div className="text-2xl font-bold text-yellow-600">
-              {tasksData.filter(t => t.currentStage === "Testing"  || t.currentStage === "UAT").length}
+              {tasksData.filter(t => t.status === "UAT_TESTING").length}
             </div>
             <p className="text-sm text-slate-600">In Testing</p>
           </CardContent>
@@ -336,7 +365,7 @@ export const Tasks = () => {
         <Card>
           <CardContent className="p-6">
             <div className="text-2xl font-bold text-green-600">
-              {tasksData.filter(t => t.currentStage === "Completed").length}
+              {tasksData.filter(t => t.status === "COMPLETED").length}
             </div>
             <p className="text-sm text-slate-600">Completed</p>
           </CardContent>
@@ -355,8 +384,8 @@ export const Tasks = () => {
                 key={task.id} 
                 className={cn(
                   "flex items-center justify-between p-4 rounded-lg transition-colors",
-                  task.currentStage === "Completed" ? "bg-green-50" : 
-                  task.currentStage === "HOLD" ? "bg-red-50" : 
+                  task.status === "COMPLETED" ? "bg-green-50" : 
+                  task.status === "BLOCKED" ? "bg-red-50" : 
                   "bg-slate-50 hover:bg-slate-100"
                 )}
               >
@@ -369,6 +398,15 @@ export const Tasks = () => {
                   </div>
                   {task.description && (
                     <p className="text-sm text-slate-600 mb-2">{task.description}</p>
+                  )}
+                  {/* Parent Task Link */}
+                  {task.parentTaskTitle && (
+                    <div className="flex items-center gap-2 mb-2">
+                      <Link className="h-3 w-3 text-slate-400" />
+                      <span className="text-xs text-slate-500">
+                        Parent: {task.parentTaskSequenceNumber} - {task.parentTaskTitle}
+                      </span>
+                    </div>
                   )}
                   <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600">
                     <span className="flex items-center">
@@ -396,17 +434,19 @@ export const Tasks = () => {
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
+                  <Badge className={getTaskTypeColor(task.taskType)}>
+                    {task.taskType}
+                  </Badge>
                   <Badge className={getIssueTypeColor(task.issueType)}>
                     {task.issueType}
                   </Badge>
                   <Badge className={getPriorityColor(task.priority)}>
                     {task.priority}
                   </Badge>
-                  <Badge className={getStageColor(task.currentStage)}>
-                    {task.currentStage}
+                  <Badge className={getStatusColor(task.status)}>
+                    {task.status}
                   </Badge>
                   <div className="flex items-center space-x-1">
-                    {/* Edit button - visible to all roles but with different permissions */}
                     <Button
                       variant="ghost"
                       size="sm"
@@ -416,7 +456,6 @@ export const Tasks = () => {
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
-                    {/* Delete button - only visible to ADMIN, MANAGER, BA */}
                     {user?.role && ["ADMIN", "MANAGER", "BA"].includes(user.role) && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
@@ -454,13 +493,19 @@ export const Tasks = () => {
 
       {/* Add Task Modal */}
       <AddTaskDialog 
-  isOpen={isCreateModalOpen} 
-  onClose={() => setIsCreateModalOpen(false)}   
-  teammates={teammates}
-/>
+        isOpen={isCreateModalOpen} 
+        onClose={() => setIsCreateModalOpen(false)}   
+        teammates={teammates}
+      />
 
       {/* Edit Task Modal */}
-      <EditTaskDialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen} task={editingTask} />
+      <EditTaskDialog 
+        isOpen={isEditModalOpen} 
+        onClose={() => setIsEditModalOpen(false)} 
+        task={editingTask} 
+        onSave={handleSaveTask} 
+        teammates={teammates} 
+      />
 
       {filteredTasks.length === 0 && !isLoading && (
         <div className="text-center py-12">
@@ -474,5 +519,3 @@ export const Tasks = () => {
 };
 
 export default Tasks;
-
-

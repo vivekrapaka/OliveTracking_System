@@ -1,20 +1,23 @@
+
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
 import apiClient from '@/services/apiClient'; // Import apiClient
 
 export interface AddTaskRequest {
   taskName: string;
-  description?: string; // Made optional as per backend, if not @NotBlank
-  currentStage: string;
-  startDate?: string; // Made optional as per backend, if not @NotBlank
-  dueDate?: string; // Made optional as per backend, if not @NotBlank
-  issueType?: string; // Made optional as per backend, if not @NotBlank
-  receivedDate?: string; // Made optional as per backend, if not @NotBlank
-  developmentStartDate?: string; // Made optional as per backend, if not @NotBlank
-  assignedTeammateNames?: string[]; // Made optional as per backend, if not @NotBlank
-  priority?: string; // Made optional as per backend, if not @NotBlank
-  projectId: number; // NEW: projectId is now required for task creation
-  documentPath?: string; // NEW: documentPath
+  description?: string;
+  status: string; // Changed from currentStage to status
+  taskType: string; // New field
+  parentId?: number; // New field
+  startDate?: string;
+  dueDate?: string;
+  issueType?: string;
+  receivedDate?: string;
+  developmentStartDate?: string;
+  assignedTeammateIds?: number[]; // Changed from assignedTeammateNames to List<Long>
+  priority?: string;
+  projectId: number;
+  documentPath?: string;
 }
 
 const addTask = async (taskData: AddTaskRequest) => {
@@ -55,5 +58,3 @@ export const useAddTask = () => {
     },
   });
 };
-
-

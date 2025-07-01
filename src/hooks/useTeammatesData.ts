@@ -1,3 +1,4 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { API_ENDPOINTS, buildApiUrl } from '@/config/api';
 import apiClient from '@/services/apiClient'; // Import apiClient
@@ -14,7 +15,8 @@ export interface BackendTeammate {
   availabilityStatus: string;
   tasksAssigned: number;
   tasksCompleted: number;
-  projectName : string;
+  projectName: string;
+  projectIds: number[]; // New field for multi-project assignment
 }
 
 export interface TeammatesApiResponse {
@@ -23,7 +25,6 @@ export interface TeammatesApiResponse {
   occupiedTeamMembersCount: number;
   activeTasksCount: number;
   teammates: BackendTeammate[];
-  
 }
 
 const fetchTeammatesData = async (): Promise<TeammatesApiResponse> => {
@@ -51,4 +52,3 @@ export const useTeammatesData = () => {
     },
   });
 };
-

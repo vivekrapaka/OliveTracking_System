@@ -1,3 +1,4 @@
+
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
 import apiClient from '@/services/apiClient'; // Import apiClient
@@ -5,7 +6,9 @@ import apiClient from '@/services/apiClient'; // Import apiClient
 interface EditTaskRequest {
   taskName: string;
   description: string;
-  currentStage: string;
+  status: string; // Changed from currentStage to status
+  taskType: string; // New field
+  parentId?: number; // New field
   startDate: string;
   dueDate: string;
   isCompleted: boolean;
@@ -14,7 +17,7 @@ interface EditTaskRequest {
   developmentStartDate: string;
   isCodeReviewDone: boolean;
   isCmcDone: boolean;
-  assignedTeammateNames: string[];
+  assignedTeammateIds: number[]; // Changed from assignedTeammateNames to List<Long>
   priority: string;
 }
 
@@ -52,4 +55,3 @@ export const useEditTask = () => {
     },
   });
 };
-
