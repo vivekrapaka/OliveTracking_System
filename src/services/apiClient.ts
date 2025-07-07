@@ -16,8 +16,9 @@ apiClient.interceptors.request.use(
     const token = localStorage.getItem('jwtToken');
     console.log('Request interceptor - Token found:', token ? 'Yes' : 'No');
     console.log('Request URL:', config.url);
-    
+    console.log("out of token")
     if (token) {
+      console.log("in token block")
       config.headers['Authorization'] = `Bearer ${token}`;
       console.log('Authorization header set:', config.headers['Authorization']);
     } else {

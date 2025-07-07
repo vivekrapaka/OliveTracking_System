@@ -15,7 +15,6 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [activeTab, setActiveTab] = useState('signin'); // State to control active tab
-
   // Sign in form state
   const [signInData, setSignInData] = useState({
     email: '',
