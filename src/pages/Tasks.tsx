@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,10 +23,10 @@ import { toast } from "@/hooks/use-toast";
 import { FilterDropdown } from "@/components/FilterDropdown";
 import { useTasksData, BackendTask } from "@/hooks/useTasksData";
 import { useTeammatesData } from "@/hooks/useTeammatesData";
-import { EditTaskDialog } from "@/components/EditTaskDialog";
 import { AddTaskDialog } from "@/components/AddTaskDialog";
 import { useDeleteTask } from "@/hooks/useDeleteTask";
 import { useAuth } from "@/contexts/AuthContext";
+import { TaskDetailsDialog } from "@/components/TaskDetailsDialog";
 
 interface Task {
   id: number;
@@ -58,8 +57,8 @@ export const Tasks = () => {
   const deleteTaskMutation = useDeleteTask();
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [selectedTaskTypes, setSelectedTaskTypes] = useState<string[]>([]);
@@ -192,10 +191,10 @@ export const Tasks = () => {
     }
   };
 
-  const handleEditTask = (task: Task) => {
-    console.log("Edit task:", task);
-    setEditingTask(task);
-    setIsEditModalOpen(true);
+  const handleViewTask = (task: Task) => {
+    console.log("View task:", task);
+    setSelectedTask(task);
+    setIsDetailsModalOpen(true);
   };
 
   const handleDeleteTask = (task: Task) => {
@@ -415,7 +414,7 @@ export const Tasks = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleEditTask(task)}
+                      onClick={() => handleViewTask(task)}
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
@@ -461,11 +460,11 @@ export const Tasks = () => {
         teammates={teammates}
       />
 
-      {/* Edit Task Modal */}
-      <EditTaskDialog 
-        isOpen={isEditModalOpen} 
-        onClose={() => setIsEditModalOpen(false)} 
-        task={editingTask} 
+      {/* Task Details Modal */}
+      <TaskDetailsDialog 
+        isOpen={isDetailsModalOpen} 
+        onClose={() => setIsDetailsModalOpen(false)} 
+        task={selectedTask} 
         onSave={handleSaveTask} 
         teammates={teammates} 
       />
