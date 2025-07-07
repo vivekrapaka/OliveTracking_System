@@ -7,8 +7,8 @@ interface UpdateTaskStatusRequest {
   newStatus: string;
 }
 
-const updateTaskStatus = async (taskName: string, newStatus: string) => {
-  const url = `/api/tasks/${encodeURIComponent(taskName)}/status`;
+const updateTaskStatus = async (taskId: number, newStatus: string) => {
+  const url = `/api/tasks/${taskId}/status`;
   
   console.log('Updating task status at:', url);
   console.log('New status:', newStatus);
@@ -22,8 +22,8 @@ export const useUpdateTaskStatus = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: ({ taskName, newStatus }: { taskName: string; newStatus: string }) => 
-      updateTaskStatus(taskName, newStatus),
+    mutationFn: ({ taskId, newStatus }: { taskId: number; newStatus: string }) => 
+      updateTaskStatus(taskId, newStatus),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks-data'] });
       toast({

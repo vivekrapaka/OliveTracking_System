@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -33,22 +34,21 @@ interface Task {
   taskNumber: string;
   name: string;
   description?: string;
-  status: string; // Changed from currentStage to status
-  taskType: string; // New field
-  parentId?: number; // New field
-  parentTaskTitle?: string; // New field
-  parentTaskSequenceNumber?: string; // New field
-  issueType: string;
+  status: string;
+  taskType: string;
+  parentId?: number;
+  parentTaskTitle?: string;
+  parentTaskFormattedNumber?: string;
   receivedDate: string;
   developmentStartDate: string;
   dueDate: string;
-  assignedTeammates: string[]; // For display (from assignedTeammateNames)
-  assignedTeammateIds: number[]; // New field
+  assignedTeammates: string[];
+  assignedTeammateIds: number[];
   priority: string;
-  isCompleted: boolean;
-  isCmcDone: boolean;
   projectId: number;
+  projectName: string;
   documentPath?: string;
+  commitId?: string;
 }
 
 export const Tasks = () => {
@@ -61,10 +61,9 @@ export const Tasks = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]); // Changed from stages to statuses
-  const [selectedTaskTypes, setSelectedTaskTypes] = useState<string[]>([]); // New filter
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [selectedTaskTypes, setSelectedTaskTypes] = useState<string[]>([]);
   const [selectedPriorities, setSelectedPriorities] = useState<string[]>([]);
-  const [selectedIssueTypes, setSelectedIssueTypes] = useState<string[]>([]);
 
   // Convert backend data to frontend format
   const convertBackendToFrontend = (backendTask: BackendTask): Task => {
@@ -73,22 +72,21 @@ export const Tasks = () => {
       taskNumber: backendTask.taskNumber,
       name: backendTask.name,
       description: backendTask.description,
-      status: backendTask.status, // Changed from currentStage
-      taskType: backendTask.taskType, // New field
-      parentId: backendTask.parentId, // New field
-      parentTaskTitle: backendTask.parentTaskTitle, // New field
-      parentTaskSequenceNumber: backendTask.parentTaskSequenceNumber, // New field
-      issueType: backendTask.issueType,
+      status: backendTask.status,
+      taskType: backendTask.taskType,
+      parentId: backendTask.parentId,
+      parentTaskTitle: backendTask.parentTaskTitle,
+      parentTaskFormattedNumber: backendTask.parentTaskFormattedNumber,
       receivedDate: backendTask.receivedDate,
       developmentStartDate: backendTask.developmentStartDate,
       dueDate: backendTask.dueDate,
-      assignedTeammates: backendTask.assignedTeammateNames || [], // For display
-      assignedTeammateIds: backendTask.assignedTeammateIds || [], // New field
+      assignedTeammates: backendTask.assignedTeammateNames || [],
+      assignedTeammateIds: backendTask.assignedTeammateIds || [],
       priority: backendTask.priority,
-      isCompleted: backendTask.isCompleted,
-      isCmcDone: backendTask.isCmcDone,
       projectId: backendTask.projectId,
-      documentPath: backendTask.documentPath
+      projectName: backendTask.projectName,
+      documentPath: backendTask.documentPath,
+      commitId: backendTask.commitId
     };
   };
 
@@ -119,9 +117,8 @@ export const Tasks = () => {
     const matchesStatus = selectedStatuses.length === 0 || selectedStatuses.includes(task.status);
     const matchesTaskType = selectedTaskTypes.length === 0 || selectedTaskTypes.includes(task.taskType);
     const matchesPriority = selectedPriorities.length === 0 || selectedPriorities.includes(task.priority);
-    const matchesIssueType = selectedIssueTypes.length === 0 || selectedIssueTypes.includes(task.issueType);
 
-    return matchesSearch && matchesStatus && matchesTaskType && matchesPriority && matchesIssueType;
+    return matchesSearch && matchesStatus && matchesTaskType && matchesPriority;
   });
 
   // Filter options for dropdowns
@@ -140,21 +137,15 @@ export const Tasks = () => {
       label: p, 
       value: p, 
       count: tasksData.filter(t => t.priority === p).length 
-    })),
-    issueTypes: [...new Set(tasksData.map(t => t.issueType))].map(i => ({ 
-      label: i, 
-      value: i, 
-      count: tasksData.filter(t => t.issueType === i).length 
     }))
   };
 
-  const activeFiltersCount = selectedStatuses.length + selectedTaskTypes.length + selectedPriorities.length + selectedIssueTypes.length;
+  const activeFiltersCount = selectedStatuses.length + selectedTaskTypes.length + selectedPriorities.length;
 
   const clearAllFilters = () => {
     setSelectedStatuses([]);
     setSelectedTaskTypes([]);
     setSelectedPriorities([]);
-    setSelectedIssueTypes([]);
     setSearchTerm("");
   };
 
@@ -164,15 +155,15 @@ export const Tasks = () => {
       case "ANALYSIS": return "bg-blue-100 text-blue-800 border-blue-200";
       case "DEVELOPMENT": return "bg-purple-100 text-purple-800 border-purple-200";
       case "SIT_TESTING": return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "SIT_FAILED": return "bg-red-100 text-red-800 border-red-200";
       case "UAT_TESTING": return "bg-orange-100 text-orange-800 border-orange-200";
+      case "UAT_FAILED": return "bg-red-100 text-red-800 border-red-200";
       case "PREPROD": return "bg-indigo-100 text-indigo-800 border-indigo-200";
       case "PROD": return "bg-green-100 text-green-800 border-green-200";
       case "COMPLETED": return "bg-green-100 text-green-800 border-green-200";
       case "CLOSED": return "bg-gray-100 text-gray-800 border-gray-200";
       case "REOPENED": return "bg-red-100 text-red-800 border-red-200";
       case "BLOCKED": return "bg-red-100 text-red-800 border-red-200";
-      case "SIT_FAILED": return "bg-red-100 text-red-800 border-red-200";
-      case "UAT_FAILED": return "bg-red-100 text-red-800 border-red-200";
       default: return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
@@ -201,25 +192,14 @@ export const Tasks = () => {
     }
   };
 
-  const getIssueTypeColor = (issueType: string) => {
-    const normalizedType = issueType.toLowerCase();
-    switch (normalizedType) {
-      case "bug": return "bg-red-100 text-red-800 border-red-200";
-      case "feature": return "bg-blue-100 text-blue-800 border-blue-200";
-      case "task": return "bg-green-100 text-green-800 border-green-200";
-      case "enhancement": return "bg-purple-100 text-purple-800 border-purple-200";
-      default: return "bg-gray-100 text-gray-800 border-gray-200";
-    }
-  };
-
   const handleEditTask = (task: Task) => {
-    console.log("calling here");
+    console.log("Edit task:", task);
     setEditingTask(task);
     setIsEditModalOpen(true);
   };
 
   const handleDeleteTask = (task: Task) => {
-    deleteTaskMutation.mutate(task.name);
+    deleteTaskMutation.mutate(task.id);
   };
 
   const handleSaveTask = (updatedTask: Task) => {
@@ -264,12 +244,7 @@ export const Tasks = () => {
           {user?.role && ["ADMIN", "MANAGER", "BA","TEAMLEAD"].includes(user.role) && (
             <Button 
               className="bg-blue-600 hover:bg-blue-700"
-              onClick={() => {
-                console.log('Add Task button clicked - before state update');
-                console.log('Current isCreateModalOpen value:', isCreateModalOpen);
-                setIsCreateModalOpen(true);
-                console.log('Add Task button clicked - after state update');
-              }}
+              onClick={() => setIsCreateModalOpen(true)}
               data-testid="add-task-button"
             >
               <Plus className="h-4 w-4 mr-2" />
@@ -310,12 +285,6 @@ export const Tasks = () => {
             options={filterOptions.priorities}
             selectedValues={selectedPriorities}
             onSelectionChange={setSelectedPriorities}
-          />
-          <FilterDropdown
-            title="Issue Type"
-            options={filterOptions.issueTypes}
-            selectedValues={selectedIssueTypes}
-            onSelectionChange={setSelectedIssueTypes}
           />
 
           {/* Clear Filters */}
@@ -404,7 +373,7 @@ export const Tasks = () => {
                     <div className="flex items-center gap-2 mb-2">
                       <Link className="h-3 w-3 text-slate-400" />
                       <span className="text-xs text-slate-500">
-                        Parent: {task.parentTaskSequenceNumber} - {task.parentTaskTitle}
+                        Parent: {task.parentTaskFormattedNumber} - {task.parentTaskTitle}
                       </span>
                     </div>
                   )}
@@ -425,20 +394,16 @@ export const Tasks = () => {
                       <Users className="h-3 w-3 mr-1" />
                       {task.assignedTeammates.join(", ")}
                     </span>
-                    <span className={cn(
-                      "flex items-center px-2 py-0.5 rounded text-xs font-medium",
-                      task.isCmcDone ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                    )}>
-                      CMC: {task.isCmcDone ? "Done" : "Pending"}
-                    </span>
+                    {task.projectName && (
+                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                        {task.projectName}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Badge className={getTaskTypeColor(task.taskType)}>
                     {task.taskType}
-                  </Badge>
-                  <Badge className={getIssueTypeColor(task.issueType)}>
-                    {task.issueType}
                   </Badge>
                   <Badge className={getPriorityColor(task.priority)}>
                     {task.priority}
@@ -450,9 +415,7 @@ export const Tasks = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => {
-                        console.log("clicking this button");
-                        handleEditTask(task)}}
+                      onClick={() => handleEditTask(task)}
                     >
                       <Edit className="h-4 w-4" />
                     </Button>

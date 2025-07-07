@@ -1,32 +1,31 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
-import apiClient from '@/services/apiClient'; // Import apiClient
+import apiClient from '@/services/apiClient';
 
 export interface AddTaskRequest {
   taskName: string;
   description?: string;
-  status: string; // Changed from currentStage to status
-  taskType: string; // New field
-  parentId?: number; // New field
-  startDate?: string;
-  dueDate?: string;
-  issueType?: string;
-  receivedDate?: string;
+  status: string;
+  taskType: string;
+  parentId?: number;
+  receivedDate: string;
   developmentStartDate?: string;
-  assignedTeammateIds?: number[]; // Changed from assignedTeammateNames to List<Long>
-  priority?: string;
+  dueDate: string;
+  assignedTeammateIds?: number[];
+  priority: string;
   projectId: number;
   documentPath?: string;
+  commitId?: string;
 }
 
 const addTask = async (taskData: AddTaskRequest) => {
-  const url = '/api/tasks'; // Relative path, apiClient handles base URL
+  const url = '/api/tasks';
   
   console.log('Adding task with data:', taskData);
   
   try {
-    const response = await apiClient.post(url, taskData); // Use apiClient.post
+    const response = await apiClient.post(url, taskData);
     console.log('Task added successfully:', response.data);
     return response.data;
   } catch (error) {

@@ -37,17 +37,16 @@ export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps
   // Form state
   const [taskName, setTaskName] = useState("");
   const [description, setDescription] = useState("");
-  const [status, setStatus] = useState("BACKLOG"); // Changed from currentStage to status
-  const [taskType, setTaskType] = useState("TASK"); // New field
-  const [parentId, setParentId] = useState<number | undefined>(undefined); // New field
-  const [issueType, setIssueType] = useState("");
+  const [status, setStatus] = useState("BACKLOG");
+  const [taskType, setTaskType] = useState("TASK");
+  const [parentId, setParentId] = useState<number | undefined>(undefined);
   const [priority, setPriority] = useState("");
-  const [selectedTeammateIds, setSelectedTeammateIds] = useState<number[]>([]); // Changed to IDs
+  const [selectedTeammateIds, setSelectedTeammateIds] = useState<number[]>([]);
   const [receivedDate, setReceivedDate] = useState<Date>();
-  const [startDate, setStartDate] = useState<Date>();
-  const [dueDate, setDueDate] = useState<Date>();
   const [developmentStartDate, setDevelopmentStartDate] = useState<Date>();
+  const [dueDate, setDueDate] = useState<Date>();
   const [documentPath, setDocumentPath] = useState("");
+  const [commitId, setCommitId] = useState("");
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   // Hooks
@@ -55,12 +54,34 @@ export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps
   const { data: taskSequenceNumber, isLoading: isLoadingSequence, refetch: refetchSequence } = useTaskSequenceNumber();
 
   // Constants with new status values
-  const statuses = ["BACKLOG", "ANALYSIS", "DEVELOPMENT", "SIT_TESTING", "UAT_TESTING", "PREPROD", "PROD", "COMPLETED", "CLOSED", "REOPENED", "BLOCKED", "SIT_FAILED", "UAT_FAILED"];
-  const taskTypes = ["BRD", "EPIC", "STORY", "TASK", "BUG", "SUB_TASK"];
-  const issueTypes = ["Feature", "Bug", "Enhancement"];
+  const statuses = [
+    { value: "BACKLOG", label: "Backlog" },
+    { value: "ANALYSIS", label: "Analysis" },
+    { value: "DEVELOPMENT", label: "Development" },
+    { value: "SIT_TESTING", label: "SIT Testing" },
+    { value: "SIT_FAILED", label: "SIT Failed" },
+    { value: "UAT_TESTING", label: "UAT Testing" },
+    { value: "UAT_FAILED", label: "UAT Failed" },
+    { value: "PREPROD", label: "Pre-Production" },
+    { value: "PROD", label: "Production" },
+    { value: "COMPLETED", label: "Completed" },
+    { value: "CLOSED", label: "Closed" },
+    { value: "REOPENED", label: "Reopened" },
+    { value: "BLOCKED", label: "Blocked" }
+  ];
+
+  const taskTypes = [
+    { value: "BRD", label: "Business Requirement Document" },
+    { value: "EPIC", label: "Epic" },
+    { value: "STORY", label: "Story" },
+    { value: "TASK", label: "Task" },
+    { value: "BUG", label: "Bug" },
+    { value: "SUB_TASK", label: "Sub-Task" }
+  ];
+
   const priorities = ["HIGH", "MEDIUM", "LOW"];
 
-  // Available parent tasks (exclude current task and EPICs cannot have parents)
+  // Available parent tasks
   const availableParentTasks = tasksData?.tasks?.map(task => ({
     id: task.id,
     name: task.name,
@@ -82,14 +103,13 @@ export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps
     setStatus("BACKLOG");
     setTaskType("TASK");
     setParentId(undefined);
-    setIssueType("");
     setPriority("");
     setSelectedTeammateIds([]);
     setReceivedDate(undefined);
-    setStartDate(undefined);
-    setDueDate(undefined);
     setDevelopmentStartDate(undefined);
+    setDueDate(undefined);
     setDocumentPath("");
+    setCommitId("");
     setValidationErrors({});
   };
 
@@ -99,7 +119,6 @@ export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps
     if (!taskName) errors.taskName = "Task name is required";
     if (!status) errors.status = "Status is required";
     if (!taskType) errors.taskType = "Task type is required";
-    if (!issueType) errors.issueType = "Issue type is required";
     if (!priority) errors.priority = "Priority is required";
     if (!receivedDate) errors.receivedDate = "Received date is required";
     if (!dueDate) errors.dueDate = "Due date is required";
@@ -117,17 +136,16 @@ export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps
     const taskData = {
       taskName,
       description,
-      status, // Changed from currentStage
-      taskType, // New field
-      parentId, // New field
-      startDate: startDate ? format(startDate, "yyyy-MM-dd") : undefined,
-      dueDate: format(dueDate!, "yyyy-MM-dd"),
-      issueType,
+      status,
+      taskType,
+      parentId,
       receivedDate: format(receivedDate!, "yyyy-MM-dd"),
       developmentStartDate: developmentStartDate ? format(developmentStartDate, "yyyy-MM-dd") : undefined,
-      assignedTeammateIds: selectedTeammateIds, // Changed to IDs
+      dueDate: format(dueDate!, "yyyy-MM-dd"),
+      assignedTeammateIds: selectedTeammateIds,
       priority,
       documentPath: documentPath || undefined,
+      commitId: commitId || undefined,
       projectId: user?.projectIds?.[0],
     };
 
@@ -214,7 +232,7 @@ export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps
             </SelectTrigger>
             <SelectContent>
               {taskTypes.map((type) => (
-                <SelectItem key={type} value={type}>{type}</SelectItem>
+                <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -240,30 +258,12 @@ export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps
             </SelectTrigger>
             <SelectContent>
               {statuses.map((statusOption) => (
-                <SelectItem key={statusOption} value={statusOption}>{statusOption}</SelectItem>
+                <SelectItem key={statusOption.value} value={statusOption.value}>{statusOption.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
           {validationErrors.status && (
             <p className="text-red-500 text-sm">{validationErrors.status}</p>
-          )}
-        </div>
-
-        {/* Issue Type */}
-        <div className="grid gap-2">
-          <Label>Issue Type *</Label>
-          <Select value={issueType} onValueChange={setIssueType}>
-            <SelectTrigger className={validationErrors.issueType ? "border-red-500" : ""}>
-              <SelectValue placeholder="Select issue type" />
-            </SelectTrigger>
-            <SelectContent>
-              {issueTypes.map((type) => (
-                <SelectItem key={type} value={type}>{type}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {validationErrors.issueType && (
-            <p className="text-red-500 text-sm">{validationErrors.issueType}</p>
           )}
         </div>
 
@@ -287,7 +287,6 @@ export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps
 
         {/* Date Fields */}
         {renderDateField("Received Date", receivedDate, setReceivedDate, validationErrors.receivedDate, true)}
-        {renderDateField("Start Date", startDate, setStartDate)}
         {renderDateField("Development Start Date", developmentStartDate, setDevelopmentStartDate)}
         {renderDateField("Due Date", dueDate, setDueDate, validationErrors.dueDate, true)}
 
@@ -306,6 +305,17 @@ export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps
             value={documentPath}
             onChange={(e) => setDocumentPath(e.target.value)}
             placeholder="Enter document path (optional)"
+          />
+        </div>
+
+        {/* Commit ID */}
+        <div className="grid gap-2">
+          <Label htmlFor="commitId">Commit ID</Label>
+          <Input
+            id="commitId"
+            value={commitId}
+            onChange={(e) => setCommitId(e.target.value)}
+            placeholder="Enter commit ID (optional)"
           />
         </div>
 

@@ -1,33 +1,31 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
-import apiClient from '@/services/apiClient'; // Import apiClient
+import apiClient from '@/services/apiClient';
 
 interface EditTaskRequest {
   taskName: string;
   description: string;
-  status: string; // Changed from currentStage to status
-  taskType: string; // New field
-  parentId?: number; // New field
-  startDate: string;
-  dueDate: string;
-  isCompleted: boolean;
-  issueType: string;
+  status: string;
+  taskType: string;
+  parentId?: number;
   receivedDate: string;
   developmentStartDate: string;
-  isCodeReviewDone: boolean;
-  isCmcDone: boolean;
-  assignedTeammateIds: number[]; // Changed from assignedTeammateNames to List<Long>
+  dueDate: string;
+  assignedTeammateIds: number[];
   priority: string;
+  projectId: number;
+  documentPath?: string;
+  commitId?: string;
 }
 
-const editTask = async (taskName: string, taskData: EditTaskRequest) => {
-  const url = `/api/tasks/${encodeURIComponent(taskName)}`; // Relative path, apiClient handles base URL
+const editTask = async (taskId: number, taskData: EditTaskRequest) => {
+  const url = `/api/tasks/${taskId}`;
   
   console.log('Editing task at:', url);
   console.log('Task data:', taskData);
   
-  const response = await apiClient.put(url, taskData); // Use apiClient.put
+  const response = await apiClient.put(url, taskData);
   
   return response.data;
 };
@@ -36,8 +34,8 @@ export const useEditTask = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: ({ taskName, taskData }: { taskName: string; taskData: EditTaskRequest }) => 
-      editTask(taskName, taskData),
+    mutationFn: ({ taskId, taskData }: { taskId: number; taskData: EditTaskRequest }) => 
+      editTask(taskId, taskData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks-data'] });
       toast({
