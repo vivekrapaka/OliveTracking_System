@@ -32,8 +32,11 @@ export interface TasksApiResponse {
 const fetchTasksData = async (): Promise<TasksApiResponse> => {
   const url = `/api/tasks`;
   
+  console.log('Fetching tasks data from:', url);
+  
   try {
     const response = await apiClient.get(url);
+    console.log('Tasks data response:', response.data);
     return response.data;
   } catch (error) {
     console.error('Tasks data fetch error:', error);

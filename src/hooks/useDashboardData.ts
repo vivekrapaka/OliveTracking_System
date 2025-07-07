@@ -1,6 +1,7 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { API_ENDPOINTS, buildApiUrl } from '@/config/api';
-import apiClient from '@/services/apiClient'; // Import apiClient
+import apiClient from '@/services/apiClient';
 import { mockDashboardData } from '@/services/mockDashboardData';
 
 export interface DashboardData {
@@ -46,8 +47,11 @@ export interface DashboardData {
 const fetchDashboardData = async (): Promise<DashboardData> => {
   const url = `/api/dashboard`;
   
+  console.log('Fetching dashboard data from:', url);
+  
   try {
-    const response = await apiClient.get(url); // Use apiClient.get
+    const response = await apiClient.get(url);
+    console.log('Dashboard data response:', response.data);
     return response.data;
   } catch (error) {
     console.error('Dashboard data fetch error:', error);
