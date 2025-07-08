@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -20,10 +21,9 @@ export const AdminRoute = ({ children }) => {
     return <Navigate to="/login" replace />;
   }
 
-  if (user.role !== 'HR' && user.role !== 'ADMIN' ) {
+  if (!['HR', 'ADMIN', 'MANAGER', 'DEV_MANAGER'].includes(user.role)) {
     return <Navigate to="/" replace />;
   }
 
   return children;
 };
-

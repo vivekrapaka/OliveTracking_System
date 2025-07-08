@@ -12,6 +12,7 @@ export const getAvailableStatusTransitions = (
     BACKLOG: { label: "Backlog", value: "BACKLOG" },
     ANALYSIS: { label: "Analysis", value: "ANALYSIS" },
     DEVELOPMENT: { label: "Development", value: "DEVELOPMENT" },
+    CODE_REVIEW: { label: "Code Review", value: "CODE_REVIEW" },
     SIT_TESTING: { label: "SIT Testing", value: "SIT_TESTING" },
     SIT_FAILED: { label: "SIT Failed", value: "SIT_FAILED" },
     UAT_TESTING: { label: "UAT Testing", value: "UAT_TESTING" },
@@ -29,7 +30,13 @@ export const getAvailableStatusTransitions = (
   switch (currentStatus) {
     case "DEVELOPMENT":
       if (userRole === "DEVELOPER") {
-        transitions.push(statusMap.SIT_TESTING);
+        transitions.push(statusMap.CODE_REVIEW);
+      }
+      break;
+
+    case "CODE_REVIEW":
+      if (["MANAGER", "TEAMLEAD", "BUSINESS_ANALYST", "BA"].includes(userRole)) {
+        transitions.push(statusMap.UAT_TESTING, statusMap.DEVELOPMENT);
       }
       break;
 
@@ -52,17 +59,7 @@ export const getAvailableStatusTransitions = (
       break;
 
     case "SIT_FAILED":
-      if (userRole === "DEVELOPER") {
-        transitions.push(statusMap.DEVELOPMENT);
-      }
-      break;
-
     case "UAT_FAILED":
-      if (userRole === "DEVELOPER") {
-        transitions.push(statusMap.DEVELOPMENT);
-      }
-      break;
-
     case "REOPENED":
       if (userRole === "DEVELOPER") {
         transitions.push(statusMap.DEVELOPMENT);
@@ -88,4 +85,8 @@ export const getAvailableStatusTransitions = (
 
 export const requiresCommitId = (status: string): boolean => {
   return ["UAT_TESTING", "PREPROD"].includes(status);
+};
+
+export const requiresComment = (currentStatus: string, newStatus: string): boolean => {
+  return currentStatus === "CODE_REVIEW" && newStatus !== "CODE_REVIEW";
 };

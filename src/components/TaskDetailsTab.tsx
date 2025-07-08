@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { TeammateSelector } from "./TeammateSelector";
 import { useEditTask } from "@/hooks/useEditTask";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAvailableStatusTransitions, requiresCommitId } from "@/utils/statusWorkflowUtils";
+import { getAvailableStatusTransitions, requiresCommitId, requiresComment } from "@/utils/statusWorkflowUtils";
 
 interface Task {
   id: number;
@@ -58,6 +58,7 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
   const [taskType, setTaskType] = useState(task.taskType);
   const [priority, setPriority] = useState(task.priority);
   const [commitId, setCommitId] = useState(task.commitId || "");
+  const [comment, setComment] = useState("");
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedDevelopmentStartDate, setSelectedDevelopmentStartDate] = useState<Date>();
   const [selectedReceivedDate, setSelectedReceivedDate] = useState<Date>();
@@ -75,13 +76,18 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
   const isCommitIdRequired = requiresCommitId(currentStage);
   const showCommitIdField = isCommitIdRequired;
 
+  // Check if comment is required for the status change
+  const isCommentRequired = requiresComment(task.status, currentStage);
+  const showCommentField = isCommentRequired;
+
   const taskTypes = [
     { value: "BRD", label: "Business Requirement Document" },
     { value: "EPIC", label: "Epic" },
     { value: "STORY", label: "Story" },
     { value: "TASK", label: "Task" },
     { value: "BUG", label: "Bug" },
-    { value: "SUB_TASK", label: "Sub-Task" }
+    { value: "SUB_TASK", label: "Sub-Task" },
+    { value: "ANALYSIS_TASK", label: "Analysis Task" }
   ];
 
   const priorities = ["CRITICAL", "HIGH", "MEDIUM", "LOW"];
@@ -120,10 +126,15 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
     if (!requiresCommitId(newStatus)) {
       setCommitId("");
     }
+    // Clear comment when status changes
+    setComment("");
   };
 
   const isFormValid = () => {
     if (isCommitIdRequired && !commitId.trim()) {
+      return false;
+    }
+    if (isCommentRequired && !comment.trim()) {
       return false;
     }
     return true;
@@ -145,6 +156,7 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
       assignedTeammateNames: selectedTeammates,
       priority: priority,
       commitId: commitId.trim() || undefined,
+      comment: comment.trim() || undefined,
     };
 
     editTaskMutation.mutate({
@@ -306,6 +318,29 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
           </p>
         )}
       </div>
+
+      {showCommentField && (
+        <div className="grid gap-2">
+          <Label htmlFor="comment">
+            Comment {isCommentRequired && <span className="text-red-500">*</span>}
+          </Label>
+          <Textarea
+            id="comment"
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="Please provide a comment for this status change..."
+            className={cn(
+              "min-h-[80px]",
+              isCommentRequired && !comment.trim() && "border-red-300 focus:border-red-500"
+            )}
+          />
+          {isCommentRequired && !comment.trim() && (
+            <p className="text-xs text-red-500">
+              A comment is required when changing status from Code Review.
+            </p>
+          )}
+        </div>
+      )}
 
       {showCommitIdField && (
         <div className="grid gap-2">

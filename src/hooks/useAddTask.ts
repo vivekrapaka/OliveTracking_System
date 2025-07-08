@@ -17,6 +17,7 @@ export interface AddTaskRequest {
   projectId: number;
   documentPath?: string;
   commitId?: string;
+  comment?: string;
 }
 
 const addTask = async (taskData: AddTaskRequest) => {

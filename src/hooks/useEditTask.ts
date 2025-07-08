@@ -14,6 +14,7 @@ interface EditTaskData {
   assignedTeammateNames: string[];
   priority: string;
   commitId?: string;
+  comment?: string;
 }
 
 interface EditTaskRequest {
