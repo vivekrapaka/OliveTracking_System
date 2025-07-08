@@ -26,16 +26,44 @@ interface WorkLog {
 interface TaskWorkLogsTabProps {
   taskId: number;
 }
+const fetchWorkLogs = async (taskId: number) => {
+  const url = `/api/tasks/${taskId}/worklogs`;
+  
+  console.log('Adding task with data:', );
+  
+  try {
+    const response = await apiClient.get(url);
+    console.log('fetch the hostory', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('history api:', error);
+    throw error;
+  }
+};
 
-const fetchWorkLogs = async (taskId: number): Promise<WorkLog[]> => {
+/*const fetchWorkLogs = async (taskId: number): Promise<WorkLog[]> => {
   const response = await apiClient.get(`/api/tasks/${taskId}/worklogs`);
   return response.data;
-};
+}; */
 
 const logWork = async (taskId: number, workLogData: { hoursSpent: number; logDate: string; description: string }) => {
+  const url = `/api/tasks/${taskId}/worklogs`;
+  
+  console.log('Adding task with data:', workLogData);
+  
+  try {
+    const response = await apiClient.post(url,workLogData);
+    console.log('fetch the workLogData', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('history workLogData:', error);
+    throw error;
+  }
+};
+/*const logWork = async (taskId: number, workLogData: { hoursSpent: number; logDate: string; description: string }) => {
   const response = await apiClient.post(`/api/tasks/${taskId}/worklogs`, workLogData);
   return response.data;
-};
+}; */
 
 export const TaskWorkLogsTab = ({ taskId }: TaskWorkLogsTabProps) => {
   const [hoursSpent, setHoursSpent] = useState("");
