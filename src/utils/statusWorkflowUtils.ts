@@ -27,42 +27,42 @@ export const getAvailableStatusTransitions = (
 
   const transitions: StatusTransition[] = [];
 
-  // Core workflow logic as specified in Phase 3 requirements
+  // Core workflow logic with teammember permissions
   switch (currentStatus) {
     case "DEVELOPMENT":
-      if (userRole === "DEVELOPER") {
+      if (["DEVELOPER", "TEAMMEMBER"].includes(userRole)) {
         transitions.push(statusMap.CODE_REVIEW);
       }
       break;
 
     case "CODE_REVIEW":
-      if (["MANAGER", "TEAMLEAD", "BUSINESS_ANALYST", "BA"].includes(userRole)) {
+      if (["MANAGER", "TEAMLEAD", "BUSINESS_ANALYST", "BA", "TEAMMEMBER"].includes(userRole)) {
         transitions.push(statusMap.DEVELOPMENT, statusMap.UAT_TESTING);
       }
       break;
 
     case "UAT_TESTING":
-      if (["TESTER", "QA_MANAGER", "BUSINESS_ANALYST", "BA"].includes(userRole)) {
+      if (["TESTER", "QA_MANAGER", "BUSINESS_ANALYST", "BA", "TEAMMEMBER"].includes(userRole)) {
         transitions.push(statusMap.PREPROD, statusMap.UAT_FAILED);
       }
       break;
 
     case "SIT_FAILED":
     case "UAT_FAILED":
-      if (userRole === "DEVELOPER") {
+      if (["DEVELOPER", "TEAMMEMBER"].includes(userRole)) {
         transitions.push(statusMap.DEVELOPMENT);
       }
       break;
 
     case "PREPROD":
-      if (["MANAGER", "ADMIN"].includes(userRole)) {
+      if (["MANAGER", "ADMIN", "TEAMMEMBER"].includes(userRole)) {
         transitions.push(statusMap.PROD);
       }
       break;
 
     default:
-      // For other statuses, allow admins and managers to have broader access
-      if (["ADMIN", "MANAGER"].includes(userRole)) {
+      // For other statuses, allow admins, managers, and teammembers to have broader access
+      if (["ADMIN", "MANAGER", "TEAMMEMBER"].includes(userRole)) {
         return Object.values(statusMap);
       }
       break;
