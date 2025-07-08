@@ -13,6 +13,7 @@ interface EditTaskData {
   developmentStartDate: string;
   assignedTeammateNames: string[];
   priority: string;
+  commitId?: string;
 }
 
 interface EditTaskRequest {

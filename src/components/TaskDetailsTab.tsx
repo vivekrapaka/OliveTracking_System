@@ -12,6 +12,8 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { TeammateSelector } from "./TeammateSelector";
 import { useEditTask } from "@/hooks/useEditTask";
+import { useAuth } from "@/contexts/AuthContext";
+import { getAvailableStatusTransitions, requiresCommitId } from "@/utils/statusWorkflowUtils";
 
 interface Task {
   id: number;
@@ -49,11 +51,13 @@ interface TaskDetailsTabProps {
 }
 
 export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetailsTabProps) => {
+  const { user } = useAuth();
   const [taskName, setTaskName] = useState(task.name);
   const [description, setDescription] = useState(task.description || "");
   const [currentStage, setCurrentStage] = useState(task.status);
   const [taskType, setTaskType] = useState(task.taskType);
   const [priority, setPriority] = useState(task.priority);
+  const [commitId, setCommitId] = useState(task.commitId || "");
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedDevelopmentStartDate, setSelectedDevelopmentStartDate] = useState<Date>();
   const [selectedReceivedDate, setSelectedReceivedDate] = useState<Date>();
@@ -61,21 +65,15 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
 
   const editTaskMutation = useEditTask();
 
-  const statuses = [
-    { value: "BACKLOG", label: "Backlog" },
-    { value: "ANALYSIS", label: "Analysis" },
-    { value: "DEVELOPMENT", label: "Development" },
-    { value: "SIT_TESTING", label: "SIT Testing" },
-    { value: "SIT_FAILED", label: "SIT Failed" },
-    { value: "UAT_TESTING", label: "UAT Testing" },
-    { value: "UAT_FAILED", label: "UAT Failed" },
-    { value: "PREPROD", label: "Pre-Production" },
-    { value: "PROD", label: "Production" },
-    { value: "COMPLETED", label: "Completed" },
-    { value: "CLOSED", label: "Closed" },
-    { value: "REOPENED", label: "Reopened" },
-    { value: "BLOCKED", label: "Blocked" }
-  ];
+  // Get available status transitions based on current status and user role
+  const availableStatusTransitions = getAvailableStatusTransitions(
+    task.status,
+    user?.role || ""
+  );
+
+  // Check if commit ID is required for the selected status
+  const isCommitIdRequired = requiresCommitId(currentStage);
+  const showCommitIdField = isCommitIdRequired;
 
   const taskTypes = [
     { value: "BRD", label: "Business Requirement Document" },
@@ -94,6 +92,7 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
     setCurrentStage(task.status);
     setTaskType(task.taskType);
     setPriority(task.priority);
+    setCommitId(task.commitId || "");
     setSelectedTeammates(task.assignedTeammates || []);
     
     if (task.dueDate) {
@@ -115,7 +114,26 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
     });
   };
 
+  const handleStatusChange = (newStatus: string) => {
+    setCurrentStage(newStatus);
+    // Clear commit ID if not required for the new status
+    if (!requiresCommitId(newStatus)) {
+      setCommitId("");
+    }
+  };
+
+  const isFormValid = () => {
+    if (isCommitIdRequired && !commitId.trim()) {
+      return false;
+    }
+    return true;
+  };
+
   const handleSave = () => {
+    if (!isFormValid()) {
+      return;
+    }
+
     const taskData = {
       taskName: taskName,
       description: description,
@@ -126,6 +144,7 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
       developmentStartDate: selectedDevelopmentStartDate ? format(selectedDevelopmentStartDate, "yyyy-MM-dd") : task.developmentStartDate,
       assignedTeammateNames: selectedTeammates,
       priority: priority,
+      commitId: commitId.trim() || undefined,
     };
 
     editTaskMutation.mutate({
@@ -267,17 +286,48 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
       
       <div className="grid gap-2">
         <Label htmlFor="status">Status</Label>
-        <Select value={currentStage} onValueChange={setCurrentStage}>
+        <Select 
+          value={currentStage} 
+          onValueChange={handleStatusChange}
+          disabled={availableStatusTransitions.length <= 1}
+        >
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {statuses.map((status) => (
+            {availableStatusTransitions.map((status) => (
               <SelectItem key={status.value} value={status.value}>{status.label}</SelectItem>
             ))}
           </SelectContent>
         </Select>
+        {availableStatusTransitions.length <= 1 && (
+          <p className="text-xs text-slate-500">
+            Status changes are restricted based on your role and current workflow.
+          </p>
+        )}
       </div>
+
+      {showCommitIdField && (
+        <div className="grid gap-2">
+          <Label htmlFor="commitId">
+            Commit ID {isCommitIdRequired && <span className="text-red-500">*</span>}
+          </Label>
+          <Input
+            id="commitId"
+            value={commitId}
+            onChange={(e) => setCommitId(e.target.value)}
+            placeholder="Enter commit ID (required for UAT Testing and Pre-Production)"
+            className={cn(
+              isCommitIdRequired && !commitId.trim() && "border-red-300 focus:border-red-500"
+            )}
+          />
+          {isCommitIdRequired && !commitId.trim() && (
+            <p className="text-xs text-red-500">
+              Commit ID is required when moving to UAT Testing or Pre-Production.
+            </p>
+          )}
+        </div>
+      )}
       
       <TeammateSelector
         teammates={teammates}
@@ -305,7 +355,7 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
         <Button 
           onClick={handleSave} 
           className="bg-blue-600 hover:bg-blue-700"
-          disabled={editTaskMutation.isPending}
+          disabled={editTaskMutation.isPending || !isFormValid()}
         >
           {editTaskMutation.isPending ? "Saving..." : "Save Changes"}
         </Button>
