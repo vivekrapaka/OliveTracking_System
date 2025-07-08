@@ -25,45 +25,36 @@ interface TaskActivity {
 interface TaskHistoryTabProps {
   taskId: number;
 }
+
 const fetchTaskHistory = async (taskId: number) => {
   const url = `/api/tasks/${taskId}/history`;
   
-  console.log('Adding task with data:', );
+  console.log('Fetching task history for taskId:', taskId);
   
   try {
     const response = await apiClient.get(url);
-    console.log('fetch the hostory', response.data);
+    console.log('Task history response:', response.data);
     return response.data;
   } catch (error) {
-    console.error('history api:', error);
+    console.error('Task history fetch error:', error);
     throw error;
   }
 };
-
-/*const fetchTaskHistory = async (taskId: number): Promise<TaskActivity[]> => {
-  const response = await apiClient.get(`/api/tasks/${taskId}/history`);
-  return response.data;
-}; */
 
 const addComment = async (taskId: number, content: string) => {
   const url = `/api/tasks/${taskId}/comments`;
   
-  console.log('comments data:', );
+  console.log('Adding comment for taskId:', taskId, 'content:', content);
   
   try {
     const response = await apiClient.post(url, { content });
-    console.log('fetch the hostory', response.data);
+    console.log('Add comment response:', response.data);
     return response.data;
   } catch (error) {
-    console.error('comment:', error);
+    console.error('Add comment error:', error);
     throw error;
   }
 };
-
-/*const addComment = async (taskId: number, content: string) => {
-  const response = await apiClient.post(`/api/tasks/${taskId}/comments`, { content });
-  return response.data;
-}; */
 
 export const TaskHistoryTab = ({ taskId }: TaskHistoryTabProps) => {
   const [commentContent, setCommentContent] = useState("");

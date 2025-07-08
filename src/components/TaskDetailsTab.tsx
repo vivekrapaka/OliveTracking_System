@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -72,13 +71,16 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
     user?.role || ""
   );
 
+  // Check if the status dropdown should be disabled
+  const isStatusDropdownDisabled = availableStatusTransitions.length <= 1;
+
   // Check if commit ID is required for the selected status
   const isCommitIdRequired = requiresCommitId(currentStage);
   const showCommitIdField = isCommitIdRequired;
 
   // Check if comment is required for the status change
   const isCommentRequired = requiresComment(task.status, currentStage);
-  const showCommentField = isCommentRequired;
+  const showCommentField = isCommentRequired || task.status === "CODE_REVIEW";
 
   const taskTypes = [
     { value: "BRD", label: "Business Requirement Document" },
@@ -296,14 +298,15 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
         </Popover>
       </div>
       
+      {/* Smart Status Dropdown */}
       <div className="grid gap-2">
         <Label htmlFor="status">Status</Label>
         <Select 
           value={currentStage} 
           onValueChange={handleStatusChange}
-          disabled={availableStatusTransitions.length <= 1}
+          disabled={isStatusDropdownDisabled}
         >
-          <SelectTrigger>
+          <SelectTrigger className={cn(isStatusDropdownDisabled && "opacity-50 cursor-not-allowed")}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -312,13 +315,14 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
             ))}
           </SelectContent>
         </Select>
-        {availableStatusTransitions.length <= 1 && (
+        {isStatusDropdownDisabled && (
           <p className="text-xs text-slate-500">
-            Status changes are restricted based on your role and current workflow.
+            No status changes available for your role at this stage.
           </p>
         )}
       </div>
 
+      {/* Conditional Comment Field */}
       {showCommentField && (
         <div className="grid gap-2">
           <Label htmlFor="comment">
@@ -328,7 +332,11 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
             id="comment"
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            placeholder="Please provide a comment for this status change..."
+            placeholder={
+              isCommentRequired 
+                ? "A comment is required when changing status from Code Review..." 
+                : "Add a comment about this status change (optional)..."
+            }
             className={cn(
               "min-h-[80px]",
               isCommentRequired && !comment.trim() && "border-red-300 focus:border-red-500"
@@ -342,6 +350,7 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
         </div>
       )}
 
+      {/* Conditional Commit ID Field */}
       {showCommitIdField && (
         <div className="grid gap-2">
           <Label htmlFor="commitId">

@@ -27,6 +27,7 @@ export const getAvailableStatusTransitions = (
 
   const transitions: StatusTransition[] = [];
 
+  // Core workflow logic as specified in Phase 3 requirements
   switch (currentStatus) {
     case "DEVELOPMENT":
       if (userRole === "DEVELOPER") {
@@ -36,13 +37,7 @@ export const getAvailableStatusTransitions = (
 
     case "CODE_REVIEW":
       if (["MANAGER", "TEAMLEAD", "BUSINESS_ANALYST", "BA"].includes(userRole)) {
-        transitions.push(statusMap.UAT_TESTING, statusMap.DEVELOPMENT);
-      }
-      break;
-
-    case "SIT_TESTING":
-      if (["TESTER", "QA_MANAGER"].includes(userRole)) {
-        transitions.push(statusMap.UAT_TESTING, statusMap.SIT_FAILED);
+        transitions.push(statusMap.DEVELOPMENT, statusMap.UAT_TESTING);
       }
       break;
 
@@ -52,30 +47,28 @@ export const getAvailableStatusTransitions = (
       }
       break;
 
+    case "SIT_FAILED":
+    case "UAT_FAILED":
+      if (userRole === "DEVELOPER") {
+        transitions.push(statusMap.DEVELOPMENT);
+      }
+      break;
+
     case "PREPROD":
       if (["MANAGER", "ADMIN"].includes(userRole)) {
         transitions.push(statusMap.PROD);
       }
       break;
 
-    case "SIT_FAILED":
-    case "UAT_FAILED":
-    case "REOPENED":
-      if (userRole === "DEVELOPER") {
-        transitions.push(statusMap.DEVELOPMENT);
-      }
-      break;
-
     default:
-      // For other statuses or roles, allow basic transitions
+      // For other statuses, allow admins and managers to have broader access
       if (["ADMIN", "MANAGER"].includes(userRole)) {
-        // Admins and managers can transition to most statuses
         return Object.values(statusMap);
       }
       break;
   }
 
-  // Always allow staying in the same status
+  // Always include the current status as the first option (no change)
   if (statusMap[currentStatus]) {
     transitions.unshift(statusMap[currentStatus]);
   }
@@ -88,5 +81,6 @@ export const requiresCommitId = (status: string): boolean => {
 };
 
 export const requiresComment = (currentStatus: string, newStatus: string): boolean => {
+  // Comment is required when changing status FROM CODE_REVIEW to any other status
   return currentStatus === "CODE_REVIEW" && newStatus !== "CODE_REVIEW";
 };
