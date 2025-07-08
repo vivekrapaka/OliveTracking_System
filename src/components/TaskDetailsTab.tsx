@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { TeammateSelector } from "./TeammateSelector";
 import { useEditTask } from "@/hooks/useEditTask";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAvailableStatusTransitions, requiresCommitId, requiresComment } from "@/utils/statusWorkflowUtils";
+import { getAvailableStatuses, requiresCommitId, requiresComment } from "@/utils/statusWorkflowUtils";
 
 interface Task {
   id: number;
@@ -66,13 +66,13 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
   const editTaskMutation = useEditTask();
 
   // Get available status transitions based on current status and user role
-  const availableStatusTransitions = getAvailableStatusTransitions(
+  const availableStatusTransitions = getAvailableStatuses(
     task.status,
     user?.role || ""
   );
 
   // Check if the status dropdown should be disabled
-  const isStatusDropdownDisabled = availableStatusTransitions.length <= 1;
+  const isStatusDropdownDisabled = availableStatusTransitions.length === 0;
 
   // Check if commit ID is required for the selected status
   const isCommitIdRequired = requiresCommitId(currentStage);
@@ -407,3 +407,5 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
     </div>
   );
 };
+
+
