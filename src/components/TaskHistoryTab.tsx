@@ -29,9 +29,10 @@ interface TaskHistoryTabProps {
 const fetchTaskHistory = async (taskId: number) => {
   const url = `/api/tasks/${taskId}/history`;
   
-  console.log('Fetching task history for taskId:', taskId);
+  console.log('Fetchinwertyui:', url);
   
   try {
+
     const response = await apiClient.get(url);
     console.log('Task history response:', response.data);
     return response.data;

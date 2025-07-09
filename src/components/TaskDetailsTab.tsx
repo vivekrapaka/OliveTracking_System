@@ -69,8 +69,9 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
   const availableStatusTransitions = getAvailableStatuses(
     task.status,
     user?.role || ""
+    
   );
-
+//console.log("printing the user status and role-{}   {}",task.status,user?.role)
   // Check if the status dropdown should be disabled
   const isStatusDropdownDisabled = availableStatusTransitions.length === 0;
 

@@ -17,11 +17,16 @@ export const getAvailableStatuses = (currentStatus: string, userRole: string): {
   ];
 
   let allowedStatuses: string[] = [];
-
+//console.log("userrole of the member-{}   {}",userRole,currentStatus)
   switch (currentStatus) {
     case "DEVELOPMENT":
-      if (userRole === "DEVELOPER") {
-        allowedStatuses = ["CODE_REVIEW"];
+      if (userRole === "TEAM_MEMBER") {
+        allowedStatuses = ["CODE_REVIEW", "BACKLOG"];
+      }
+      break;
+    case "BACKLOG":
+      if (userRole === "TEAM_MEMBER") {
+        allowedStatuses = ["CODE_REVIEW", "DEVELOPMENT"];
       }
       break;
     case "CODE_REVIEW":

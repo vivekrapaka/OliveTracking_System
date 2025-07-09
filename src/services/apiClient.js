@@ -15,6 +15,7 @@ apiClient.interceptors.request.use(
     const token = localStorage.getItem('jwtToken'); // Retrieve stored token
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
+      console.log("ytrertyui ",token)
     }
     return config;
   },
