@@ -1,5 +1,5 @@
 
-export const getAvailableStatuses = (currentStatus: string, userRole: string): { value: string; label: string }[] => {
+export const getAvailableStatuses = (currentStatus: string, userFunctionalGroup: string): { value: string; label: string }[] => {
   const allStatuses = [
     { value: "BACKLOG", label: "Backlog" },
     { value: "ANALYSIS", label: "Analysis" },
@@ -20,65 +20,55 @@ export const getAvailableStatuses = (currentStatus: string, userRole: string): {
   let allowedStatuses: string[] = [];
   switch (currentStatus) {
     case "BACKLOG":
-      if (["DEVELOPER", "TEAM_MEMBER"].includes(userRole)) {
+      if (userFunctionalGroup === "DEVELOPER") {
         allowedStatuses = ["ANALYSIS"];
       }
       break;
     
     case "ANALYSIS":
-      if (["DEVELOPER", "TEAM_MEMBER"].includes(userRole)) {
+      if (userFunctionalGroup === "DEVELOPER") {
         allowedStatuses = ["DEVELOPMENT"];
       }
       break;
     
     case "DEVELOPMENT":
-<<<<<<< HEAD
-      if (userRole === "TEAM_MEMBER") {
-        allowedStatuses = ["CODE_REVIEW", "BACKLOG"];
-      }
-      break;
-    case "BACKLOG":
-      if (userRole === "TEAM_MEMBER") {
-        allowedStatuses = ["CODE_REVIEW", "DEVELOPMENT"];
-=======
-      if (["DEVELOPER", "TEAM_MEMBER"].includes(userRole)) {
+      if (userFunctionalGroup === "DEVELOPER") {
         allowedStatuses = ["CODE_REVIEW"];
->>>>>>> cf400669db48f0188fcc90b4f12d8b81e1176db4
       }
       break;
     
     case "CODE_REVIEW":
-      if (["MANAGER", "TEAMLEAD", "BUSINESS_ANALYST"].includes(userRole)) {
+      if (["MANAGER", "TEAMLEAD", "BUSINESS_ANALYST"].includes(userFunctionalGroup)) {
         allowedStatuses = ["DEVELOPMENT", "UAT_TESTING"];
       }
       break;
     
     case "UAT_TESTING":
-      if (["TESTER", "QA_MANAGER"].includes(userRole)) {
+      if (userFunctionalGroup === "TESTER") {
         allowedStatuses = ["PREPROD", "UAT_FAILED"];
       }
       break;
     
     case "UAT_FAILED":
-      if (["DEVELOPER", "TEAM_MEMBER"].includes(userRole)) {
+      if (userFunctionalGroup === "DEVELOPER") {
         allowedStatuses = ["DEVELOPMENT"];
       }
       break;
     
     case "SIT_FAILED":
-      if (["DEVELOPER", "TEAM_MEMBER"].includes(userRole)) {
+      if (userFunctionalGroup === "DEVELOPER") {
         allowedStatuses = ["DEVELOPMENT"];
       }
       break;
     
     case "REOPENED":
-      if (["DEVELOPER", "TEAM_MEMBER"].includes(userRole)) {
+      if (userFunctionalGroup === "DEVELOPER") {
         allowedStatuses = ["DEVELOPMENT"];
       }
       break;
     
     case "PREPROD":
-      if (["MANAGER", "ADMIN"].includes(userRole)) {
+      if (["MANAGER", "ADMIN"].includes(userFunctionalGroup)) {
         allowedStatuses = ["PROD"];
       }
       break;

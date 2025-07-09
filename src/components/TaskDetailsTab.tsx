@@ -65,13 +65,12 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
 
   const editTaskMutation = useEditTask();
 
-  // Get available status transitions based on current status and user role
+  // Get available status transitions based on current status and user functionalGroup
   const availableStatusTransitions = getAvailableStatuses(
     task.status,
-    user?.role || ""
-    
+    user?.functionalGroup || ""
   );
-//console.log("printing the user status and role-{}   {}",task.status,user?.role)
+
   // Check if the status dropdown should be disabled
   const isStatusDropdownDisabled = availableStatusTransitions.length === 0;
 
@@ -408,5 +407,3 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
     </div>
   );
 };
-
-
