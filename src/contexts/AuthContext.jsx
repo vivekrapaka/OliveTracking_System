@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import AuthService from '../services/auth';
 
@@ -18,10 +19,10 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     const response = await AuthService.signin(email, password);
     console.log("resppp",response)
-    const { accessToken, id, email: userEmail, fullName, role, projectIds, projectNames } = response.data; // Extract new fields
+    const { accessToken, id, email: userEmail, fullName, roleTitle, functionalGroup, projectIds, projectNames } = response.data; // Extract functionalGroup
     localStorage.setItem('jwtToken', accessToken);
     console.log("in authcontextt",accessToken)
-    const userData = { id, email: userEmail, fullName, role, projectIds, projectNames }; // Store new fields
+    const userData = { id, email: userEmail, fullName, role: roleTitle, functionalGroup, projectIds, projectNames }; // Store functionalGroup
     localStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);
     return userData;
@@ -45,5 +46,3 @@ export const AuthProvider = ({ children }) => {
 };
 
 export const useAuth = () => useContext(AuthContext);
-
-
