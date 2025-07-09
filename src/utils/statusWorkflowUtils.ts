@@ -5,8 +5,6 @@ export const getAvailableStatuses = (currentStatus: string, userFunctionalGroup:
     { value: "ANALYSIS", label: "Analysis" },
     { value: "DEVELOPMENT", label: "Development" },
     { value: "CODE_REVIEW", label: "Code Review" },
-    { value: "SIT_TESTING", label: "SIT Testing" },
-    { value: "SIT_FAILED", label: "SIT Failed" },
     { value: "UAT_TESTING", label: "UAT Testing" },
     { value: "UAT_FAILED", label: "UAT Failed" },
     { value: "PREPROD", label: "Pre-Production" },
@@ -18,6 +16,8 @@ export const getAvailableStatuses = (currentStatus: string, userFunctionalGroup:
   ];
 
   let allowedStatuses: string[] = [];
+  
+  // Implement the definitive workflow logic map
   switch (currentStatus) {
     case "BACKLOG":
       if (userFunctionalGroup === "DEVELOPER") {
@@ -32,7 +32,7 @@ export const getAvailableStatuses = (currentStatus: string, userFunctionalGroup:
       break;
     
     case "DEVELOPMENT":
-      if (["DEVELOPER", "TEAM_MEMBER"].includes(userFunctionalGroup)) {
+      if (userFunctionalGroup === "DEVELOPER") {
         allowedStatuses = ["CODE_REVIEW"];
       }
       break;
@@ -50,12 +50,6 @@ export const getAvailableStatuses = (currentStatus: string, userFunctionalGroup:
       break;
     
     case "UAT_FAILED":
-      if (userFunctionalGroup === "DEVELOPER") {
-        allowedStatuses = ["DEVELOPMENT"];
-      }
-      break;
-    
-    case "SIT_FAILED":
       if (userFunctionalGroup === "DEVELOPER") {
         allowedStatuses = ["DEVELOPMENT"];
       }
