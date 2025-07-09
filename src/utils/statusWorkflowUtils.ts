@@ -1,3 +1,4 @@
+
 export const getAvailableStatuses = (currentStatus: string, userRole: string): { value: string; label: string }[] => {
   const allStatuses = [
     { value: "BACKLOG", label: "Backlog" },
@@ -18,42 +19,63 @@ export const getAvailableStatuses = (currentStatus: string, userRole: string): {
 
   let allowedStatuses: string[] = [];
 
+  // Complete workflow logic map as per Phase 3 Final specification
   switch (currentStatus) {
+    case "BACKLOG":
+      if (["DEVELOPER", "TEAM_MEMBER"].includes(userRole)) {
+        allowedStatuses = ["ANALYSIS"];
+      }
+      break;
+    
+    case "ANALYSIS":
+      if (["DEVELOPER", "TEAM_MEMBER"].includes(userRole)) {
+        allowedStatuses = ["DEVELOPMENT"];
+      }
+      break;
+    
     case "DEVELOPMENT":
-      if (userRole === "DEVELOPER") {
+      if (["DEVELOPER", "TEAM_MEMBER"].includes(userRole)) {
         allowedStatuses = ["CODE_REVIEW"];
       }
       break;
+    
     case "CODE_REVIEW":
       if (["MANAGER", "TEAMLEAD", "BUSINESS_ANALYST"].includes(userRole)) {
         allowedStatuses = ["DEVELOPMENT", "UAT_TESTING"];
       }
       break;
+    
     case "UAT_TESTING":
       if (["TESTER", "QA_MANAGER"].includes(userRole)) {
         allowedStatuses = ["PREPROD", "UAT_FAILED"];
       }
       break;
-    case "SIT_FAILED":
-      if (userRole === "DEVELOPER") {
-        allowedStatuses = ["DEVELOPMENT"];
-      }
-      break;
+    
     case "UAT_FAILED":
-      if (userRole === "DEVELOPER") {
+      if (["DEVELOPER", "TEAM_MEMBER"].includes(userRole)) {
         allowedStatuses = ["DEVELOPMENT"];
       }
       break;
+    
+    case "SIT_FAILED":
+      if (["DEVELOPER", "TEAM_MEMBER"].includes(userRole)) {
+        allowedStatuses = ["DEVELOPMENT"];
+      }
+      break;
+    
     case "REOPENED":
-      if (userRole === "DEVELOPER") {
+      if (["DEVELOPER", "TEAM_MEMBER"].includes(userRole)) {
         allowedStatuses = ["DEVELOPMENT"];
       }
       break;
+    
     case "PREPROD":
       if (["MANAGER", "ADMIN"].includes(userRole)) {
         allowedStatuses = ["PROD"];
       }
       break;
+    
+    // For all other combinations, return empty array (no valid transitions)
     default:
       allowedStatuses = [];
   }
@@ -63,11 +85,9 @@ export const getAvailableStatuses = (currentStatus: string, userRole: string): {
 
 export const requiresComment = (currentStatus: string, newStatus: string): boolean => {
   // Comment is mandatory when current status is CODE_REVIEW and a transition is available
-  return currentStatus === "CODE_REVIEW" && getAvailableStatuses(currentStatus, "").length > 0; // Role is not relevant for this check
+  return currentStatus === "CODE_REVIEW";
 };
 
 export const requiresCommitId = (newStatus: string): boolean => {
   return ["UAT_TESTING", "PREPROD"].includes(newStatus);
 };
-
-
