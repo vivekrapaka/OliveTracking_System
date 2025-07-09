@@ -1,4 +1,5 @@
 
+
 export const getAvailableStatuses = (currentStatus: string, userFunctionalGroup: string): { value: string; label: string }[] => {
   const allStatuses = [
     { value: "BACKLOG", label: "Backlog" },
@@ -17,7 +18,7 @@ export const getAvailableStatuses = (currentStatus: string, userFunctionalGroup:
 
   let allowedStatuses: string[] = [];
   
-  // Implement the definitive workflow logic map
+  // Implement the definitive workflow logic map from the guide
   switch (currentStatus) {
     case "BACKLOG":
       if (userFunctionalGroup === "DEVELOPER") {

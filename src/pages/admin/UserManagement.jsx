@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,10 +9,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Plus, Edit, Trash2, Search } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from '@/hooks/useUsers';
 import { useProjects } from '@/hooks/useProjects';
+import { useRoles } from '@/hooks/useRoles';
 import { toast } from '@/hooks/use-toast';
 
 const UserManagement = () => {
@@ -26,19 +29,20 @@ const UserManagement = () => {
     phone: '',
     location: '',
     password: '',
-    role: '',
+    roleId: '',
     projectIds: []
   });
 
   // React Query hooks
   const { data: users = [], isLoading: usersLoading, error: usersError } = useUsers();
   const { data: projects = [], isLoading: projectsLoading } = useProjects();
+  const { data: roles = [], isLoading: rolesLoading } = useRoles();
   const createUserMutation = useCreateUser();
   const updateUserMutation = useUpdateUser();
   const deleteUserMutation = useDeleteUser();
 
-  // Check if user is admin
-  if (user?.role !== "ADMIN"  && user?.role !== "HR") {
+  // Check if user has admin or HR permissions
+  if (!["ADMIN", "HR"].includes(user?.functionalGroup)) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
@@ -58,21 +62,35 @@ const UserManagement = () => {
     try {
       const userData = { ...formData };
 
-      // Handle project assignment based on role
-      if (formData.role === "ADMIN" || formData.role === "HR") {
-        userData.projectIds = [];
-      } else if (!formData.projectIds || formData.projectIds.length === 0) {
+      // Validate required fields
+      if (!userData.roleId) {
         toast({
           title: "Error",
-          description: "Project assignment is required for non-admin/HR roles",
+          description: "Role selection is required",
           variant: "destructive",
         });
         return;
       }
 
+      // Find the selected role to check if it needs projects
+      const selectedRole = roles.find(role => role.id === parseInt(userData.roleId));
+      if (selectedRole && !["ADMIN", "HR"].includes(selectedRole.functionalGroup)) {
+        if (!userData.projectIds || userData.projectIds.length === 0) {
+          toast({
+            title: "Error",
+            description: "Project assignment is required for this role",
+            variant: "destructive",
+          });
+          return;
+        }
+      } else {
+        // Clear project assignments for ADMIN/HR roles
+        userData.projectIds = [];
+      }
+
       await createUserMutation.mutateAsync(userData);
       setIsCreateDialogOpen(false);
-      setFormData({ fullName: '', email: '', phone: '', location: '', password: '', role: '', projectIds: [] });
+      setFormData({ fullName: '', email: '', phone: '', location: '', password: '', roleId: '', projectIds: [] });
     } catch (error) {
       // Error handling is done in the mutation
     }
@@ -88,16 +106,30 @@ const UserManagement = () => {
         delete userData.password;
       }
 
-      // Handle project assignment based on role
-      if (formData.role === "ADMIN" || formData.role === "HR") {
-        userData.projectIds = [];
-      } else if (!formData.projectIds || formData.projectIds.length === 0) {
+      // Validate required fields
+      if (!userData.roleId) {
         toast({
           title: "Error",
-          description: "Project assignment is required for non-admin/HR roles",
+          description: "Role selection is required",
           variant: "destructive",
         });
         return;
+      }
+
+      // Find the selected role to check if it needs projects
+      const selectedRole = roles.find(role => role.id === parseInt(userData.roleId));
+      if (selectedRole && !["ADMIN", "HR"].includes(selectedRole.functionalGroup)) {
+        if (!userData.projectIds || userData.projectIds.length === 0) {
+          toast({
+            title: "Error",
+            description: "Project assignment is required for this role",
+            variant: "destructive",
+          });
+          return;
+        }
+      } else {
+        // Clear project assignments for ADMIN/HR roles
+        userData.projectIds = [];
       }
 
       await updateUserMutation.mutateAsync({ 
@@ -106,8 +138,8 @@ const UserManagement = () => {
       });
       setIsEditDialogOpen(false);
       setEditingUser(null);
-      setFormData({ fullName: '', email: '', phone: '', location: '', password: '', role: '', projectIds: [] });
-    } catch  {
+      setFormData({ fullName: '', email: '', phone: '', location: '', password: '', roleId: '', projectIds: [] });
+    } catch (error) {
       // Error handling is done in the mutation
     }
   };
@@ -128,7 +160,7 @@ const UserManagement = () => {
       phone: userToEdit.phone || '',
       location: userToEdit.location || '',
       password: '',
-      role: userToEdit.role || '',
+      roleId: userToEdit.roleId ? userToEdit.roleId.toString() : '',
       projectIds: userToEdit.projectIds || []
     });
     setIsEditDialogOpen(true);
@@ -142,32 +174,34 @@ const UserManagement = () => {
     return names.length ? names.join(", ") : "Unknown Project(s)";
   };
 
-  const getRoleBadgeColor = (role) => {
-    switch (role) {
+  const getRoleBadgeColor = (roleTitle) => {
+    switch (roleTitle) {
       case "ADMIN":
         return "bg-red-100 text-red-800";
       case "HR":
         return "bg-purple-100 text-purple-800";
-      case "MANAGER":
+      case "SDM1":
+      case "SDM2":
         return "bg-blue-100 text-blue-800";
       case "BA":
         return "bg-green-100 text-green-800";
-      case "TEAM_MEMBER":
-        return "bg-gray-100 text-gray-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
   };
 
+  const selectedRole = roles.find(role => role.id === parseInt(formData.roleId));
+  const shouldShowProjects = selectedRole && !["ADMIN", "HR"].includes(selectedRole.functionalGroup);
+
   const filteredUsers = users.filter(user =>
     user.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.role?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.roleTitle?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.phone?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.location?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (usersLoading || projectsLoading) {
+  if (usersLoading || projectsLoading || rolesLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
@@ -261,40 +295,39 @@ const UserManagement = () => {
               </div>
               <div>
                 <Label htmlFor="role">Role *</Label>
-                <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value, projectIds: (value === 'ADMIN' && value === 'HR') ? [] : formData.projectIds })}>
+                <Select value={formData.roleId} onValueChange={(value) => setFormData({ ...formData, roleId: value, projectIds: [] })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ADMIN">Admin</SelectItem>
-                    <SelectItem value="HR">HR</SelectItem>
-                    <SelectItem value="MANAGER">Manager</SelectItem>
-                    <SelectItem value="BA">Business Analyst</SelectItem>
-                    <SelectItem value="TEAM_MEMBER">Team Member</SelectItem>
+                    {roles.map((role) => (
+                      <SelectItem key={role.id} value={role.id.toString()}>
+                        {role.title}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
-              {formData.role && formData.role !== "ADMIN" && formData.role !== "HR" && (
+              {shouldShowProjects && (
                 <div>
                   <Label>Assigned Projects *</Label>
                   <div className="max-h-48 overflow-y-auto border rounded-md p-2 space-y-2">
                     {projects.map((project) => (
-                      <label
-                        key={project.id}
-                        className="flex items-center space-x-2"
-                      >
-                        <input
-                          type="checkbox"
+                      <div key={project.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`project-${project.id}`}
                           checked={formData.projectIds.includes(project.id)}
-                          onChange={(e) => {
-                            const newProjectIds = e.target.checked
+                          onCheckedChange={(checked) => {
+                            const newProjectIds = checked
                               ? [...formData.projectIds, project.id]
                               : formData.projectIds.filter((id) => id !== project.id);
                             setFormData({ ...formData, projectIds: newProjectIds });
                           }}
                         />
-                        <span>{project.name}</span>
-                      </label>
+                        <Label htmlFor={`project-${project.id}`} className="text-sm">
+                          {project.projectName}
+                        </Label>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -355,7 +388,9 @@ const UserManagement = () => {
                     <TableCell>{user.phone || 'N/A'}</TableCell>
                     <TableCell>{user.location || 'N/A'}</TableCell>
                     <TableCell>
-                      <Badge className={getRoleBadgeColor(user.role)}>{user.role}</Badge>
+                      <Badge className={getRoleBadgeColor(user.roleTitle || user.role)}>
+                        {user.roleTitle || user.role}
+                      </Badge>
                     </TableCell>
                     <TableCell>{getProjectNames(user.projectIds)}</TableCell>
                     <TableCell>
@@ -465,40 +500,39 @@ const UserManagement = () => {
             </div>
             <div>
               <Label htmlFor="edit-role">Role *</Label>
-              <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value, projectIds: (value === 'ADMIN' || value === 'HR') ? [] : formData.projectIds })}>
+              <Select value={formData.roleId} onValueChange={(value) => setFormData({ ...formData, roleId: value, projectIds: [] })}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ADMIN">Admin</SelectItem>
-                  <SelectItem value="HR">HR</SelectItem>
-                  <SelectItem value="MANAGER">Manager</SelectItem>
-                  <SelectItem value="BA">Business Analyst</SelectItem>
-                  <SelectItem value="TEAM_MEMBER">Team Member</SelectItem>
+                  {roles.map((role) => (
+                    <SelectItem key={role.id} value={role.id.toString()}>
+                      {role.title}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
-            {formData.role && formData.role !== "ADMIN" && formData.role !== "HR" && (
+            {shouldShowProjects && (
               <div>
                 <Label>Assigned Projects *</Label>
                 <div className="max-h-48 overflow-y-auto border rounded-md p-2 space-y-2">
                   {projects.map((project) => (
-                    <label
-                      key={project.id}
-                      className="flex items-center space-x-2"
-                    >
-                      <input
-                        type="checkbox"
+                    <div key={project.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`edit-project-${project.id}`}
                         checked={formData.projectIds.includes(project.id)}
-                        onChange={(e) => {
-                          const newProjectIds = e.target.checked
+                        onCheckedChange={(checked) => {
+                          const newProjectIds = checked
                             ? [...formData.projectIds, project.id]
                             : formData.projectIds.filter((id) => id !== project.id);
                           setFormData({ ...formData, projectIds: newProjectIds });
                         }}
                       />
-                      <span>{project.projectName}</span>
-                    </label>
+                      <Label htmlFor={`edit-project-${project.id}`} className="text-sm">
+                        {project.projectName}
+                      </Label>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -519,5 +553,3 @@ const UserManagement = () => {
 };
 
 export default UserManagement;
-
-
