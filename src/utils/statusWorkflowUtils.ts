@@ -32,18 +32,8 @@ export const getAvailableStatuses = (currentStatus: string, userRole: string): {
       break;
     
     case "DEVELOPMENT":
-<<<<<<< HEAD
-      if (userRole === "TEAM_MEMBER") {
-        allowedStatuses = ["CODE_REVIEW", "BACKLOG"];
-      }
-      break;
-    case "BACKLOG":
-      if (userRole === "TEAM_MEMBER") {
-        allowedStatuses = ["CODE_REVIEW", "DEVELOPMENT"];
-=======
       if (["DEVELOPER", "TEAM_MEMBER"].includes(userRole)) {
         allowedStatuses = ["CODE_REVIEW"];
->>>>>>> cf400669db48f0188fcc90b4f12d8b81e1176db4
       }
       break;
     
