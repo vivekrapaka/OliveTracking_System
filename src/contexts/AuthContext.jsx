@@ -19,10 +19,10 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     const response = await AuthService.signin(email, password);
     console.log("resppp",response)
-    const { accessToken, id, email: userEmail, fullName, roleTitle, functionalGroup, projectIds, projectNames } = response.data; // Extract functionalGroup
+    const { accessToken, id, email: userEmail, fullName, role, functionalGroup, projectIds, projectNames } = response.data; // Extract functionalGroup
     localStorage.setItem('jwtToken', accessToken);
     console.log("in authcontextt",accessToken)
-    const userData = { id, email: userEmail, fullName, role: roleTitle, functionalGroup, projectIds, projectNames }; // Store functionalGroup
+    const userData = { id, email: userEmail, fullName, role: role, functionalGroup, projectIds, projectNames }; // Store functionalGroup
     localStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);
     return userData;
