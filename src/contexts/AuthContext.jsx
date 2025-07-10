@@ -34,12 +34,13 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('jwtToken', token);
     console.log("Stored JWT token:", token);
     
+    // CRITICAL: Store functionalGroup as the key for all permission-based logic
     const userData = { 
       id, 
       email: userEmail, 
       fullName, 
-      roleTitle, // Display title (e.g., "SDEII")
-      functionalGroup, // Permission group (e.g., "DEVELOPER") - THIS IS KEY
+      roleTitle, // Display title (e.g., "SDEII") - for display purposes only
+      functionalGroup, // Permission group (e.g., "DEVELOPER") - THIS IS THE KEY
       role: roleTitle, // Keep for backward compatibility
       projectIds: projectIds || [], 
       projectNames: projectNames || []

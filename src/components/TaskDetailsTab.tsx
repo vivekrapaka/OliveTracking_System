@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -302,7 +301,7 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
         </Popover>
       </div>
       
-      {/* Smart Status Dropdown */}
+      {/* Smart Status Dropdown - THE MOST CRITICAL COMPONENT */}
       <div className="grid gap-2">
         <Label htmlFor="status">Status</Label>
         <Select 
@@ -326,7 +325,7 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
         )}
       </div>
 
-      {/* Conditional Comment Field */}
+      {/* Conditional Comment Field - Mandatory for specific transitions */}
       {showCommentField && (
         <div className="grid gap-2">
           <Label htmlFor="comment">
@@ -354,7 +353,7 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
         </div>
       )}
 
-      {/* Conditional Commit ID Field */}
+      {/* Conditional Commit ID Field - Mandatory for UAT_TESTING and PREPROD */}
       {showCommitIdField && (
         <div className="grid gap-2">
           <Label htmlFor="commitId">

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -88,6 +87,9 @@ const UserManagement = () => {
         userData.projectIds = [];
       }
 
+      // Convert roleId to integer for submission
+      userData.roleId = parseInt(userData.roleId);
+
       await createUserMutation.mutateAsync(userData);
       setIsCreateDialogOpen(false);
       setFormData({ fullName: '', email: '', phone: '', location: '', password: '', roleId: '', projectIds: [] });
@@ -139,6 +141,9 @@ const UserManagement = () => {
         // Clear project assignments for ADMIN/HR roles
         userData.projectIds = [];
       }
+
+      // Convert roleId to integer for submission
+      userData.roleId = parseInt(userData.roleId);
 
       await updateUserMutation.mutateAsync({ 
         id: editingUser.id, 
@@ -219,6 +224,7 @@ const UserManagement = () => {
     }
   };
 
+  // Check if projects should be shown based on selected role
   const selectedRole = roles.find(role => role.id === parseInt(formData.roleId));
   const shouldShowProjects = selectedRole && !["ADMIN", "HR"].includes(selectedRole.functionalGroup);
 

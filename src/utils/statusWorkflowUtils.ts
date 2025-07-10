@@ -68,6 +68,12 @@ export const getAvailableStatuses = (currentStatus: string, userFunctionalGroup:
       }
       break;
     
+    case "REOPENED":
+      if (userFunctionalGroup === "DEVELOPER") {
+        allowedStatuses = ["DEVELOPMENT"];
+      }
+      break;
+    
     // For all other combinations, return empty array (no valid transitions)
     default:
       allowedStatuses = [];

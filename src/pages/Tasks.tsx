@@ -64,7 +64,6 @@ export const Tasks = () => {
   const [selectedTaskTypes, setSelectedTaskTypes] = useState<string[]>([]);
   const [selectedPriorities, setSelectedPriorities] = useState<string[]>([]);
 
-  // Convert backend data to frontend format
   const convertBackendToFrontend = (backendTask: BackendTask): Task => {
     return {
       id: backendTask.id,
@@ -89,25 +88,21 @@ export const Tasks = () => {
     };
   };
 
-  // Convert API data to component state
   const apiTasksData = tasksApiData?.tasks?.map(convertBackendToFrontend) || [];
   const [tasksData, setTasksData] = useState<Task[]>([]);
 
-  // Update local state when API data changes
   useEffect(() => {
     if (apiTasksData.length > 0) {
       setTasksData(apiTasksData);
     }
   }, [apiTasksData]);
 
-  // Convert teammates data for the dialog
   const teammates = teammatesApiData?.teammates?.map(teammate => ({
     id: teammate.id,
     name: teammate.name,
     role: teammate.role
   })) || [];
 
-  // Filter tasks based on search and filters
   const filteredTasks = tasksData.filter(task => {
     const matchesSearch = searchTerm === "" || 
       task.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -120,7 +115,6 @@ export const Tasks = () => {
     return matchesSearch && matchesStatus && matchesTaskType && matchesPriority;
   });
 
-  // Filter options for dropdowns
   const filterOptions = {
     statuses: [...new Set(tasksData.map(t => t.status))].map(s => ({ 
       label: s, 
