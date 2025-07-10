@@ -16,6 +16,7 @@ import { useAddTask } from "@/hooks/useAddTask";
 import { useTaskSequenceNumber } from "@/hooks/useTaskSequenceNumber";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTasksData } from "@/hooks/useTasksData";
+import { useProjects } from "@/hooks/useProjects";
 
 interface Teammate {
   id: number;
@@ -32,6 +33,7 @@ interface AddTaskDialogProps {
 export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps) => {
   const { user } = useAuth();
   const { data: tasksData } = useTasksData();
+  const { data: projectsData } = useProjects();
 
   // Form state
   const [taskName, setTaskName] = useState("");
@@ -46,6 +48,7 @@ export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps
   const [dueDate, setDueDate] = useState<Date>();
   const [documentPath, setDocumentPath] = useState("");
   const [commitId, setCommitId] = useState("");
+  const [selectedProjectId, setSelectedProjectId] = useState<number | undefined>(undefined);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   // Hooks
@@ -88,6 +91,9 @@ export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps
     taskType: task.taskType || 'TASK'
   })) || [];
 
+  // Available projects from API
+  const availableProjects = projectsData || [];
+
   const handleTeammateToggle = (teammateId: number) => {
     setSelectedTeammateIds(prev => 
       prev.includes(teammateId)
@@ -109,6 +115,7 @@ export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps
     setDueDate(undefined);
     setDocumentPath("");
     setCommitId("");
+    setSelectedProjectId(undefined);
     setValidationErrors({});
   };
 
@@ -121,6 +128,7 @@ export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps
     if (!priority) errors.priority = "Priority is required";
     if (!receivedDate) errors.receivedDate = "Received date is required";
     if (!dueDate) errors.dueDate = "Due date is required";
+    if (!selectedProjectId) errors.projectId = "Project selection is required";
 
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
@@ -145,7 +153,7 @@ export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps
       priority,
       documentPath: documentPath || undefined,
       commitId: commitId || undefined,
-      projectId: user?.projectIds?.[0],
+      projectId: selectedProjectId, // Send the selected project ID
     };
 
     console.log('Submitting task:', taskData);
@@ -175,14 +183,24 @@ export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps
           <DialogTitle>Add New Task</DialogTitle>
         </DialogHeader>
         
-        {/* Project Info */}
+        {/* Project Selection - NEW FEATURE */}
         <div className="grid gap-2">
-          <Label>Project</Label>
-          <Input
-            value={user?.projectIds?.[0] || ""}
-            readOnly
-            className="bg-gray-50 text-gray-700"
-          />
+          <Label>Project *</Label>
+          <Select value={selectedProjectId?.toString()} onValueChange={(value) => setSelectedProjectId(Number(value))}>
+            <SelectTrigger className={validationErrors.projectId ? "border-red-500" : ""}>
+              <SelectValue placeholder="Select a project" />
+            </SelectTrigger>
+            <SelectContent>
+              {availableProjects.map((project) => (
+                <SelectItem key={project.id} value={project.id.toString()}>
+                  {project.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {validationErrors.projectId && (
+            <p className="text-red-500 text-sm">{validationErrors.projectId}</p>
+          )}
         </div>
 
         {/* Task Number */}
@@ -388,5 +406,3 @@ function renderDateField(
     </div>
   );
 }
-
-

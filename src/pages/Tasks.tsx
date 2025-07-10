@@ -144,44 +144,44 @@ export const Tasks = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "BACKLOG": return "bg-gray-100 text-gray-800 border-gray-200";
-      case "ANALYSIS": return "bg-blue-100 text-blue-800 border-blue-200";
-      case "DEVELOPMENT": return "bg-purple-100 text-purple-800 border-purple-200";
-      case "SIT_TESTING": return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "SIT_FAILED": return "bg-red-100 text-red-800 border-red-200";
-      case "UAT_TESTING": return "bg-orange-100 text-orange-800 border-orange-200";
-      case "UAT_FAILED": return "bg-red-100 text-red-800 border-red-200";
+      case "BACKLOG": return "bg-jira-gray-light text-gray-800 border-gray-200";
+      case "ANALYSIS": return "bg-jira-blue-light text-blue-800 border-blue-200";
+      case "DEVELOPMENT": return "bg-jira-purple-light text-purple-800 border-purple-200";
+      case "SIT_TESTING": return "bg-jira-orange-light text-orange-800 border-orange-200";
+      case "SIT_FAILED": return "bg-jira-red-light text-red-800 border-red-200";
+      case "UAT_TESTING": return "bg-jira-orange-light text-orange-800 border-orange-200";
+      case "UAT_FAILED": return "bg-jira-red-light text-red-800 border-red-200";
       case "PREPROD": return "bg-indigo-100 text-indigo-800 border-indigo-200";
-      case "PROD": return "bg-green-100 text-green-800 border-green-200";
-      case "COMPLETED": return "bg-green-100 text-green-800 border-green-200";
-      case "CLOSED": return "bg-gray-100 text-gray-800 border-gray-200";
-      case "REOPENED": return "bg-red-100 text-red-800 border-red-200";
-      case "BLOCKED": return "bg-red-100 text-red-800 border-red-200";
-      default: return "bg-gray-100 text-gray-800 border-gray-200";
+      case "PROD": return "bg-jira-green-light text-green-800 border-green-200";
+      case "COMPLETED": return "bg-jira-green-light text-green-800 border-green-200";
+      case "CLOSED": return "bg-jira-gray-light text-gray-800 border-gray-200";
+      case "REOPENED": return "bg-jira-red-light text-red-800 border-red-200";
+      case "BLOCKED": return "bg-jira-red-light text-red-800 border-red-200";
+      default: return "bg-jira-gray-light text-gray-800 border-gray-200";
     }
   };
 
   const getTaskTypeColor = (taskType: string) => {
     switch (taskType) {
-      case "BRD": return "bg-blue-100 text-blue-800 border-blue-200";
-      case "EPIC": return "bg-purple-100 text-purple-800 border-purple-200";
-      case "STORY": return "bg-green-100 text-green-800 border-green-200";
-      case "TASK": return "bg-gray-100 text-gray-800 border-gray-200";
-      case "BUG": return "bg-red-100 text-red-800 border-red-200";
-      case "SUB_TASK": return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      default: return "bg-gray-100 text-gray-800 border-gray-200";
+      case "BRD": return "bg-jira-blue-light text-blue-800 border-blue-200";
+      case "EPIC": return "bg-jira-purple-light text-purple-800 border-purple-200";
+      case "STORY": return "bg-jira-green-light text-green-800 border-green-200";
+      case "TASK": return "bg-jira-gray-light text-gray-800 border-gray-200";
+      case "BUG": return "bg-jira-red-light text-red-800 border-red-200";
+      case "SUB_TASK": return "bg-jira-orange-light text-orange-800 border-orange-200";
+      default: return "bg-jira-gray-light text-gray-800 border-gray-200";
     }
   };
 
   const getPriorityColor = (priority: string) => {
     const normalizedPriority = priority.toLowerCase();
     switch (normalizedPriority) {
-      case "critical": return "bg-red-100 text-red-800 border-red-200";
+      case "critical": return "bg-jira-red-light text-red-800 border-red-200";
       case "high": 
-      case "hig": return "bg-orange-100 text-orange-800 border-orange-200";
-      case "medium": return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "low": return "bg-green-100 text-green-800 border-green-200";
-      default: return "bg-gray-100 text-gray-800 border-gray-200";
+      case "hig": return "bg-jira-orange-light text-orange-800 border-orange-200";
+      case "medium": return "bg-jira-orange-light text-yellow-800 border-yellow-200";
+      case "low": return "bg-jira-green-light text-green-800 border-green-200";
+      default: return "bg-jira-gray-light text-gray-800 border-gray-200";
     }
   };
 
@@ -205,7 +205,7 @@ export const Tasks = () => {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
+          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-jira-blue" />
           <p className="text-slate-600">Loading tasks...</p>
         </div>
       </div>
@@ -225,18 +225,18 @@ export const Tasks = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+    <div className="space-y-6 bg-background min-h-screen">
+      {/* Header with Jira-inspired styling */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0 bg-card border-b border-border p-6">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Tasks</h1>
-          <p className="text-slate-600 mt-1">Manage and track your project tasks</p>
+          <h1 className="text-3xl font-bold text-foreground font-inter">Tasks</h1>
+          <p className="text-muted-foreground mt-1">Manage and track your project tasks</p>
         </div>
 
         <div className="flex items-center space-x-2">
           {user?.functionalGroup && ["ADMIN", "MANAGER","DEV_MANAGER","TEST_MANAGER", "BUSINESS_ANALYST", "DEV_LEAD","TEST_LEAD"].includes(user.functionalGroup) && (
             <Button 
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-jira-blue hover:bg-jira-blue/90 text-white"
               onClick={() => setIsCreateModalOpen(true)}
               data-testid="add-task-button"
             >
@@ -247,229 +247,232 @@ export const Tasks = () => {
         </div>
       </div>
 
-      {/* Search and Filters */}
-      <div className="space-y-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
-          <Input
-            placeholder="Search tasks by name or task number..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-
-        {/* Filter Bar */}
-        <div className="flex flex-wrap gap-3 items-center">
-          <FilterDropdown
-            title="Status"
-            options={filterOptions.statuses}
-            selectedValues={selectedStatuses}
-            onSelectionChange={setSelectedStatuses}
-          />
-          <FilterDropdown
-            title="Task Type"
-            options={filterOptions.taskTypes}
-            selectedValues={selectedTaskTypes}
-            onSelectionChange={setSelectedTaskTypes}
-          />
-          <FilterDropdown
-            title="Priority"
-            options={filterOptions.priorities}
-            selectedValues={selectedPriorities}
-            onSelectionChange={setSelectedPriorities}
-          />
-
-          {/* Clear Filters */}
-          {activeFiltersCount > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={clearAllFilters}
-              className="text-slate-600 hover:text-slate-900"
-            >
-              <X className="h-4 w-4 mr-1" />
-              Clear all ({activeFiltersCount})
-            </Button>
-          )}
-        </div>
-
-        {/* Results Count */}
-        <div className="text-sm text-slate-600">
-          Showing {filteredTasks.length} of {tasksData.length} tasks
-        </div>
-      </div>
-
-      {/* Task Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-2xl font-bold text-slate-900">{tasksApiData?.totalTasksCount || 0}</div>
-            <p className="text-sm text-slate-600">Total Tasks</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-2xl font-bold text-blue-600">
-              {tasksData.filter(t => t.status === "DEVELOPMENT" || t.status === "ANALYSIS").length}
-            </div>
-            <p className="text-sm text-slate-600">In Development</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-2xl font-bold text-yellow-600">
-              {tasksData.filter(t => t.status === "UAT_TESTING").length}
-            </div>
-            <p className="text-sm text-slate-600">In Testing</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-2xl font-bold text-green-600">
-              {tasksData.filter(t => t.status === "COMPLETED").length}
-            </div>
-            <p className="text-sm text-slate-600">Completed</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Tasks Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>All Tasks</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {filteredTasks.map((task) => (
-              <div 
-                key={task.id} 
-                className={cn(
-                  "flex items-center justify-between p-4 rounded-lg transition-colors",
-                  task.status === "COMPLETED" ? "bg-green-50" : 
-                  task.status === "BLOCKED" ? "bg-red-50" : 
-                  "bg-slate-50 hover:bg-slate-100"
-                )}
-              >
-                <div className="flex-1">
-                  <div className="flex items-center space-x-3 mb-1">
-                    <div className="bg-gray-800 text-white px-2 py-1 rounded font-mono text-xs font-bold border border-gray-600">
-                      {task.taskNumber}
-                    </div>
-                    <h3 className="font-medium text-slate-900">{task.name}</h3>
-                  </div>
-                  {task.description && (
-                    <p className="text-sm text-slate-600 mb-2">{task.description}</p>
-                  )}
-                  {/* Parent Task Link */}
-                  {task.parentTaskTitle && (
-                    <div className="flex items-center gap-2 mb-2">
-                      <Link className="h-3 w-3 text-slate-400" />
-                      <span className="text-xs text-slate-500">
-                        Parent: {task.parentTaskFormattedNumber} - {task.parentTaskTitle}
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600">
-                    <span className="flex items-center">
-                      <Calendar className="h-3 w-3 mr-1" />
-                      Received: {format(new Date(task.receivedDate), "MMM dd, yyyy")}
-                    </span>
-                    <span className="flex items-center">
-                      <Calendar className="h-3 w-3 mr-1" />
-                      Start: {format(new Date(task.developmentStartDate), "MMM dd, yyyy")}
-                    </span>
-                    <span className="flex items-center">
-                      <Calendar className="h-3 w-3 mr-1" />
-                      Due: {format(new Date(task.dueDate), "MMM dd, yyyy")}
-                    </span>
-                    <span className="flex items-center">
-                      <Users className="h-3 w-3 mr-1" />
-                      {task.assignedTeammates.join(", ")}
-                    </span>
-                    {task.projectName && (
-                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                        {task.projectName}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Badge className={getTaskTypeColor(task.taskType)}>
-                    {task.taskType}
-                  </Badge>
-                  <Badge className={getPriorityColor(task.priority)}>
-                    {task.priority}
-                  </Badge>
-                  <Badge className={getStatusColor(task.status)}>
-                    {task.status}
-                  </Badge>
-                  <div className="flex items-center space-x-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleViewTask(task)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    {user?.functionalGroup && ["ADMIN", "MANAGER", "BUSINESS_ANALYST"].includes(user.functionalGroup) && (
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete Task</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Are you sure you want to delete task "{task.name}"? This action cannot be undone.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleDeleteTask(task)}
-                              className="bg-red-600 hover:bg-red-700"
-                              disabled={deleteTaskMutation.isPending}
-                            >
-                              {deleteTaskMutation.isPending ? "Deleting..." : "Delete"}
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
+      <div className="px-6">
+        {/* Search and Filters with Jira styling */}
+        <div className="space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Search tasks by name or task number..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 bg-card border-border"
+            />
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Add Task Modal */}
-      <AddTaskDialog 
-        isOpen={isCreateModalOpen} 
-        onClose={() => setIsCreateModalOpen(false)}   
-        teammates={teammates}
-      />
+          {/* Filter Bar */}
+          <div className="flex flex-wrap gap-3 items-center">
+            <FilterDropdown
+              title="Status"
+              options={filterOptions.statuses}
+              selectedValues={selectedStatuses}
+              onSelectionChange={setSelectedStatuses}
+            />
+            <FilterDropdown
+              title="Task Type"
+              options={filterOptions.taskTypes}
+              selectedValues={selectedTaskTypes}
+              onSelectionChange={setSelectedTaskTypes}
+            />
+            <FilterDropdown
+              title="Priority"
+              options={filterOptions.priorities}
+              selectedValues={selectedPriorities}
+              onSelectionChange={setSelectedPriorities}
+            />
 
-      {/* Task Details Modal */}
-      <TaskDetailsDialog 
-        isOpen={isDetailsModalOpen} 
-        onClose={() => setIsDetailsModalOpen(false)} 
-        task={selectedTask} 
-        onSave={handleSaveTask} 
-        teammates={teammates} 
-      />
+            {/* Clear Filters */}
+            {activeFiltersCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearAllFilters}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4 mr-1" />
+                Clear all ({activeFiltersCount})
+              </Button>
+            )}
+          </div>
 
-      {filteredTasks.length === 0 && !isLoading && (
-        <div className="text-center py-12">
-          <Users className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-slate-900 mb-2">No tasks found</h3>
-          <p className="text-slate-600">Try adjusting your search criteria or add a new task.</p>
+          {/* Results Count */}
+          <div className="text-sm text-muted-foreground">
+            Showing {filteredTasks.length} of {tasksData.length} tasks
+          </div>
         </div>
-      )}
+
+        {/* Task Stats with Jira-inspired cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 my-6">
+          <Card className="jira-card">
+            <CardContent className="p-6">
+              <div className="text-2xl font-bold text-foreground">{tasksApiData?.totalTasksCount || 0}</div>
+              <p className="text-sm text-muted-foreground">Total Tasks</p>
+            </CardContent>
+          </Card>
+          <Card className="jira-card">
+            <CardContent className="p-6">
+              <div className="text-2xl font-bold text-jira-blue">
+                {tasksData.filter(t => t.status === "DEVELOPMENT" || t.status === "ANALYSIS").length}
+              </div>
+              <p className="text-sm text-muted-foreground">In Development</p>
+            </CardContent>
+          </Card>
+          <Card className="jira-card">
+            <CardContent className="p-6">
+              <div className="text-2xl font-bold text-jira-orange">
+                {tasksData.filter(t => t.status === "UAT_TESTING").length}
+              </div>
+              <p className="text-sm text-muted-foreground">In Testing</p>
+            </CardContent>
+          </Card>
+          <Card className="jira-card">
+            <CardContent className="p-6">
+              <div className="text-2xl font-bold text-jira-green">
+                {tasksData.filter(t => t.status === "COMPLETED").length}
+              </div>
+              <p className="text-sm text-muted-foreground">Completed</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Tasks Table with Jira styling */}
+        <Card className="jira-card">
+          <CardHeader>
+            <CardTitle className="text-foreground font-inter">All Tasks</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {filteredTasks.map((task) => (
+                <div 
+                  key={task.id} 
+                  className={cn(
+                    "flex items-center justify-between p-4 rounded-lg transition-all duration-200 border border-border",
+                    task.status === "COMPLETED" ? "bg-jira-green-light/50" : 
+                    task.status === "BLOCKED" ? "bg-jira-red-light/50" : 
+                    "bg-card hover:bg-accent/50"
+                  )}
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3 mb-1">
+                      <div className="bg-jira-gray text-white px-2 py-1 rounded font-mono text-xs font-bold border border-border">
+                        {task.taskNumber}
+                      </div>
+                      <h3 className="font-medium text-foreground font-inter">{task.name}</h3>
+                    </div>
+                    {task.description && (
+                      <p className="text-sm text-muted-foreground mb-2">{task.description}</p>
+                    )}
+                    {/* Parent Task Link */}
+                    {task.parentTaskTitle && (
+                      <div className="flex items-center gap-2 mb-2">
+                        <Link className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">
+                          Parent: {task.parentTaskFormattedNumber} - {task.parentTaskTitle}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                      <span className="flex items-center">
+                        <Calendar className="h-3 w-3 mr-1" />
+                        Received: {format(new Date(task.receivedDate), "MMM dd, yyyy")}
+                      </span>
+                      <span className="flex items-center">
+                        <Calendar className="h-3 w-3 mr-1" />
+                        Start: {format(new Date(task.developmentStartDate), "MMM dd, yyyy")}
+                      </span>
+                      <span className="flex items-center">
+                        <Calendar className="h-3 w-3 mr-1" />
+                        Due: {format(new Date(task.dueDate), "MMM dd, yyyy")}
+                      </span>
+                      <span className="flex items-center">
+                        <Users className="h-3 w-3 mr-1" />
+                        {task.assignedTeammates.join(", ")}
+                      </span>
+                      {task.projectName && (
+                        <span className="text-xs bg-jira-blue-light text-blue-800 px-2 py-1 rounded border border-blue-200">
+                          {task.projectName}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Badge className={getTaskTypeColor(task.taskType)}>
+                      {task.taskType}
+                    </Badge>
+                    <Badge className={getPriorityColor(task.priority)}>
+                      {task.priority}
+                    </Badge>
+                    <Badge className={getStatusColor(task.status)}>
+                      {task.status}
+                    </Badge>
+                    <div className="flex items-center space-x-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleViewTask(task)}
+                        className="hover:bg-accent"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      {user?.functionalGroup && ["ADMIN", "MANAGER", "BUSINESS_ANALYST"].includes(user.functionalGroup) && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="sm" className="hover:bg-destructive/10">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Task</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete task "{task.name}"? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteTask(task)}
+                                className="bg-destructive hover:bg-destructive/90"
+                                disabled={deleteTaskMutation.isPending}
+                              >
+                                {deleteTaskMutation.isPending ? "Deleting..." : "Delete"}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Add Task Modal */}
+        <AddTaskDialog 
+          isOpen={isCreateModalOpen} 
+          onClose={() => setIsCreateModalOpen(false)}   
+          teammates={teammates}
+        />
+
+        {/* Task Details Modal */}
+        <TaskDetailsDialog 
+          isOpen={isDetailsModalOpen} 
+          onClose={() => setIsDetailsModalOpen(false)} 
+          task={selectedTask} 
+          onSave={handleSaveTask} 
+          teammates={teammates} 
+        />
+
+        {filteredTasks.length === 0 && !isLoading && (
+          <div className="text-center py-12">
+            <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-foreground mb-2">No tasks found</h3>
+            <p className="text-muted-foreground">Try adjusting your search criteria or add a new task.</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

@@ -47,7 +47,8 @@ export const TaskDetailsDialog = ({ isOpen, onClose, task, onSave, teammates }: 
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("details");
 
-  const canViewHistory = user?.role && ["ADMIN", "MANAGER"].includes(user.role);
+  // Updated to include DEV_MANAGER and TEST_MANAGER
+  const canViewHistory = user?.functionalGroup && ["ADMIN", "MANAGER", "DEV_MANAGER", "TEST_MANAGER"].includes(user.functionalGroup);
 
   useEffect(() => {
     if (isOpen) {
@@ -84,12 +85,14 @@ export const TaskDetailsDialog = ({ isOpen, onClose, task, onSave, teammates }: 
           
           {canViewHistory && (
             <TabsContent value="history" className="mt-4">
-              <TaskHistoryTab taskId={task.id} />
+              {/* Only render TaskHistoryTab when the tab is active to prevent unnecessary API calls */}
+              {activeTab === "history" && <TaskHistoryTab taskId={task.id} />}
             </TabsContent>
           )}
           
           <TabsContent value="worklogs" className="mt-4">
-            <TaskWorkLogsTab taskId={task.id} />
+            {/* Only render TaskWorkLogsTab when the tab is active to prevent unnecessary API calls */}
+            {activeTab === "worklogs" && <TaskWorkLogsTab taskId={task.id} />}
           </TabsContent>
         </Tabs>
       </DialogContent>
