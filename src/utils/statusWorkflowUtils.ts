@@ -1,5 +1,4 @@
 
-
 export const getAvailableStatuses = (currentStatus: string, userFunctionalGroup: string): { value: string; label: string }[] => {
   const allStatuses = [
     { value: "BACKLOG", label: "Backlog" },
@@ -8,6 +7,7 @@ export const getAvailableStatuses = (currentStatus: string, userFunctionalGroup:
     { value: "CODE_REVIEW", label: "Code Review" },
     { value: "UAT_TESTING", label: "UAT Testing" },
     { value: "UAT_FAILED", label: "UAT Failed" },
+    { value: "READY_FOR_PREPROD", label: "Ready for Pre-Production" },
     { value: "PREPROD", label: "Pre-Production" },
     { value: "PROD", label: "Production" },
     { value: "COMPLETED", label: "Completed" },
@@ -39,31 +39,31 @@ export const getAvailableStatuses = (currentStatus: string, userFunctionalGroup:
       break;
     
     case "CODE_REVIEW":
-      if (["MANAGER", "TEAMLEAD", "BUSINESS_ANALYST"].includes(userFunctionalGroup)) {
+      if (["MANAGER", "DEV_LEAD", "BUSINESS_ANALYST"].includes(userFunctionalGroup)) {
         allowedStatuses = ["DEVELOPMENT", "UAT_TESTING"];
       }
       break;
     
     case "UAT_TESTING":
-      if (userFunctionalGroup === "TESTER") {
-        allowedStatuses = ["PREPROD", "UAT_FAILED"];
+      if (["TESTER", "TEST_LEAD"].includes(userFunctionalGroup)) {
+        allowedStatuses = ["UAT_FAILED", "READY_FOR_PREPROD"];
       }
       break;
     
     case "UAT_FAILED":
       if (userFunctionalGroup === "DEVELOPER") {
-        allowedStatuses = ["DEVELOPMENT"];
+        allowedStatuses = ["UAT_TESTING"];
       }
       break;
     
-    case "REOPENED":
-      if (userFunctionalGroup === "DEVELOPER") {
-        allowedStatuses = ["DEVELOPMENT"];
+    case "READY_FOR_PREPROD":
+      if (["DEVELOPER", "DEV_LEAD"].includes(userFunctionalGroup)) {
+        allowedStatuses = ["PREPROD"];
       }
       break;
     
     case "PREPROD":
-      if (["MANAGER", "ADMIN"].includes(userFunctionalGroup)) {
+      if (["DEVELOPER", "DEV_LEAD"].includes(userFunctionalGroup)) {
         allowedStatuses = ["PROD"];
       }
       break;
@@ -77,8 +77,24 @@ export const getAvailableStatuses = (currentStatus: string, userFunctionalGroup:
 };
 
 export const requiresComment = (currentStatus: string, newStatus: string): boolean => {
-  // Comment is mandatory when current status is CODE_REVIEW and a transition is available
-  return currentStatus === "CODE_REVIEW";
+  // Comment is mandatory for these transitions:
+  // 1. From CODE_REVIEW to any other status
+  // 2. From UAT_TESTING to UAT_FAILED
+  // 3. From UAT_FAILED back to UAT_TESTING
+  
+  if (currentStatus === "CODE_REVIEW") {
+    return true;
+  }
+  
+  if (currentStatus === "UAT_TESTING" && newStatus === "UAT_FAILED") {
+    return true;
+  }
+  
+  if (currentStatus === "UAT_FAILED" && newStatus === "UAT_TESTING") {
+    return true;
+  }
+  
+  return false;
 };
 
 export const requiresCommitId = (newStatus: string): boolean => {

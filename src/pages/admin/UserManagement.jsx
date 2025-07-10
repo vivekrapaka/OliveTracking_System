@@ -41,7 +41,7 @@ const UserManagement = () => {
   const updateUserMutation = useUpdateUser();
   const deleteUserMutation = useDeleteUser();
 
-  // Check if user has admin or HR permissions
+  // Check if user has admin or HR permissions using functionalGroup
   if (!["ADMIN", "HR"].includes(user?.functionalGroup)) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -91,8 +91,16 @@ const UserManagement = () => {
       await createUserMutation.mutateAsync(userData);
       setIsCreateDialogOpen(false);
       setFormData({ fullName: '', email: '', phone: '', location: '', password: '', roleId: '', projectIds: [] });
+      toast({
+        title: "Success",
+        description: "User created successfully",
+      });
     } catch (error) {
-      // Error handling is done in the mutation
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to create user",
+        variant: "destructive",
+      });
     }
   };
 
@@ -139,16 +147,32 @@ const UserManagement = () => {
       setIsEditDialogOpen(false);
       setEditingUser(null);
       setFormData({ fullName: '', email: '', phone: '', location: '', password: '', roleId: '', projectIds: [] });
+      toast({
+        title: "Success",
+        description: "User updated successfully",
+      });
     } catch (error) {
-      // Error handling is done in the mutation
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to update user",
+        variant: "destructive",
+      });
     }
   };
 
   const handleDeleteUser = async (userId) => {
     try {
       await deleteUserMutation.mutateAsync(userId);
+      toast({
+        title: "Success",
+        description: "User deleted successfully",
+      });
     } catch (error) {
-      // Error handling is done in the mutation
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to delete user",
+        variant: "destructive",
+      });
     }
   };
 
@@ -174,17 +198,22 @@ const UserManagement = () => {
     return names.length ? names.join(", ") : "Unknown Project(s)";
   };
 
-  const getRoleBadgeColor = (roleTitle) => {
-    switch (roleTitle) {
+  const getRoleBadgeColor = (functionalGroup) => {
+    switch (functionalGroup) {
       case "ADMIN":
         return "bg-red-100 text-red-800";
       case "HR":
         return "bg-purple-100 text-purple-800";
-      case "SDM1":
-      case "SDM2":
+      case "MANAGER":
+      case "DEV_LEAD":
         return "bg-blue-100 text-blue-800";
-      case "BA":
+      case "BUSINESS_ANALYST":
         return "bg-green-100 text-green-800";
+      case "TESTER":
+      case "TEST_LEAD":
+        return "bg-yellow-100 text-yellow-800";
+      case "DEVELOPER":
+        return "bg-cyan-100 text-cyan-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
@@ -302,7 +331,7 @@ const UserManagement = () => {
                   <SelectContent>
                     {roles.map((role) => (
                       <SelectItem key={role.id} value={role.id.toString()}>
-                        {role.title}
+                        {role.title} ({role.functionalGroup})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -368,6 +397,7 @@ const UserManagement = () => {
                 <TableHead>Phone</TableHead>
                 <TableHead>Location</TableHead>
                 <TableHead>Role</TableHead>
+                <TableHead>Functional Group</TableHead>
                 <TableHead>Projects</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -375,7 +405,7 @@ const UserManagement = () => {
             <TableBody>
               {filteredUsers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-slate-500">
+                  <TableCell colSpan={9} className="text-center text-slate-500">
                     No users found
                   </TableCell>
                 </TableRow>
@@ -388,8 +418,13 @@ const UserManagement = () => {
                     <TableCell>{user.phone || 'N/A'}</TableCell>
                     <TableCell>{user.location || 'N/A'}</TableCell>
                     <TableCell>
-                      <Badge className={getRoleBadgeColor(user.roleTitle || user.role)}>
-                        {user.roleTitle || user.role}
+                      <Badge className="bg-slate-100 text-slate-800">
+                        {user.roleTitle || user.role || 'N/A'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={getRoleBadgeColor(user.functionalGroup)}>
+                        {user.functionalGroup || 'N/A'}
                       </Badge>
                     </TableCell>
                     <TableCell>{getProjectNames(user.projectIds)}</TableCell>
@@ -507,7 +542,7 @@ const UserManagement = () => {
                 <SelectContent>
                   {roles.map((role) => (
                     <SelectItem key={role.id} value={role.id.toString()}>
-                      {role.title}
+                      {role.title} ({role.functionalGroup})
                     </SelectItem>
                   ))}
                 </SelectContent>

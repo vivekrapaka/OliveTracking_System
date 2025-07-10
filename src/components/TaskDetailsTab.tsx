@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -80,7 +81,10 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
 
   // Check if comment is required for the status change
   const isCommentRequired = requiresComment(task.status, currentStage);
-  const showCommentField = isCommentRequired || task.status === "CODE_REVIEW";
+  const showCommentField = isCommentRequired || 
+    (task.status === "CODE_REVIEW" && availableStatusTransitions.length > 0) ||
+    (task.status === "UAT_TESTING" && currentStage === "UAT_FAILED") ||
+    (task.status === "UAT_FAILED" && currentStage === "UAT_TESTING");
 
   const taskTypes = [
     { value: "BRD", label: "Business Requirement Document" },
@@ -334,7 +338,7 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
             onChange={(e) => setComment(e.target.value)}
             placeholder={
               isCommentRequired 
-                ? "A comment is required when changing status from Code Review..." 
+                ? "A comment is required for this status transition..." 
                 : "Add a comment about this status change (optional)..."
             }
             className={cn(
@@ -344,7 +348,7 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
           />
           {isCommentRequired && !comment.trim() && (
             <p className="text-xs text-red-500">
-              A comment is required when changing status from Code Review.
+              A comment is required for this status transition.
             </p>
           )}
         </div>

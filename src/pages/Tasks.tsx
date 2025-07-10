@@ -240,7 +240,7 @@ export const Tasks = () => {
         </div>
 
         <div className="flex items-center space-x-2">
-          {user?.role && ["ADMIN", "MANAGER", "BA","TEAMLEAD"].includes(user.role) && (
+          {user?.functionalGroup && ["ADMIN", "MANAGER", "BUSINESS_ANALYST", "DEV_LEAD"].includes(user.functionalGroup) && (
             <Button 
               className="bg-blue-600 hover:bg-blue-700"
               onClick={() => setIsCreateModalOpen(true)}
@@ -317,7 +317,7 @@ export const Tasks = () => {
         <Card>
           <CardContent className="p-6">
             <div className="text-2xl font-bold text-blue-600">
-              {tasksData.filter(t => t.status === "DEVELOPMENT" || t.status === "SIT_TESTING").length}
+              {tasksData.filter(t => t.status === "DEVELOPMENT" || t.status === "ANALYSIS").length}
             </div>
             <p className="text-sm text-slate-600">In Development</p>
           </CardContent>
@@ -418,7 +418,7 @@ export const Tasks = () => {
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
-                    {user?.role && ["ADMIN", "MANAGER", "BA"].includes(user.role) && (
+                    {user?.functionalGroup && ["ADMIN", "MANAGER", "BUSINESS_ANALYST"].includes(user.functionalGroup) && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button variant="ghost" size="sm">
