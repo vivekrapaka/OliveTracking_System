@@ -39,13 +39,13 @@ export const getAvailableStatuses = (currentStatus: string, userFunctionalGroup:
       break;
     
     case "CODE_REVIEW":
-      if (["MANAGER", "DEV_LEAD", "BUSINESS_ANALYST"].includes(userFunctionalGroup)) {
+      if (["MANAGER", "DEV_LEAD", "BUSINESS_ANALYST","DEV_MANAGER"].includes(userFunctionalGroup)) {
         allowedStatuses = ["DEVELOPMENT", "UAT_TESTING"];
       }
       break;
     
     case "UAT_TESTING":
-      if (["TESTER", "TEST_LEAD"].includes(userFunctionalGroup)) {
+      if (["TESTER", "TEST_LEAD","TEST_MANAGER"].includes(userFunctionalGroup)) {
         allowedStatuses = ["UAT_FAILED", "READY_FOR_PREPROD"];
       }
       break;

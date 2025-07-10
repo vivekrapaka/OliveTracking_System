@@ -41,7 +41,7 @@ export const AuthProvider = ({ children }) => {
       fullName, 
       roleTitle, // Display title (e.g., "SDEII") - for display purposes only
       functionalGroup, // Permission group (e.g., "DEVELOPER") - THIS IS THE KEY
-      role: roleTitle, // Keep for backward compatibility
+      role: functionalGroup, // Keep for backward compatibility
       projectIds: projectIds || [], 
       projectNames: projectNames || []
     };

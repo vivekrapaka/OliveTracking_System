@@ -234,7 +234,7 @@ export const Tasks = () => {
         </div>
 
         <div className="flex items-center space-x-2">
-          {user?.functionalGroup && ["ADMIN", "MANAGER", "BUSINESS_ANALYST", "DEV_LEAD"].includes(user.functionalGroup) && (
+          {user?.functionalGroup && ["ADMIN", "MANAGER","DEV_MANAGER","TEST_MANAGER", "BUSINESS_ANALYST", "DEV_LEAD","TEST_LEAD"].includes(user.functionalGroup) && (
             <Button 
               className="bg-blue-600 hover:bg-blue-700"
               onClick={() => setIsCreateModalOpen(true)}

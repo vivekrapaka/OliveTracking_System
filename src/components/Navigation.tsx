@@ -12,9 +12,9 @@ export const Navigation = () => {
   const { user, logout } = useAuth();
 
   const navItems = [
-    { path: "/", label: "Dashboard", icon: LayoutDashboard, roles: ["ADMIN", "MANAGER", "BA", "TEAM_MEMBER"] }, // HR role excluded
-    { path: "/tasks", label: "Tasks", icon: CheckSquare, roles: ["ADMIN", "MANAGER", "BA", "TEAM_MEMBER"] }, // HR role excluded
-    { path: "/teammates", label: "Teammates", icon: Users, roles: ["ADMIN", "MANAGER", "BA", "HR"] }, // TEAM_MEMBER role excluded
+    { path: "/", label: "Dashboard", icon: LayoutDashboard, roles: ["ADMIN", "MANAGER", "BUSINESS_ANALYST", "TEAM_MEMBER","DEV_MANAGER","TEST_MANAGER","DEV_LEAD","TEST_LEAD","TESTER","DEVELOPER"] }, // HR role excluded
+    { path: "/tasks", label: "Tasks", icon: CheckSquare, roles: ["ADMIN", "MANAGER", "BUSINESS_ANALYST", "TEAM_MEMBER","DEV_MANAGER","TEST_MANAGER","DEV_LEAD","TEST_LEAD","TESTER","DEVELOPER"] }, // HR role excluded
+    { path: "/teammates", label: "Teammates", icon: Users, roles: ["ADMIN", "MANAGER", "BUSINESS_ANALYST","DEV_MANAGER","TEST_MANAGER","DEV_LEAD","TEST_LEAD"] }, // TEAM_MEMBER role excluded
   ];
 
   // Admin-only navigation items
