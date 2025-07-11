@@ -449,11 +449,10 @@ export const Tasks = () => {
           </CardContent>
         </Card>
 
-        {/* Add Task Modal */}
+        {/* Add Task Modal - Fixed props */}
         <AddTaskDialog 
-          isOpen={isCreateModalOpen} 
-          onClose={() => setIsCreateModalOpen(false)}   
-          teammates={teammates}
+          open={isCreateModalOpen} 
+          onOpenChange={setIsCreateModalOpen}
         />
 
         {/* Task Details Modal */}
