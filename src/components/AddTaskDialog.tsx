@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -12,7 +11,7 @@ import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { TeammateSelector } from "./TeammateSelector";
-import { useCreateTask } from "@/hooks/useCreateTask";
+import { useAddTask } from "@/hooks/useAddTask";
 import { useTeammatesData } from "@/hooks/useTeammatesData";
 import { useProjects } from "@/hooks/useProjects";
 import { toast } from "@/hooks/use-toast";
@@ -34,7 +33,7 @@ export const AddTaskDialog = ({ open, onOpenChange }: AddTaskDialogProps) => {
   const [selectedTeammates, setSelectedTeammates] = useState<string[]>([]);
   const [parentTaskId, setParentTaskId] = useState("");
 
-  const createTaskMutation = useCreateTask();
+  const addTaskMutation = useAddTask();
   const { data: teammatesApiData } = useTeammatesData();
   const { data: projects = [] } = useProjects();
 
@@ -92,15 +91,16 @@ export const AddTaskDialog = ({ open, onOpenChange }: AddTaskDialogProps) => {
       description,
       taskType,
       priority,
-      projectId: selectedProjectId, // Send project ID to backend
+      projectId: selectedProjectId,
       dueDate: selectedDate ? format(selectedDate, "yyyy-MM-dd") : undefined,
       developmentStartDate: selectedDevelopmentStartDate ? format(selectedDevelopmentStartDate, "yyyy-MM-dd") : undefined,
       receivedDate: selectedReceivedDate ? format(selectedReceivedDate, "yyyy-MM-dd") : undefined,
       assignedTeammateNames: selectedTeammates,
       parentTaskId: parentTaskId ? parseInt(parentTaskId) : undefined,
+      status: "BACKLOG"
     };
 
-    createTaskMutation.mutate(taskData, {
+    addTaskMutation.mutate(taskData, {
       onSuccess: () => {
         resetForm();
         onOpenChange(false);
@@ -285,9 +285,9 @@ export const AddTaskDialog = ({ open, onOpenChange }: AddTaskDialogProps) => {
             <Button 
               onClick={handleSubmit} 
               className="bg-blue-600 hover:bg-blue-700"
-              disabled={createTaskMutation.isPending}
+              disabled={addTaskMutation.isPending}
             >
-              {createTaskMutation.isPending ? "Creating..." : "Create Task"}
+              {addTaskMutation.isPending ? "Creating..." : "Create Task"}
             </Button>
           </div>
         </div>
