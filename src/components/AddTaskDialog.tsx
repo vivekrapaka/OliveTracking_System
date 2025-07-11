@@ -184,24 +184,41 @@ export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps
         </DialogHeader>
         
         {/* Project Selection - NEW FEATURE */}
-        <div className="grid gap-2">
-          <Label>Project *</Label>
-          <Select value={selectedProjectId?.toString()} onValueChange={(value) => setSelectedProjectId(Number(value))}>
-            <SelectTrigger className={validationErrors.projectId ? "border-red-500" : ""}>
-              <SelectValue placeholder="Select a project" />
-            </SelectTrigger>
-            <SelectContent>
-              {availableProjects.map((project) => (
-                <SelectItem key={project.id} value={project.id.toString()}>
-                  {project.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {validationErrors.projectId && (
-            <p className="text-red-500 text-sm">{validationErrors.projectId}</p>
-          )}
-        </div>
+      <div className="grid gap-2">
+  <Label>Project *</Label>
+
+  {/* Log the lists on render */}
+  {console.log("Project Names:", user?.projectsNames)}
+  {console.log("Project IDs:", user?.projectIds)}
+
+  <Select
+    value={selectedProjectId?.toString()}
+    onValueChange={(value) => {
+      console.log("Selected Project ID (as string):", value);
+      setSelectedProjectId(Number(value));
+    }}
+  >
+    <SelectTrigger className={validationErrors.projectId ? "border-red-500" : ""}>
+      <SelectValue placeholder="Select a project" />
+    </SelectTrigger>
+    <SelectContent>
+      {user?.projectNames?.map((projectNames, index) => {
+        const projectId = user.projectIds[index];
+        console.log(`Rendering: Name = ${projectNames}, ID = ${projectId}`);
+        return (
+          <SelectItem key={projectId} value={projectId.toString()}>
+            {projectNames}
+          </SelectItem>
+        );
+      })}
+    </SelectContent>
+  </Select>
+
+  {validationErrors.projectId && (
+    <p className="text-red-500 text-sm">{validationErrors.projectId}</p>
+  )}
+</div>
+
 
         {/* Task Number */}
         <div className="grid gap-2">
