@@ -12,7 +12,7 @@ import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { TeammateSelector } from "./TeammateSelector";
-import { useCreateTask } from "@/hooks/useCreateTask";
+import { useAddTask } from "@/hooks/useAddTask";
 import { useTeammatesData } from "@/hooks/useTeammatesData";
 import { useProjects } from "@/hooks/useProjects";
 import { toast } from "@/hooks/use-toast";
@@ -34,7 +34,7 @@ export const AddTaskDialog = ({ open, onOpenChange }: AddTaskDialogProps) => {
   const [selectedTeammates, setSelectedTeammates] = useState<string[]>([]);
   const [parentTaskId, setParentTaskId] = useState("");
 
-  const createTaskMutation = useCreateTask();
+  const addTaskMutation = useAddTask();
   const { data: teammatesApiData } = useTeammatesData();
   const { data: projects = [] } = useProjects();
 
@@ -78,29 +78,35 @@ export const AddTaskDialog = ({ open, onOpenChange }: AddTaskDialogProps) => {
   };
 
   const handleSubmit = () => {
-    if (!taskName || !taskType || !priority || !selectedProjectId) {
+    if (!taskName || !taskType || !priority || !selectedProjectId || !selectedReceivedDate || !selectedDate) {
       toast({
         title: "Error",
-        description: "Please fill in all required fields including project selection",
+        description: "Please fill in all required fields including project selection, received date and due date",
         variant: "destructive"
       });
       return;
     }
 
+    // Convert teammate names to IDs
+    const selectedTeammateIds = teammates
+      .filter(teammate => selectedTeammates.includes(teammate.name))
+      .map(teammate => teammate.id);
+
     const taskData = {
       taskName,
-      description,
+      description: description || "",
+      status: "BACKLOG",
       taskType,
-      priority,
-      projectId: selectedProjectId, // Send project ID to backend
-      dueDate: selectedDate ? format(selectedDate, "yyyy-MM-dd") : undefined,
+      parentId: parentTaskId ? parseInt(parentTaskId) : undefined,
+      receivedDate: format(selectedReceivedDate, "yyyy-MM-dd"),
       developmentStartDate: selectedDevelopmentStartDate ? format(selectedDevelopmentStartDate, "yyyy-MM-dd") : undefined,
-      receivedDate: selectedReceivedDate ? format(selectedReceivedDate, "yyyy-MM-dd") : undefined,
-      assignedTeammateNames: selectedTeammates,
-      parentTaskId: parentTaskId ? parseInt(parentTaskId) : undefined,
+      dueDate: format(selectedDate, "yyyy-MM-dd"),
+      assignedTeammateIds: selectedTeammateIds,
+      priority,
+      projectId: selectedProjectId,
     };
 
-    createTaskMutation.mutate(taskData, {
+    addTaskMutation.mutate(taskData, {
       onSuccess: () => {
         resetForm();
         onOpenChange(false);
@@ -182,7 +188,7 @@ export const AddTaskDialog = ({ open, onOpenChange }: AddTaskDialogProps) => {
           </div>
           
           <div className="grid gap-2">
-            <Label>Received Date</Label>
+            <Label>Received Date *</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -234,7 +240,7 @@ export const AddTaskDialog = ({ open, onOpenChange }: AddTaskDialogProps) => {
           </div>
 
           <div className="grid gap-2">
-            <Label>Due Date</Label>
+            <Label>Due Date *</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -285,9 +291,9 @@ export const AddTaskDialog = ({ open, onOpenChange }: AddTaskDialogProps) => {
             <Button 
               onClick={handleSubmit} 
               className="bg-blue-600 hover:bg-blue-700"
-              disabled={createTaskMutation.isPending}
+              disabled={addTaskMutation.isPending}
             >
-              {createTaskMutation.isPending ? "Creating..." : "Create Task"}
+              {addTaskMutation.isPending ? "Creating..." : "Create Task"}
             </Button>
           </div>
         </div>
