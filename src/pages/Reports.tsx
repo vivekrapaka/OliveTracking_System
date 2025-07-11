@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, FileText, Clock, Users } from 'lucide-react';
+import { CalendarIcon, FileText, Clock, Users, Download } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks, subMonths } from 'date-fns';
 import { cn } from '@/lib/utils';
 import apiClient from '@/services/apiClient';
@@ -104,6 +104,15 @@ const Reports = () => {
     } finally {
       setIsGeneratingReport(false);
     }
+  };
+
+  const downloadPDF = () => {
+    if (!selectedTeammateId || !startDate || !endDate) {
+      return;
+    }
+
+    const pdfUrl = `/api/reports/timesheet/pdf?teammateId=${selectedTeammateId}&startDate=${format(startDate, 'yyyy-MM-dd')}&endDate=${format(endDate, 'yyyy-MM-dd')}`;
+    window.open(pdfUrl, '_blank');
   };
 
   const canGenerateReport = selectedTeammateId && startDate && endDate;
@@ -236,7 +245,7 @@ const Reports = () => {
           </div>
 
           {/* Generate Button */}
-          <div className="flex justify-end">
+          <div className="flex justify-end space-x-2">
             <Button
               onClick={generateReport}
               disabled={!canGenerateReport || isGeneratingReport}
@@ -254,6 +263,16 @@ const Reports = () => {
                 </>
               )}
             </Button>
+            {reportData && (
+              <Button
+                onClick={downloadPDF}
+                variant="outline"
+                className="border-jira-blue text-jira-blue hover:bg-jira-blue/10"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Download PDF
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
