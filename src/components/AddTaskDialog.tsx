@@ -12,7 +12,7 @@ import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { TeammateSelector } from "./TeammateSelector";
-import { useAddTask } from "@/hooks/useAddTask";
+import { useCreateTask } from "@/hooks/useCreateTask";
 import { useTeammatesData } from "@/hooks/useTeammatesData";
 import { useProjects } from "@/hooks/useProjects";
 import { toast } from "@/hooks/use-toast";
@@ -34,7 +34,7 @@ export const AddTaskDialog = ({ open, onOpenChange }: AddTaskDialogProps) => {
   const [selectedTeammates, setSelectedTeammates] = useState<string[]>([]);
   const [parentTaskId, setParentTaskId] = useState("");
 
-  const addTaskMutation = useAddTask();
+  const createTaskMutation = useCreateTask();
   const { data: teammatesApiData } = useTeammatesData();
   const { data: projects = [] } = useProjects();
 
@@ -78,35 +78,29 @@ export const AddTaskDialog = ({ open, onOpenChange }: AddTaskDialogProps) => {
   };
 
   const handleSubmit = () => {
-    if (!taskName || !taskType || !priority || !selectedProjectId || !selectedReceivedDate || !selectedDate) {
+    if (!taskName || !taskType || !priority || !selectedProjectId) {
       toast({
         title: "Error",
-        description: "Please fill in all required fields including project selection, received date and due date",
+        description: "Please fill in all required fields including project selection",
         variant: "destructive"
       });
       return;
     }
 
-    // Convert teammate names to IDs
-    const selectedTeammateIds = teammates
-      .filter(teammate => selectedTeammates.includes(teammate.name))
-      .map(teammate => teammate.id);
-
     const taskData = {
       taskName,
-      description: description || "",
-      status: "BACKLOG",
+      description,
       taskType,
-      parentId: parentTaskId ? parseInt(parentTaskId) : undefined,
-      receivedDate: format(selectedReceivedDate, "yyyy-MM-dd"),
-      developmentStartDate: selectedDevelopmentStartDate ? format(selectedDevelopmentStartDate, "yyyy-MM-dd") : undefined,
-      dueDate: format(selectedDate, "yyyy-MM-dd"),
-      assignedTeammateIds: selectedTeammateIds,
       priority,
-      projectId: selectedProjectId,
+      projectId: selectedProjectId, // Send project ID to backend
+      dueDate: selectedDate ? format(selectedDate, "yyyy-MM-dd") : undefined,
+      developmentStartDate: selectedDevelopmentStartDate ? format(selectedDevelopmentStartDate, "yyyy-MM-dd") : undefined,
+      receivedDate: selectedReceivedDate ? format(selectedReceivedDate, "yyyy-MM-dd") : undefined,
+      assignedTeammateNames: selectedTeammates,
+      parentTaskId: parentTaskId ? parseInt(parentTaskId) : undefined,
     };
 
-    addTaskMutation.mutate(taskData, {
+    createTaskMutation.mutate(taskData, {
       onSuccess: () => {
         resetForm();
         onOpenChange(false);
@@ -188,7 +182,7 @@ export const AddTaskDialog = ({ open, onOpenChange }: AddTaskDialogProps) => {
           </div>
           
           <div className="grid gap-2">
-            <Label>Received Date *</Label>
+            <Label>Received Date</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -240,7 +234,7 @@ export const AddTaskDialog = ({ open, onOpenChange }: AddTaskDialogProps) => {
           </div>
 
           <div className="grid gap-2">
-            <Label>Due Date *</Label>
+            <Label>Due Date</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -291,9 +285,9 @@ export const AddTaskDialog = ({ open, onOpenChange }: AddTaskDialogProps) => {
             <Button 
               onClick={handleSubmit} 
               className="bg-blue-600 hover:bg-blue-700"
-              disabled={addTaskMutation.isPending}
+              disabled={createTaskMutation.isPending}
             >
-              {addTaskMutation.isPending ? "Creating..." : "Create Task"}
+              {createTaskMutation.isPending ? "Creating..." : "Create Task"}
             </Button>
           </div>
         </div>
