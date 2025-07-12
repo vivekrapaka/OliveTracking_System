@@ -10,15 +10,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { CalendarIcon, FileText, Clock, Users, Download, BarChart3, User, Calendar as CalendarDaily, AlertTriangle } from 'lucide-react';
+import { CalendarIcon, FileText, Clock, Users, Download, BarChart3, User, Calendar as CalendarDaily, AlertTriangle, UserCheck, Crown } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks, subMonths } from 'date-fns';
 import { cn } from '@/lib/utils';
 import apiClient from '@/services/apiClient';
 import { toast } from '@/hooks/use-toast';
 
+interface TaskLog {
+  taskName: string;
+  hours: number;
+}
+
 interface DailyLog {
   date: string;
   totalHours: number;
+  taskLogs: TaskLog[];
 }
 
 interface TimesheetResponse {
@@ -32,6 +38,10 @@ interface TaskTimeSummaryResponse {
   taskId: number;
   taskName: string;
   totalHours: number;
+  devManagerName?: string;
+  testManagerName?: string;
+  developerNames: string[];
+  testerNames: string[];
   breakdown: {
     developmentHours: number;
     testingHours: number;
@@ -142,7 +152,7 @@ const Reports = () => {
 
       const response = await apiClient.get('/api/reports/timesheet', {
         params: {
-          teammateId: selectedTeammateId, // Using the correct teammate ID from teammates dropdown
+          teammateId: selectedTeammateId,
           startDate: formattedStartDate,
           endDate: formattedEndDate
         }
@@ -415,7 +425,7 @@ const Reports = () => {
                       const teammateId = Number(value);
                       console.log('Selected teammate ID:', teammateId);
                       setSelectedTeammateId(teammateId);
-                      setTimesheetReportData(null); // Clear previous report data
+                      setTimesheetReportData(null);
                     }}
                   >
                     <SelectTrigger className="h-12 border-2 border-primary/30 focus:border-primary focus:ring-primary/20 bg-background/80">
@@ -464,7 +474,7 @@ const Reports = () => {
                         selected={startDate}
                         onSelect={(date) => {
                           setStartDate(date);
-                          setTimesheetReportData(null); // Clear previous report data
+                          setTimesheetReportData(null);
                         }}
                         initialFocus
                       />
@@ -497,7 +507,7 @@ const Reports = () => {
                         selected={endDate}
                         onSelect={(date) => {
                           setEndDate(date);
-                          setTimesheetReportData(null); // Clear previous report data
+                          setTimesheetReportData(null);
                         }}
                         initialFocus
                       />
@@ -522,7 +532,7 @@ const Reports = () => {
                       size="sm"
                       onClick={() => {
                         setDatePreset(preset.value);
-                        setTimesheetReportData(null); // Clear previous report data
+                        setTimesheetReportData(null);
                       }}
                       className="border-primary/40 hover:bg-primary/10 hover:border-primary hover:text-primary font-semibold"
                     >
@@ -609,7 +619,8 @@ const Reports = () => {
                       <TableHeader className="bg-gradient-to-r from-primary/10 to-secondary/10">
                         <TableRow>
                           <TableHead className="font-bold text-foreground py-6 text-base">Date</TableHead>
-                          <TableHead className="font-bold text-foreground py-6 text-base">Total Hours Logged</TableHead>
+                          <TableHead className="font-bold text-foreground py-6 text-base">Total Hours</TableHead>
+                          <TableHead className="font-bold text-foreground py-6 text-base">Task Breakdown</TableHead>
                           <TableHead className="font-bold text-foreground py-6 text-base">Status</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -636,6 +647,15 @@ const Reports = () => {
                               >
                                 {log.totalHours} hours
                               </span>
+                            </TableCell>
+                            <TableCell className="py-6">
+                              <div className="space-y-1">
+                                {log.taskLogs.map((taskLog, taskIndex) => (
+                                  <div key={taskIndex} className="text-sm bg-white/80 px-2 py-1 rounded border">
+                                    <span className="font-medium">{taskLog.taskName}</span>: {taskLog.hours}h
+                                  </div>
+                                ))}
+                              </div>
                             </TableCell>
                             <TableCell className="py-6">
                               <span
@@ -695,7 +715,7 @@ const Reports = () => {
                     const taskId = Number(value);
                     console.log('Selected task ID:', taskId);
                     setSelectedTaskId(taskId);
-                    setTaskReportData(null); // Clear previous report data
+                    setTaskReportData(null);
                   }}
                 >
                   <SelectTrigger className="h-12 border-2 border-secondary/30 focus:border-secondary focus:ring-secondary/20 bg-background/80">
@@ -790,6 +810,58 @@ const Reports = () => {
                     </div>
                     <div className="p-6 bg-gradient-to-br from-secondary/20 to-primary/20 rounded-2xl shadow-lg">
                       <Clock className="h-12 w-12 text-secondary" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Management Information */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {taskReportData.devManagerName && (
+                    <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <Crown className="h-5 w-5 text-blue-600" />
+                        <h4 className="font-bold text-blue-800">Development Manager</h4>
+                      </div>
+                      <p className="text-blue-700 font-semibold">{taskReportData.devManagerName}</p>
+                    </div>
+                  )}
+                  {taskReportData.testManagerName && (
+                    <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-6">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <Crown className="h-5 w-5 text-purple-600" />
+                        <h4 className="font-bold text-purple-800">Test Manager</h4>
+                      </div>
+                      <p className="text-purple-700 font-semibold">{taskReportData.testManagerName}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Team Members */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6">
+                    <div className="flex items-center space-x-3 mb-4">
+                      <UserCheck className="h-5 w-5 text-green-600" />
+                      <h4 className="font-bold text-green-800">Developers</h4>
+                    </div>
+                    <div className="space-y-2">
+                      {taskReportData.developerNames.map((developer, index) => (
+                        <div key={index} className="bg-white px-3 py-2 rounded border text-green-700 font-medium">
+                          {developer}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="bg-orange-50 border-2 border-orange-200 rounded-xl p-6">
+                    <div className="flex items-center space-x-3 mb-4">
+                      <UserCheck className="h-5 w-5 text-orange-600" />
+                      <h4 className="font-bold text-orange-800">Testers</h4>
+                    </div>
+                    <div className="space-y-2">
+                      {taskReportData.testerNames.map((tester, index) => (
+                        <div key={index} className="bg-white px-3 py-2 rounded border text-orange-700 font-medium">
+                          {tester}
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>

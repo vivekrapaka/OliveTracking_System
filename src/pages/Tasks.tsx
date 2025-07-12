@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -45,6 +44,8 @@ interface Task {
   dueDate: string;
   assignedTeammates: string[];
   assignedTeammateIds: number[];
+  developerName?: string;
+  testerName?: string;
   priority: string;
   projectId: number;
   projectName: string;
@@ -82,6 +83,8 @@ export const Tasks = () => {
       dueDate: backendTask.dueDate,
       assignedTeammates: backendTask.assignedTeammateNames || [],
       assignedTeammateIds: backendTask.assignedTeammateIds || [],
+      developerName: backendTask.developerName,
+      testerName: backendTask.testerName,
       priority: backendTask.priority,
       projectId: backendTask.projectId,
       projectName: backendTask.projectName,
@@ -105,10 +108,27 @@ export const Tasks = () => {
     role: teammate.role
   })) || [];
 
-  // Check if current user is assigned to a task
+  // Check if current user can edit a task
+  const canEditTask = (task: Task): boolean => {
+    if (!user?.fullName || !user?.functionalGroup) return false;
+    
+    // Managers and analysts can edit all tasks
+    const managerRoles = ["ADMIN", "MANAGER", "DEV_MANAGER", "TEST_MANAGER", "DEV_LEAD", "TEST_LEAD", "BUSINESS_ANALYST"];
+    if (managerRoles.includes(user.functionalGroup)) {
+      return true;
+    }
+    
+    // Regular developers and testers can only edit if they are assigned
+    const isAssignedDeveloper = task.developerName === user.fullName;
+    const isAssignedTester = task.testerName === user.fullName;
+    
+    return isAssignedDeveloper || isAssignedTester;
+  };
+
+  // Check if task is assigned to current user (for highlighting)
   const isTaskAssignedToUser = (task: Task): boolean => {
     if (!user?.fullName) return false;
-    return task.assignedTeammates.includes(user.fullName);
+    return task.developerName === user.fullName || task.testerName === user.fullName;
   };
 
   const filteredTasks = tasksData.filter(task => {
@@ -194,16 +214,6 @@ export const Tasks = () => {
   };
 
   const handleViewTask = (task: Task) => {
-    // Check if user is assigned to the task
-    if (!isTaskAssignedToUser(task)) {
-      toast({
-        title: "Access Denied",
-        description: "You can only view tasks that are assigned to you.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     console.log("View task:", task);
     setSelectedTask(task);
     setIsDetailsModalOpen(true);
@@ -219,9 +229,9 @@ export const Tasks = () => {
     ));
   };
 
-  // Check if user can create tasks
+  // Check if user can create tasks - exclude TEST roles
   const canCreateTasks = user?.functionalGroup && 
-    ["ADMIN", "MANAGER", "DEV_MANAGER", "BUSINESS_ANALYST"].includes(user.functionalGroup);
+    ["ADMIN", "MANAGER", "DEV_MANAGER", "BUSINESS_ANALYST", "DEV_LEAD"].includes(user.functionalGroup);
 
   if (isLoading) {
     return (
@@ -366,6 +376,7 @@ export const Tasks = () => {
             <div className="space-y-4">
               {filteredTasks.map((task) => {
                 const isAssigned = isTaskAssignedToUser(task);
+                const canEdit = canEditTask(task);
                 return (
                   <div 
                     key={task.id} 
@@ -417,10 +428,13 @@ export const Tasks = () => {
                           <Calendar className="h-3 w-3 mr-1" />
                           Due: {format(new Date(task.dueDate), "MMM dd, yyyy")}
                         </span>
-                        <span className="flex items-center">
-                          <Users className="h-3 w-3 mr-1" />
-                          {task.assignedTeammates.join(", ")}
-                        </span>
+                        {/* Display developer and tester names */}
+                        {(task.developerName || task.testerName) && (
+                          <span className="flex items-center">
+                            <Users className="h-3 w-3 mr-1" />
+                            {[task.developerName, task.testerName].filter(Boolean).join(", ")}
+                          </span>
+                        )}
                         {task.projectName && (
                           <span className="text-xs bg-professional-cyan/10 text-professional-cyan-dark px-2 py-1 rounded border border-professional-cyan/20">
                             {task.projectName}
@@ -439,8 +453,8 @@ export const Tasks = () => {
                         {task.status}
                       </Badge>
                       <div className="flex items-center space-x-1">
-                        {/* Edit button - only for assigned users */}
-                        {isAssigned ? (
+                        {/* Edit button - based on new permission logic */}
+                        {canEdit ? (
                           <Button
                             variant="ghost"
                             size="sm"
@@ -455,7 +469,7 @@ export const Tasks = () => {
                             size="sm"
                             disabled
                             className="opacity-50 cursor-not-allowed"
-                            title="Only assigned team members can edit this task"
+                            title="You don't have permission to edit this task"
                           >
                             <Lock className="h-4 w-4" />
                           </Button>

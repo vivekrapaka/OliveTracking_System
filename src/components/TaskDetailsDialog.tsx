@@ -22,6 +22,8 @@ interface Task {
   dueDate: string;
   assignedTeammates: string[];
   assignedTeammateIds: number[];
+  developerName?: string;
+  testerName?: string;
   priority: string;
   projectId: number;
   projectName: string;
@@ -47,8 +49,8 @@ export const TaskDetailsDialog = ({ isOpen, onClose, task, onSave, teammates }: 
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("details");
 
-  // Updated to include DEV_MANAGER and TEST_MANAGER
-  const canViewHistory = user?.functionalGroup && ["ADMIN", "MANAGER", "DEV_MANAGER", "TEST_MANAGER"].includes(user.functionalGroup);
+  // Enhanced permission check - managers and leads can view history
+  const canViewHistory = user?.functionalGroup && ["ADMIN", "MANAGER", "DEV_MANAGER", "TEST_MANAGER", "DEV_LEAD", "TEST_LEAD", "BUSINESS_ANALYST"].includes(user.functionalGroup);
 
   useEffect(() => {
     if (isOpen) {
@@ -60,18 +62,18 @@ export const TaskDetailsDialog = ({ isOpen, onClose, task, onSave, teammates }: 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[800px] max-h-[80vh]">
+      <DialogContent className="sm:max-w-[800px] max-h-[80vh] bg-white/95 backdrop-blur-md border-professional-slate/20">
         <DialogHeader>
-          <DialogTitle>Task Details - {task.taskNumber}</DialogTitle>
+          <DialogTitle className="text-professional-navy">Task Details - {task.taskNumber}</DialogTitle>
         </DialogHeader>
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="details">Details</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 bg-professional-blue/10">
+            <TabsTrigger value="details" className="data-[state=active]:bg-professional-blue data-[state=active]:text-white">Details</TabsTrigger>
             {canViewHistory && (
-              <TabsTrigger value="history">History & Comments</TabsTrigger>
+              <TabsTrigger value="history" className="data-[state=active]:bg-professional-blue data-[state=active]:text-white">History & Comments</TabsTrigger>
             )}
-            <TabsTrigger value="worklogs">Work Logs</TabsTrigger>
+            <TabsTrigger value="worklogs" className="data-[state=active]:bg-professional-blue data-[state=active]:text-white">Work Logs</TabsTrigger>
           </TabsList>
           
           <TabsContent value="details" className="mt-4">
