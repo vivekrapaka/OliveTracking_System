@@ -1,4 +1,3 @@
-
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 @tailwind base;
 @tailwind components;
@@ -95,95 +94,177 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground font-inter;
+    @apply bg-background text-foreground font-professional;
     font-feature-settings: "rlig" 1, "calt" 1;
     background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
+    background-attachment: fixed;
   }
 }
 
 /* Professional utility classes inspired by modern design systems */
 @layer components {
   .professional-card {
-    @apply bg-card border-2 border-border/50 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 backdrop-blur-sm;
+    @apply bg-white/80 backdrop-blur-md border border-professional-slate/20 rounded-xl shadow-professional hover:shadow-professional-lg transition-all duration-300;
   }
   
   .professional-gradient {
-    @apply bg-gradient-to-br from-primary/10 via-primary/5 to-secondary/10;
+    @apply bg-gradient-to-br from-professional-blue/10 via-professional-blue/5 to-professional-cyan/10;
+  }
+  
+  .professional-gradient-bg {
+    @apply bg-professional-gradient;
   }
   
   .professional-button {
-    @apply bg-gradient-to-r from-primary to-primary/90 hover:from-primary/95 hover:to-primary/85 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200;
+    @apply bg-gradient-to-r from-professional-blue to-professional-cyan hover:from-professional-blue-dark hover:to-professional-cyan-dark text-white shadow-professional hover:shadow-professional-lg transition-all duration-200 font-medium;
   }
   
   .professional-input {
-    @apply border-2 border-border/60 focus:border-primary focus:ring-primary/20 bg-background/80 backdrop-blur-sm;
+    @apply border border-professional-slate/30 focus:border-professional-blue focus:ring-professional-blue/20 bg-white/80 backdrop-blur-sm rounded-lg transition-all duration-200;
+  }
+  
+  .professional-badge {
+    @apply px-3 py-1 rounded-full text-xs font-medium border backdrop-blur-sm;
   }
   
   /* Enhanced status classes with professional styling */
   .jira-status-backlog {
-    @apply bg-gradient-to-r from-slate-100 to-slate-50 text-slate-800 border-2 border-slate-200 shadow-sm;
+    @apply bg-gradient-to-r from-professional-slate-light to-professional-slate/50 text-professional-slate-dark border border-professional-slate/30 shadow-sm;
   }
   
   .jira-status-analysis {
-    @apply bg-gradient-to-r from-blue-100 to-blue-50 text-blue-800 border-2 border-blue-200 shadow-sm;
+    @apply bg-gradient-to-r from-professional-blue-light to-professional-blue/10 text-professional-blue-dark border border-professional-blue/30 shadow-sm;
   }
   
   .jira-status-development {
-    @apply bg-gradient-to-r from-purple-100 to-purple-50 text-purple-800 border-2 border-purple-200 shadow-sm;
+    @apply bg-gradient-to-r from-professional-purple-light to-professional-purple/10 text-professional-purple-dark border border-professional-purple/30 shadow-sm;
   }
   
   .jira-status-testing {
-    @apply bg-gradient-to-r from-yellow-100 to-yellow-50 text-yellow-800 border-2 border-yellow-200 shadow-sm;
+    @apply bg-gradient-to-r from-professional-orange-light to-professional-orange/10 text-professional-orange-dark border border-professional-orange/30 shadow-sm;
   }
   
   .jira-status-completed {
-    @apply bg-gradient-to-r from-green-100 to-green-50 text-green-800 border-2 border-green-200 shadow-sm;
+    @apply bg-gradient-to-r from-professional-green-light to-professional-green/10 text-professional-green-dark border border-professional-green/30 shadow-sm;
   }
   
   .jira-status-failed {
-    @apply bg-gradient-to-r from-red-100 to-red-50 text-red-800 border-2 border-red-200 shadow-sm;
+    @apply bg-gradient-to-r from-professional-red-light to-professional-red/10 text-professional-red-dark border border-professional-red/30 shadow-sm;
   }
   
   .jira-priority-high {
-    @apply bg-gradient-to-r from-red-100 to-red-50 text-red-800 border-2 border-red-200 shadow-sm;
+    @apply bg-gradient-to-r from-professional-red-light to-professional-red/10 text-professional-red-dark border border-professional-red/30 shadow-sm;
   }
   
   .jira-priority-medium {
-    @apply bg-gradient-to-r from-yellow-100 to-yellow-50 text-yellow-800 border-2 border-yellow-200 shadow-sm;
+    @apply bg-gradient-to-r from-professional-yellow-light to-professional-yellow/10 text-professional-yellow-dark border border-professional-yellow/30 shadow-sm;
   }
   
   .jira-priority-low {
-    @apply bg-gradient-to-r from-green-100 to-green-50 text-green-800 border-2 border-green-200 shadow-sm;
+    @apply bg-gradient-to-r from-professional-green-light to-professional-green/10 text-professional-green-dark border border-professional-green/30 shadow-sm;
+  }
+  
+  /* Professional glass morphism effects */
+  .professional-glass {
+    @apply backdrop-blur-professional bg-white/10 border border-white/20 shadow-professional-lg;
+  }
+  
+  .professional-glass-dark {
+    @apply backdrop-blur-professional bg-black/10 border border-black/20 shadow-professional-lg;
+  }
+  
+  /* Professional animations */
+  .professional-animate-in {
+    @apply animate-professional-fade-in;
+  }
+  
+  .professional-hover {
+    @apply transition-all duration-200 hover:scale-[1.02] hover:shadow-professional-lg;
+  }
+  
+  .professional-focus {
+    @apply focus:outline-none focus:ring-2 focus:ring-professional-blue/50 focus:border-professional-blue;
+  }
+  
+  /* Professional text gradients */
+  .professional-text-gradient {
+    @apply bg-gradient-to-r from-professional-blue to-professional-cyan bg-clip-text text-transparent;
+  }
+  
+  .professional-text-gradient-dark {
+    @apply bg-gradient-to-r from-professional-navy to-professional-blue bg-clip-text text-transparent;
+  }
+  
+  /* Professional loading states */
+  .professional-shimmer {
+    @apply bg-professional-shimmer bg-[length:200%_100%] animate-professional-shimmer;
+  }
+  
+  /* Professional scroll bars */
+  .professional-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(217, 89%, 61%) hsl(214, 32%, 91%);
+  }
+  
+  .professional-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .professional-scrollbar::-webkit-scrollbar-track {
+    @apply bg-professional-slate-light rounded-full;
+  }
+  
+  .professional-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-professional-blue rounded-full hover:bg-professional-blue-dark;
   }
 }
 
 /* Professional typography */
-.font-inter {
-  font-family: 'Inter', sans-serif;
+.font-professional {
+  font-family: 'Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', sans-serif;
+  font-optical-sizing: auto;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
 
-/* Professional animations */
-@keyframes professional-fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
+/* Professional responsive design helpers */
+@media (max-width: 768px) {
+  .professional-mobile-padding {
+    @apply px-4 py-3;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+  
+  .professional-mobile-text {
+    @apply text-sm leading-relaxed;
   }
 }
 
-.professional-animate-in {
-  animation: professional-fade-in 0.3s ease-out;
+/* Professional high contrast mode support */
+@media (prefers-contrast: high) {
+  .professional-button {
+    @apply border-2 border-professional-navy;
+  }
+  
+  .professional-card {
+    @apply border-2 border-professional-slate-dark;
+  }
 }
 
-/* Professional hover effects */
-.professional-hover {
-  @apply transition-all duration-200 hover:scale-[1.02] hover:shadow-lg;
+/* Professional reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .professional-hover,
+  .professional-animate-in,
+  .professional-shimmer {
+    @apply transition-none animate-none;
+  }
 }
 
-/* Professional glass effect */
-.professional-glass {
-  @apply backdrop-blur-md bg-white/10 border border-white/20;
+/* Professional print styles */
+@media print {
+  .professional-card {
+    @apply shadow-none border border-gray-400;
+  }
+  
+  .professional-gradient,
+  .professional-glass {
+    background: white !important;
+  }
 }
