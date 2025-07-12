@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import AuthService from '../services/auth';
 
@@ -17,9 +18,34 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     const response = await AuthService.signin(email, password);
-    const { token, id, email: userEmail, fullName, role, projectIds, projectNames } = response.data; // Extract new fields
+    console.log("Login response:", response);
+    
+    const { 
+      token, 
+      id, 
+      email: userEmail, 
+      fullName, 
+      roleTitle, 
+      functionalGroup, 
+      projectIds, 
+      projectNames 
+    } = response.data;
+    
     localStorage.setItem('jwtToken', token);
-    const userData = { id, email: userEmail, fullName, role, projectIds, projectNames }; // Store new fields
+    console.log("Stored JWT token:", token);
+    
+    // CRITICAL: Store functionalGroup as the key for all permission-based logic
+    const userData = { 
+      id, 
+      email: userEmail, 
+      fullName, 
+      roleTitle, // Display title (e.g., "SDEII") - for display purposes only
+      functionalGroup, // Permission group (e.g., "DEVELOPER") - THIS IS THE KEY
+      role: functionalGroup, // Keep for backward compatibility
+      projectIds: projectIds || [], 
+      projectNames: projectNames || []
+    };
+    
     localStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);
     return userData;
@@ -30,8 +56,8 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
-  const signup = async (fullName, email, password,phone,location) => {
-    const response = await AuthService.signup(fullName, email, password,phone,location);
+  const signup = async (fullName, email, password, phone, location) => {
+    const response = await AuthService.signup(fullName, email, password, phone, location);
     return response.data;
   };
 
@@ -43,5 +69,3 @@ export const AuthProvider = ({ children }) => {
 };
 
 export const useAuth = () => useContext(AuthContext);
-
-

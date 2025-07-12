@@ -1,20 +1,22 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, CheckSquare, Users, Menu, LogOut, User, Settings, FolderOpen } from "lucide-react";
+import { LayoutDashboard, CheckSquare, Users, Menu, LogOut, User, Settings, FolderOpen, FileText } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import karyaLogo from "@/assets/karya_logo.png";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+
 export const Navigation = () => {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user, logout } = useAuth();
 
   const navItems = [
-    { path: "/", label: "Dashboard", icon: LayoutDashboard, roles: ["ADMIN", "MANAGER", "BA", "TEAM_MEMBER"] }, // HR role excluded
-    { path: "/tasks", label: "Tasks", icon: CheckSquare, roles: ["ADMIN", "MANAGER", "BA", "TEAM_MEMBER"] }, // HR role excluded
-    { path: "/teammates", label: "Teammates", icon: Users, roles: ["ADMIN", "MANAGER", "BA", "HR"] }, // TEAM_MEMBER role excluded
+    { path: "/", label: "Dashboard", icon: LayoutDashboard, roles: ["ADMIN", "MANAGER", "BUSINESS_ANALYST", "TEAM_MEMBER","DEV_MANAGER","TEST_MANAGER","DEV_LEAD","TEST_LEAD","TESTER","DEVELOPER"] },
+    { path: "/tasks", label: "Tasks", icon: CheckSquare, roles: ["ADMIN", "MANAGER", "BUSINESS_ANALYST", "TEAM_MEMBER","DEV_MANAGER","TEST_MANAGER","DEV_LEAD","TEST_LEAD","TESTER","DEVELOPER"] },
+    { path: "/teammates", label: "Teammates", icon: Users, roles: ["ADMIN", "MANAGER", "BUSINESS_ANALYST","DEV_MANAGER","TEST_MANAGER","DEV_LEAD","TEST_LEAD"] },
+    { path: "/reports", label: "Reports", icon: FileText, roles: ["ADMIN", "MANAGER", "DEV_MANAGER", "TEST_MANAGER", "DEV_LEAD", "TEST_LEAD"] },
   ];
 
   // Admin-only navigation items
@@ -53,7 +55,7 @@ export const Navigation = () => {
               {navItems.map((item) => {
                 const Icon = item.icon;
                 // Conditionally render based on user role
-                if (user?.role && item.roles.includes(user.role)) {
+                if (user?.functionalGroup && item.roles.includes(user.functionalGroup)) {
                   return (
                     <Link key={item.path} to={item.path}>
                       <Button
@@ -75,7 +77,7 @@ export const Navigation = () => {
               })}
               
               {/* Admin Navigation Items */}
-              {(user?.role === 'ADMIN' || user?.role === 'HR') && adminNavItems.map((item) => {
+              {(user?.functionalGroup === 'ADMIN' || user?.functionalGroup === 'HR') && adminNavItems.map((item) => {
                 const Icon = item.icon;
                 return (
                   <Link key={item.path} to={item.path}>
@@ -103,16 +105,16 @@ export const Navigation = () => {
                 <Button variant="ghost" className="flex items-center space-x-2">
                   <User className="h-4 w-4" />
                   <span className="hidden lg:inline">{user?.fullName}</span>
-                  <span className="text-xs text-slate-500">({user?.role})</span>
+                  <span className="text-xs text-slate-500">({user?.functionalGroup})</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
                 <div className="px-2 py-1.5 text-sm text-slate-600">
                   <div className="font-medium">{user?.fullName}</div>
                   <div className="text-xs text-slate-500">{user?.email}</div>
-                  <div className="text-xs text-slate-500">Role: {user?.role}</div>
-                  {user?.projectId && (
-                    <div className="text-xs text-slate-500">Project: {user?.projectId}</div>
+                  <div className="text-xs text-slate-500">Role: {user?.functionalGroup}</div>
+                  {user?.projectIds && user?.projectIds.length > 0 && (
+                    <div className="text-xs text-slate-500">Projects: {user?.projectNames?.join(', ')}</div>
                   )}
                 </div>
                 <DropdownMenuSeparator />
@@ -136,9 +138,9 @@ export const Navigation = () => {
                 <div className="px-2 py-1.5 text-sm text-slate-600">
                   <div className="font-medium">{user?.fullName}</div>
                   <div className="text-xs text-slate-500">{user?.email}</div>
-                  <div className="text-xs text-slate-500">Role: {user?.role}</div>
-                  {user?.projectId && (
-                    <div className="text-xs text-slate-500">Project: {user?.projectId}</div>
+                  <div className="text-xs text-slate-500">Role: {user?.functionalGroup}</div>
+                  {user?.projectIds && user?.projectIds.length > 0 && (
+                    <div className="text-xs text-slate-500">Projects: {user?.projectNames?.join(', ')}</div>
                   )}
                 </div>
                 <DropdownMenuSeparator />
@@ -166,7 +168,7 @@ export const Navigation = () => {
               {navItems.map((item) => {
                 const Icon = item.icon;
                 // Conditionally render based on user role for mobile
-                if (user?.role && item.roles.includes(user.role)) {
+                if (user?.functionalGroup && item.roles.includes(user.functionalGroup)) {
                   return (
                     <Link 
                       key={item.path} 
@@ -192,7 +194,7 @@ export const Navigation = () => {
               })}
               
               {/* Admin Navigation Items for Mobile */}
-              {(user?.role === 'ADMIN' || user?.role === 'HR') && adminNavItems.map((item) => {
+              {(user?.functionalGroup === 'ADMIN' || user?.functionalGroup === 'HR') && adminNavItems.map((item) => {
                 const Icon = item.icon;
                 return (
                   <Link 
@@ -222,6 +224,3 @@ export const Navigation = () => {
     </nav>
   );
 };
-
-
-

@@ -10,21 +10,18 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { TeammateSelector } from "./TeammateSelector";
+import { TeammateMultiSelector } from "./TeammateMultiSelector";
+import { ParentTaskSelector } from "./ParentTaskSelector";
 import { useAddTask } from "@/hooks/useAddTask";
 import { useTaskSequenceNumber } from "@/hooks/useTaskSequenceNumber";
 import { useAuth } from "@/contexts/AuthContext";
-import { useAllProjects } from "@/hooks/useFilterAdminInTasks"
+import { useTasksData } from "@/hooks/useTasksData";
+import { useProjects } from "@/hooks/useProjects";
 
 interface Teammate {
   id: number;
   name: string;
   role: string;
-}
-
-interface Project {
-  id: string;
-  name: string;
 }
 
 interface AddTaskDialogProps {
@@ -34,54 +31,91 @@ interface AddTaskDialogProps {
 }
 
 export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps) => {
-  const { user, setUser } = useAuth();
-  //console.log('Dialog opened with user:', user);
+  const { user } = useAuth();
+  const { data: tasksData } = useTasksData();
+  const { data: projectsData } = useProjects();
 
   // Form state
   const [taskName, setTaskName] = useState("");
   const [description, setDescription] = useState("");
-  const [currentStage, setCurrentStage] = useState("");
-  const [issueType, setIssueType] = useState("");
+  const [status, setStatus] = useState("BACKLOG");
+  const [taskType, setTaskType] = useState("TASK");
+  const [parentId, setParentId] = useState<number | undefined>(undefined);
   const [priority, setPriority] = useState("");
-  const [selectedTeammates, setSelectedTeammates] = useState<string[]>([]);
+  const [selectedTeammateIds, setSelectedTeammateIds] = useState<number[]>([]);
   const [receivedDate, setReceivedDate] = useState<Date>();
-  const [startDate, setStartDate] = useState<Date>();
-  const [dueDate, setDueDate] = useState<Date>();
   const [developmentStartDate, setDevelopmentStartDate] = useState<Date>();
+  const [dueDate, setDueDate] = useState<Date>();
   const [documentPath, setDocumentPath] = useState("");
+  const [commitId, setCommitId] = useState("");
+  const [selectedProjectId, setSelectedProjectId] = useState<number | undefined>(undefined);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
-  const [selectedProjectName, setSelectedProjectName] = useState("");
 
   // Hooks
   const addTaskMutation = useAddTask();
   const { data: taskSequenceNumber, isLoading: isLoadingSequence, refetch: refetchSequence } = useTaskSequenceNumber();
 
-  // Constants
-  const stages = ["SIT", "DEV", "Pre-Prod", "Prod", "FSD", "UAT"];
-  const issueTypes = ["Feature", "Bug", "Enhancement"];
-  const priorities = ["HIGH", "MEDIUM", "LOW"];
-  const selectedProjectId = user?.projectIds?.[0];
+  // Constants with new status values
+  const statuses = [
+    { value: "BACKLOG", label: "Backlog" },
+    { value: "ANALYSIS", label: "Analysis" },
+    { value: "DEVELOPMENT", label: "Development" },
+    { value: "SIT_TESTING", label: "SIT Testing" },
+    { value: "SIT_FAILED", label: "SIT Failed" },
+    { value: "UAT_TESTING", label: "UAT Testing" },
+    { value: "UAT_FAILED", label: "UAT Failed" },
+    { value: "PREPROD", label: "Pre-Production" },
+    { value: "PROD", label: "Production" },
+    { value: "COMPLETED", label: "Completed" },
+    { value: "CLOSED", label: "Closed" },
+    { value: "REOPENED", label: "Reopened" },
+    { value: "BLOCKED", label: "Blocked" }
+  ];
 
-  const handleTeammateToggle = (teammateName: string) => {
-    setSelectedTeammates(prev => 
-      prev.includes(teammateName)
-        ? prev.filter(name => name !== teammateName)
-        : [...prev, teammateName]
+  const taskTypes = [
+    { value: "BRD", label: "Business Requirement Document" },
+    { value: "EPIC", label: "Epic" },
+    { value: "STORY", label: "Story" },
+    { value: "TASK", label: "Task" },
+    { value: "BUG", label: "Bug" },
+    { value: "SUB_TASK", label: "Sub-Task" }
+  ];
+
+  const priorities = ["HIGH", "MEDIUM", "LOW"];
+
+  // Available parent tasks
+  const availableParentTasks = tasksData?.tasks?.map(task => ({
+    id: task.id,
+    name: task.name,
+    taskNumber: task.taskNumber,
+    taskType: task.taskType || 'TASK'
+  })) || [];
+
+  // Available projects from API
+  const availableProjects = projectsData || [];
+
+  const handleTeammateToggle = (teammateId: number) => {
+    setSelectedTeammateIds(prev => 
+      prev.includes(teammateId)
+        ? prev.filter(id => id !== teammateId)
+        : [...prev, teammateId]
     );
   };
 
   const resetForm = () => {
     setTaskName("");
     setDescription("");
-    setCurrentStage("");
-    setIssueType("");
+    setStatus("BACKLOG");
+    setTaskType("TASK");
+    setParentId(undefined);
     setPriority("");
-    setSelectedTeammates([]);
+    setSelectedTeammateIds([]);
     setReceivedDate(undefined);
-    setStartDate(undefined);
-    setDueDate(undefined);
     setDevelopmentStartDate(undefined);
+    setDueDate(undefined);
     setDocumentPath("");
+    setCommitId("");
+    setSelectedProjectId(undefined);
     setValidationErrors({});
   };
 
@@ -89,12 +123,12 @@ export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps
     const errors: Record<string, string> = {};
     
     if (!taskName) errors.taskName = "Task name is required";
-    if (!currentStage) errors.currentStage = "Current stage is required";
-    if (!issueType) errors.issueType = "Issue type is required";
+    if (!status) errors.status = "Status is required";
+    if (!taskType) errors.taskType = "Task type is required";
     if (!priority) errors.priority = "Priority is required";
     if (!receivedDate) errors.receivedDate = "Received date is required";
     if (!dueDate) errors.dueDate = "Due date is required";
-
+    if (!selectedProjectId) errors.projectId = "Project selection is required";
 
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
@@ -109,16 +143,17 @@ export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps
     const taskData = {
       taskName,
       description,
-      currentStage,
-      startDate: startDate ? format(startDate, "yyyy-MM-dd") : undefined,
-      dueDate: format(dueDate!, "yyyy-MM-dd"),
-      issueType,
+      status,
+      taskType,
+      parentId,
       receivedDate: format(receivedDate!, "yyyy-MM-dd"),
       developmentStartDate: developmentStartDate ? format(developmentStartDate, "yyyy-MM-dd") : undefined,
-      assignedTeammateNames: selectedTeammates,
+      dueDate: format(dueDate!, "yyyy-MM-dd"),
+      assignedTeammateIds: selectedTeammateIds,
       priority,
       documentPath: documentPath || undefined,
-      projectId : user?.projectIds?.[0],
+      commitId: commitId || undefined,
+      projectId: selectedProjectId,
     };
 
     console.log('Submitting task:', taskData);
@@ -140,161 +175,200 @@ export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps
     resetForm();
     onClose();
   };
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto ">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add New Task</DialogTitle>
         </DialogHeader>
-        
-       {/* Project Info (Auto-detected) */}
-<div className="grid gap-2">
-  <Label>Project</Label>
-  <Input
-    value={
-      user?.projectIds?.[0]
-    }
-    readOnly
-    className="bg-gray-50 text-gray-700"
-  />
+
+        {/* Project Selection - NEW FEATURE */}
+      <div className="grid gap-2">
+  <Label>Project *</Label>
+
+
+  <Select
+    value={selectedProjectId?.toString()}
+    onValueChange={(value) => {
+      console.log("Selected Project ID (as string):", value);
+      setSelectedProjectId(Number(value));
+    }}
+  >
+    <SelectTrigger className={validationErrors.projectId ? "border-red-500" : ""}>
+      <SelectValue placeholder="Select a project" />
+    </SelectTrigger>
+    <SelectContent>
+      {user?.projectNames?.map((projectNames, index) => {
+        const projectId = user.projectIds[index];
+        console.log(`Rendering: Name = ${projectNames}, ID = ${projectId}`);
+        return (
+          <SelectItem key={projectId} value={projectId.toString()}>
+            {projectNames}
+          </SelectItem>
+        );
+      })}
+    </SelectContent>
+  </Select>
+
+  {validationErrors.projectId && (
+    <p className="text-red-500 text-sm">{validationErrors.projectId}</p>
+  )}
 </div>
 
 
-          {/* Task Number */}
-          <div className="grid gap-2">
-            <Label>Task Number</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                value={isLoadingSequence ? "Loading..." : taskSequenceNumber || "TSK-001"}
-                readOnly
-                className="bg-gray-50 text-gray-700"
-                placeholder="TSK-001"
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => refetchSequence()}
-                disabled={isLoadingSequence}
-                className="px-3"
-              >
-                <RefreshCw className={cn("h-4 w-4", isLoadingSequence && "animate-spin")} />
-              </Button>
-            </div>
-          </div>
-
-          {/* Task Name */}
-          <div className="grid gap-2">
-            <Label htmlFor="taskName">Task Name *</Label>
+        {/* Task Number */}
+        <div className="grid gap-2">
+          <Label>Task Number</Label>
+          <div className="flex items-center gap-2">
             <Input
-              id="taskName"
-              value={taskName}
-              onChange={(e) => setTaskName(e.target.value)}
-              placeholder="Enter task name"
-              className={validationErrors.taskName ? "border-red-500" : ""}
+              value={isLoadingSequence ? "Loading..." : taskSequenceNumber || "TSK-001"}
+              readOnly
+              className="bg-gray-50 text-gray-700"
+              placeholder="TSK-001"
             />
-            {validationErrors.taskName && (
-              <p className="text-red-500 text-sm">{validationErrors.taskName}</p>
-            )}
-          </div>
-
-          {/* Current Stage */}
-          <div className="grid gap-2">
-            <Label>Current Stage *</Label>
-            <Select 
-              value={currentStage} 
-              onValueChange={setCurrentStage}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetchSequence()}
+              disabled={isLoadingSequence}
+              className="px-3"
             >
-              <SelectTrigger className={validationErrors.currentStage ? "border-red-500" : ""}>
-                <SelectValue placeholder="Select stage" />
-              </SelectTrigger>
-              <SelectContent>
-                {stages.map((stage) => (
-                  <SelectItem key={stage} value={stage}>{stage}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {validationErrors.currentStage && (
-              <p className="text-red-500 text-sm">{validationErrors.currentStage}</p>
-            )}
+              <RefreshCw className={cn("h-4 w-4", isLoadingSequence && "animate-spin")} />
+            </Button>
           </div>
 
-          {/* Issue Type */}
-          <div className="grid gap-2">
-            <Label>Issue Type *</Label>
-            <Select 
-              value={issueType} 
-              onValueChange={setIssueType}
-            >
-              <SelectTrigger className={validationErrors.issueType ? "border-red-500" : ""}>
-                <SelectValue placeholder="Select issue type" />
-              </SelectTrigger>
-              <SelectContent>
-                {issueTypes.map((type) => (
-                  <SelectItem key={type} value={type}>{type}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {validationErrors.issueType && (
-              <p className="text-red-500 text-sm">{validationErrors.issueType}</p>
-            )}
-          </div>
 
-          {/* Priority */}
-          <div className="grid gap-2">
-            <Label>Priority *</Label>
-            <Select 
-              value={priority} 
-              onValueChange={setPriority}
-            >
-              <SelectTrigger className={validationErrors.priority ? "border-red-500" : ""}>
-                <SelectValue placeholder="Select priority" />
-              </SelectTrigger>
-              <SelectContent>
-                {priorities.map((priority) => (
-                  <SelectItem key={priority} value={priority}>{priority}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {validationErrors.priority && (
-              <p className="text-red-500 text-sm">{validationErrors.priority}</p>
-            )}
-          </div>
 
-          {/* Date Fields */}
-          {renderDateField("Received Date", receivedDate, setReceivedDate, validationErrors.receivedDate, true)}
-          {renderDateField("Start Date", startDate, setStartDate)}
-          {renderDateField("Development Start Date", developmentStartDate, setDevelopmentStartDate)}
-          {renderDateField("Due Date", dueDate, setDueDate, validationErrors.dueDate, true)}
 
-          {/* Teammates */}
-          <TeammateSelector
-            teammates={teammates}
-            selectedTeammates={selectedTeammates}
-            onTeammateToggle={handleTeammateToggle}
+        </div>
+
+        {/* Task Name */}
+        <div className="grid gap-2">
+          <Label htmlFor="taskName">Task Name *</Label>
+          <Input
+            id="taskName"
+            value={taskName}
+            onChange={(e) => setTaskName(e.target.value)}
+            placeholder="Enter task name"
+            className={validationErrors.taskName ? "border-red-500" : ""}
+          />
+          {validationErrors.taskName && (
+            <p className="text-red-500 text-sm">{validationErrors.taskName}</p>
+          )}
+        </div>
+
+        {/* Task Type */}
+        <div className="grid gap-2">
+          <Label>Task Type *</Label>
+          <Select value={taskType} onValueChange={setTaskType}>
+            <SelectTrigger className={validationErrors.taskType ? "border-red-500" : ""}>
+              <SelectValue placeholder="Select task type" />
+            </SelectTrigger>
+            <SelectContent>
+              {taskTypes.map((type) => (
+                <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {validationErrors.taskType && (
+            <p className="text-red-500 text-sm">{validationErrors.taskType}</p>
+          )}
+        </div>
+
+        {/* Parent Task */}
+        <ParentTaskSelector
+          availableTasks={availableParentTasks}
+          selectedTaskId={parentId}
+          onTaskSelect={setParentId}
+          currentTaskType={taskType}
+        />
+
+        {/* Status */}
+        <div className="grid gap-2">
+          <Label>Status *</Label>
+          <Select value={status} onValueChange={setStatus}>
+            <SelectTrigger className={validationErrors.status ? "border-red-500" : ""}>
+              <SelectValue placeholder="Select status" />
+            </SelectTrigger>
+            <SelectContent>
+              {statuses.map((statusOption) => (
+                <SelectItem key={statusOption.value} value={statusOption.value}>{statusOption.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {validationErrors.status && (
+            <p className="text-red-500 text-sm">{validationErrors.status}</p>
+          )}
+        </div>
+
+        {/* Priority */}
+        <div className="grid gap-2">
+          <Label>Priority *</Label>
+          <Select value={priority} onValueChange={setPriority}>
+            <SelectTrigger className={validationErrors.priority ? "border-red-500" : ""}>
+              <SelectValue placeholder="Select priority" />
+            </SelectTrigger>
+            <SelectContent>
+              {priorities.map((priority) => (
+                <SelectItem key={priority} value={priority}>{priority}</SelectItem>
+              ))}
+
+            </SelectContent>
+          </Select>
+          {validationErrors.priority && (
+            <p className="text-red-500 text-sm">{validationErrors.priority}</p>
+          )}
+        </div>
+
+        {/* Date Fields */}
+        {renderDateField("Received Date", receivedDate, setReceivedDate, validationErrors.receivedDate, true)}
+        {renderDateField("Development Start Date", developmentStartDate, setDevelopmentStartDate)}
+        {renderDateField("Due Date", dueDate, setDueDate, validationErrors.dueDate, true)}
+
+        {/* Teammates */}
+        <TeammateMultiSelector
+          teammates={teammates}
+          selectedTeammateIds={selectedTeammateIds}
+          onTeammateToggle={handleTeammateToggle}
+        />
+
+        {/* Document Path */}
+        <div className="grid gap-2">
+          <Label htmlFor="documentPath">Document Path</Label>
+          <Input
+            id="documentPath"
+            value={documentPath}
+            onChange={(e) => setDocumentPath(e.target.value)}
+            placeholder="Enter document path (optional)"
+          />
+        </div>
+
+        {/* Commit ID */}
+        <div className="grid gap-2">
+          <Label htmlFor="commitId">Commit ID</Label>
+          <Input
+            id="commitId"
+            value={commitId}
+            onChange={(e) => setCommitId(e.target.value)}
+            placeholder="Enter commit ID (optional)"
+          />
+        </div>
+
+        {/* Description */}
+        <div className="grid gap-2">
+          <Label htmlFor="description">Description</Label>
+          <Textarea
+            id="description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Enter task description (optional)"
+            className="min-h-[100px]"
           />
 
-          {/* Document Path */}
-          <div className="grid gap-2">
-            <Label htmlFor="documentPath">Document Path</Label>
-            <Input
-              id="documentPath"
-              value={documentPath}
-              onChange={(e) => setDocumentPath(e.target.value)}
-              placeholder="Enter document path (optional)"
-            />
-          </div>
 
-          {/* Description */}
-          <div className="grid gap-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Enter task description (optional)"
-              className="min-h-[100px]"
-            />
-          </div>
+
+        </div>
 
         {/* Actions */}
         <div className="flex justify-end space-x-2">
@@ -346,6 +420,7 @@ function renderDateField(
             selected={value}
             onSelect={setValue}
             initialFocus
+            className="pointer-events-auto"
           />
         </PopoverContent>
       </Popover>

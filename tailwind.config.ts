@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,21 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// Jira-inspired colors
+				jira: {
+					blue: 'hsl(var(--jira-blue))',
+					'blue-light': 'hsl(var(--jira-blue-light))',
+					green: 'hsl(var(--jira-green))',
+					'green-light': 'hsl(var(--jira-green-light))',
+					orange: 'hsl(var(--jira-orange))',
+					'orange-light': 'hsl(var(--jira-orange-light))',
+					red: 'hsl(var(--jira-red))',
+					'red-light': 'hsl(var(--jira-red-light))',
+					purple: 'hsl(var(--jira-purple))',
+					'purple-light': 'hsl(var(--jira-purple-light))',
+					gray: 'hsl(var(--jira-gray))',
+					'gray-light': 'hsl(var(--jira-gray-light))'
 				}
 			},
 			borderRadius: {
@@ -89,6 +105,9 @@ export default {
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out'
+			},
+			fontFamily: {
+				'inter': ['Inter', 'sans-serif'],
 			}
 		}
 	},

@@ -15,6 +15,7 @@ apiClient.interceptors.request.use(
     const token = localStorage.getItem('jwtToken'); // Retrieve stored token
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
+      console.log("ytrertyui ",token)
     }
     return config;
   },
@@ -42,7 +43,7 @@ apiClient.interceptors.response.use(
     if (error.response && error.response.status === 403) {
         console.error('Forbidden: You do not have permission to perform this action.');
         // Display a user-friendly message on the UI
-        alert("Permission Denied: You are not authorized to perform this action.");
+      //  alert("Permission Denied: You are not authorized to perform this action.");
     }
     // Re-throw the error so specific components can handle it
     return Promise.reject(error);

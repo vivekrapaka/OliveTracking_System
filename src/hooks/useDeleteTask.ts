@@ -1,22 +1,23 @@
+
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
-import apiClient from '@/services/apiClient'; // Import apiClient
+import apiClient from '@/services/apiClient';
 
-const deleteTask = async (taskName: string) => {
-  const url = `/api/tasks/${encodeURIComponent(taskName)}`; // Relative path, apiClient handles base URL
+const deleteTask = async (taskId: number) => {
+  const url = `/api/tasks/${taskId}`;
   
   console.log('Deleting task at:', url);
   
-  const response = await apiClient.delete(url); // Use apiClient.delete
+  const response = await apiClient.delete(url);
   
-  return response.data; // Axios automatically parses JSON or returns empty for 204
+  return response.data;
 };
 
 export const useDeleteTask = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (taskName: string) => deleteTask(taskName),
+    mutationFn: (taskId: number) => deleteTask(taskId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks-data'] });
       toast({
@@ -34,4 +35,3 @@ export const useDeleteTask = () => {
     },
   });
 };
-

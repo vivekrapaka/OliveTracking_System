@@ -1,31 +1,33 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from '@/hooks/use-toast';
-import apiClient from '@/services/apiClient'; // Import apiClient
 
-interface EditTaskRequest {
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import apiClient from '@/services/apiClient';
+import { toast } from '@/hooks/use-toast';
+
+interface EditTaskData {
   taskName: string;
   description: string;
-  currentStage: string;
-  startDate: string;
+  status: string;
+  taskType: string;
   dueDate: string;
-  isCompleted: boolean;
-  issueType: string;
   receivedDate: string;
   developmentStartDate: string;
-  isCodeReviewDone: boolean;
-  isCmcDone: boolean;
   assignedTeammateNames: string[];
   priority: string;
+  commitId?: string;
+  comment?: string;
 }
 
-const editTask = async (taskName: string, taskData: EditTaskRequest) => {
-  const url = `/api/tasks/${encodeURIComponent(taskName)}`; // Relative path, apiClient handles base URL
-  
-  console.log('Editing task at:', url);
+interface EditTaskRequest {
+  taskId: number;
+  taskData: EditTaskData;
+}
+
+const editTask = async ({ taskId, taskData }: EditTaskRequest) => {
+  console.log('Editing task with ID:', taskId);
   console.log('Task data:', taskData);
   
-  const response = await apiClient.put(url, taskData); // Use apiClient.put
-  
+  const response = await apiClient.put(`/api/tasks/${taskId}`, taskData);
+  console.log('Edit task response:', response.data);
   return response.data;
 };
 
@@ -33,23 +35,23 @@ export const useEditTask = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: ({ taskName, taskData }: { taskName: string; taskData: EditTaskRequest }) => 
-      editTask(taskName, taskData),
-    onSuccess: () => {
+    mutationFn: editTask,
+    onSuccess: (data) => {
+      console.log('Task edited successfully:', data);
       queryClient.invalidateQueries({ queryKey: ['tasks-data'] });
       toast({
         title: "Task Updated",
-        description: "Task has been updated successfully.",
+        description: "The task has been updated successfully.",
       });
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
       console.error('Edit task error:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to update task';
       toast({
         title: "Error",
-        description: `Failed to update task: ${error.message}`,
+        description: errorMessage,
         variant: "destructive",
       });
     },
   });
 };
-

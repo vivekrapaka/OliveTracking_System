@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,6 +10,7 @@ import { Layout } from "./components/Layout";
 import { default as Dashboard } from "./pages/Dashboard";
 import { Tasks } from "./pages/Tasks";
 import { default as Teammates } from "./pages/Teammates";
+import Reports from "./pages/Reports";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import ProjectManagement from "./pages/admin/ProjectManagement";
@@ -43,7 +45,13 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <Teammates />
-                /
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/reports" element={
+              <ProtectedRoute>
+                <Layout>
+                  <Reports />
                 </Layout>
               </ProtectedRoute>
             } />
@@ -70,5 +78,3 @@ function App() {
 }
 
 export default App;
-
-

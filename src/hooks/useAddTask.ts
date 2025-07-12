@@ -1,29 +1,32 @@
+
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
-import apiClient from '@/services/apiClient'; // Import apiClient
+import apiClient from '@/services/apiClient';
 
 export interface AddTaskRequest {
   taskName: string;
-  description?: string; // Made optional as per backend, if not @NotBlank
-  currentStage: string;
-  startDate?: string; // Made optional as per backend, if not @NotBlank
-  dueDate?: string; // Made optional as per backend, if not @NotBlank
-  issueType?: string; // Made optional as per backend, if not @NotBlank
-  receivedDate?: string; // Made optional as per backend, if not @NotBlank
-  developmentStartDate?: string; // Made optional as per backend, if not @NotBlank
-  assignedTeammateNames?: string[]; // Made optional as per backend, if not @NotBlank
-  priority?: string; // Made optional as per backend, if not @NotBlank
-  projectId: number; // NEW: projectId is now required for task creation
-  documentPath?: string; // NEW: documentPath
+  description?: string;
+  status: string;
+  taskType: string;
+  parentId?: number;
+  receivedDate: string;
+  developmentStartDate?: string;
+  dueDate: string;
+  assignedTeammateIds?: number[];
+  priority: string;
+  projectId: number;
+  documentPath?: string;
+  commitId?: string;
+  comment?: string;
 }
 
 const addTask = async (taskData: AddTaskRequest) => {
-  const url = '/api/tasks'; // Relative path, apiClient handles base URL
+  const url = '/api/tasks';
   
   console.log('Adding task with data:', taskData);
   
   try {
-    const response = await apiClient.post(url, taskData); // Use apiClient.post
+    const response = await apiClient.post(url, taskData);
     console.log('Task added successfully:', response.data);
     return response.data;
   } catch (error) {
@@ -55,5 +58,3 @@ export const useAddTask = () => {
     },
   });
 };
-
-

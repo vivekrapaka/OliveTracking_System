@@ -8,13 +8,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { Eye, EyeOff } from 'lucide-react';
+import karyaLogo from "@/assets/karya_logo.png"
 
 const Login = () => {
   const { user, login, signup } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [activeTab, setActiveTab] = useState('signin'); // State to control active tab
-
   // Sign in form state
   const [signInData, setSignInData] = useState({
     email: '',
@@ -148,7 +148,7 @@ const Login = () => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <img 
-            src="OliveTracking_System/public/lovable-uploads/karya_logo.png" 
+            src={karyaLogo}
             alt="KARYA" 
             className="h-16 w-auto mx-auto mb-4"
           />
