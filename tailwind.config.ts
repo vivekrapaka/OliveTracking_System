@@ -63,7 +63,22 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// Jira-inspired colors
+				// Professional color palette inspired by your logo
+				professional: {
+					blue: 'hsl(217, 89%, 61%)',
+					'blue-light': 'hsl(217, 89%, 95%)',
+					'blue-dark': 'hsl(217, 89%, 45%)',
+					cyan: 'hsl(197, 71%, 52%)',
+					'cyan-light': 'hsl(197, 71%, 95%)',
+					'cyan-dark': 'hsl(197, 71%, 40%)',
+					navy: 'hsl(213, 31%, 14%)',
+					'navy-light': 'hsl(213, 31%, 85%)',
+					'navy-dark': 'hsl(213, 31%, 8%)',
+					slate: 'hsl(214, 32%, 91%)',
+					'slate-light': 'hsl(214, 32%, 96%)',
+					'slate-dark': 'hsl(214, 32%, 45%)'
+				},
+				// Enhanced Jira-inspired colors with professional touch
 				jira: {
 					blue: 'hsl(var(--jira-blue))',
 					'blue-light': 'hsl(var(--jira-blue-light))',
@@ -100,14 +115,55 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'professional-slide-in': {
+					'0%': {
+						opacity: '0',
+						transform: 'translateX(-20px)'
+					},
+					'100%': {
+						opacity: '1',
+						transform: 'translateX(0)'
+					}
+				},
+				'professional-scale-in': {
+					'0%': {
+						opacity: '0',
+						transform: 'scale(0.95)'
+					},
+					'100%': {
+						opacity: '1',
+						transform: 'scale(1)'
+					}
+				},
+				'professional-fade-in': {
+					'0%': {
+						opacity: '0',
+						transform: 'translateY(10px)'
+					},
+					'100%': {
+						opacity: '1',
+						transform: 'translateY(0)'
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'professional-slide-in': 'professional-slide-in 0.3s ease-out',
+				'professional-scale-in': 'professional-scale-in 0.2s ease-out',
+				'professional-fade-in': 'professional-fade-in 0.3s ease-out'
 			},
 			fontFamily: {
 				'inter': ['Inter', 'sans-serif'],
+			},
+			boxShadow: {
+				'professional': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+				'professional-lg': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+				'professional-xl': '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+			},
+			backdropBlur: {
+				'professional': '16px',
 			}
 		}
 	},

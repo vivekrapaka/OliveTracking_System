@@ -2,12 +2,15 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTeammatesData } from '@/hooks/useTeammatesData';
+import { useTasksData } from '@/hooks/useTasksData';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, FileText, Clock, Users } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { CalendarIcon, FileText, Clock, Users, Download, BarChart3, User, Calendar as CalendarDaily, AlertTriangle } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks, subMonths } from 'date-fns';
 import { cn } from '@/lib/utils';
 import apiClient from '@/services/apiClient';
@@ -25,16 +28,35 @@ interface TimesheetResponse {
   dailyLogs: DailyLog[];
 }
 
+interface TaskTimeSummaryResponse {
+  taskId: number;
+  taskName: string;
+  totalHours: number;
+  breakdown: {
+    developmentHours: number;
+    testingHours: number;
+    otherHours: number;
+  };
+}
+
 const Reports = () => {
   const { user } = useAuth();
-  const { data: teammatesData } = useTeammatesData();
-  
-  // Filter states
+  const { data: teammatesData, isLoading: teammatesLoading } = useTeammatesData();
+  const { data: tasksData, isLoading: tasksLoading } = useTasksData();
+
+  // Teammate Timesheet States
   const [selectedTeammateId, setSelectedTeammateId] = useState<number | null>(null);
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
-  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
-  const [reportData, setReportData] = useState<TimesheetResponse | null>(null);
+  const [isGeneratingTimesheetReport, setIsGeneratingTimesheetReport] = useState(false);
+  const [timesheetReportData, setTimesheetReportData] = useState<TimesheetResponse | null>(null);
+  const [isDownloadingTimesheetPDF, setIsDownloadingTimesheetPDF] = useState(false);
+
+  // Task Summary States
+  const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
+  const [isGeneratingTaskReport, setIsGeneratingTaskReport] = useState(false);
+  const [taskReportData, setTaskReportData] = useState<TaskTimeSummaryResponse | null>(null);
+  const [isDownloadingTaskPDF, setIsDownloadingTaskPDF] = useState(false);
 
   // Check if user has access to reports
   const hasReportAccess = user?.functionalGroup && [
@@ -43,14 +65,20 @@ const Reports = () => {
 
   if (!hasReportAccess) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Card className="max-w-md">
-          <CardHeader>
-            <CardTitle className="text-center text-destructive">Access Denied</CardTitle>
+      <div className="flex items-center justify-center min-h-[500px]">
+        <Card className="max-w-lg shadow-xl border-0 bg-gradient-to-br from-red-50 to-orange-50">
+          <CardHeader className="text-center pb-4">
+            <div className="mx-auto w-16 h-16 bg-gradient-to-br from-red-500 to-orange-500 rounded-full flex items-center justify-center mb-4">
+              <AlertTriangle className="h-8 w-8 text-white" />
+            </div>
+            <CardTitle className="text-2xl font-bold text-red-700">Access Restricted</CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-center text-muted-foreground">
-              You don't have permission to access the Reports section.
+          <CardContent className="text-center">
+            <p className="text-gray-600 text-lg leading-relaxed">
+              You need manager or lead privileges to access the Advanced Reports section.
+            </p>
+            <p className="text-sm text-gray-500 mt-3">
+              Contact your administrator if you believe this is an error.
             </p>
           </CardContent>
         </Card>
@@ -58,7 +86,12 @@ const Reports = () => {
     );
   }
 
+  // Get the correct teammates array from the API response structure
   const teammates = teammatesData?.teammates || [];
+  const tasks = tasksData?.tasks || [];
+
+  console.log('Teammates data:', teammates);
+  console.log('Tasks data:', tasks);
 
   const setDatePreset = (preset: string) => {
     const now = new Date();
@@ -84,289 +117,759 @@ const Reports = () => {
     }
   };
 
-  const generateReport = async () => {
+  const generateTimesheetReport = async () => {
     if (!selectedTeammateId || !startDate || !endDate) {
       toast({
         title: "Missing Information",
-        description: "Please select a teammate and date range.",
+        description: "Please select a teammate and date range to generate the report.",
         variant: "destructive",
       });
       return;
     }
 
-    setIsGeneratingReport(true);
-    setReportData(null);
+    setIsGeneratingTimesheetReport(true);
+    setTimesheetReportData(null);
     
     try {
-      console.log('Generating report with params:', {
+      const formattedStartDate = format(startDate, 'yyyy-MM-dd');
+      const formattedEndDate = format(endDate, 'yyyy-MM-dd');
+      
+      console.log('Generating timesheet report with correct teammate ID:', {
         teammateId: selectedTeammateId,
-        startDate: format(startDate, 'yyyy-MM-dd'),
-        endDate: format(endDate, 'yyyy-MM-dd')
+        startDate: formattedStartDate,
+        endDate: formattedEndDate
       });
 
       const response = await apiClient.get('/api/reports/timesheet', {
         params: {
-          teammateId: selectedTeammateId,
-          startDate: format(startDate, 'yyyy-MM-dd'),
-          endDate: format(endDate, 'yyyy-MM-dd')
+          teammateId: selectedTeammateId, // Using the correct teammate ID from teammates dropdown
+          startDate: formattedStartDate,
+          endDate: formattedEndDate
         }
       });
       
-      console.log('Report response:', response.data);
-      setReportData(response.data);
+      console.log('Timesheet report response:', response.data);
+      setTimesheetReportData(response.data);
       
       toast({
-        title: "Success",
-        description: "Report generated successfully.",
+        title: "Report Generated Successfully",
+        description: `Timesheet report generated for ${response.data.teammateName}.`,
       });
     } catch (error) {
-      console.error('Error generating report:', error);
+      console.error('Error generating timesheet report:', error);
       toast({
-        title: "Error",
-        description: "Failed to generate report. Please try again.",
+        title: "Report Generation Failed",
+        description: "Unable to generate the timesheet report. Please try again.",
         variant: "destructive",
       });
     } finally {
-      setIsGeneratingReport(false);
+      setIsGeneratingTimesheetReport(false);
     }
   };
 
-  const canGenerateReport = selectedTeammateId && startDate && endDate;
+  const generateTaskReport = async () => {
+    if (!selectedTaskId) {
+      toast({
+        title: "Missing Information",
+        description: "Please select a task to generate the summary report.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingTaskReport(true);
+    setTaskReportData(null);
+    
+    try {
+      console.log('Generating task report for taskId:', selectedTaskId);
+
+      const response = await apiClient.get(`/api/reports/task-summary/${selectedTaskId}`);
+      
+      console.log('Task report response:', response.data);
+      setTaskReportData(response.data);
+      
+      toast({
+        title: "Report Generated Successfully",
+        description: `Task summary report generated for ${response.data.taskName}.`,
+      });
+    } catch (error) {
+      console.error('Error generating task report:', error);
+      toast({
+        title: "Report Generation Failed",
+        description: "Unable to generate the task summary report. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingTaskReport(false);
+    }
+  };
+
+  // Authenticated PDF download for timesheet
+  const downloadTimesheetPDF = async () => {
+    if (!selectedTeammateId || !startDate || !endDate || !timesheetReportData) {
+      toast({
+        title: "Cannot Download PDF",
+        description: "Please generate a timesheet report first before downloading.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsDownloadingTimesheetPDF(true);
+
+    try {
+      const token = localStorage.getItem('jwtToken');
+      const formattedStartDate = format(startDate, 'yyyy-MM-dd');
+      const formattedEndDate = format(endDate, 'yyyy-MM-dd');
+      
+      const url = `${apiClient.defaults.baseURL}/api/reports/timesheet/pdf?teammateId=${selectedTeammateId}&startDate=${formattedStartDate}&endDate=${formattedEndDate}`;
+      
+      console.log('Downloading PDF from:', url);
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const pdfBlob = await response.blob();
+      const fileURL = URL.createObjectURL(pdfBlob);
+
+      const link = document.createElement('a');
+      link.href = fileURL;
+      link.download = `timesheet_${timesheetReportData.teammateName.replace(/\s+/g, '_')}_${formattedStartDate}_to_${formattedEndDate}.pdf`;
+      document.body.appendChild(link);
+      
+      link.click();
+      
+      document.body.removeChild(link);
+      URL.revokeObjectURL(fileURL);
+
+      toast({
+        title: "PDF Downloaded",
+        description: "Timesheet PDF has been downloaded successfully.",
+      });
+
+    } catch (error) {
+      console.error('Error downloading timesheet PDF:', error);
+      toast({
+        title: "Download Failed",
+        description: "Unable to download the timesheet PDF. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDownloadingTimesheetPDF(false);
+    }
+  };
+
+  // Authenticated PDF download for task summary
+  const downloadTaskPDF = async () => {
+    if (!selectedTaskId || !taskReportData) {
+      toast({
+        title: "Cannot Download PDF",
+        description: "Please generate a task summary report first before downloading.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsDownloadingTaskPDF(true);
+
+    try {
+      const token = localStorage.getItem('jwtToken');
+      const url = `${apiClient.defaults.baseURL}/api/reports/task-summary/${selectedTaskId}/pdf`;
+      
+      console.log('Downloading task PDF from:', url);
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const pdfBlob = await response.blob();
+      const fileURL = URL.createObjectURL(pdfBlob);
+
+      const link = document.createElement('a');
+      link.href = fileURL;
+      link.download = `task_summary_${taskReportData.taskName.replace(/\s+/g, '_')}.pdf`;
+      document.body.appendChild(link);
+      
+      link.click();
+      
+      document.body.removeChild(link);
+      URL.revokeObjectURL(fileURL);
+
+      toast({
+        title: "PDF Downloaded",
+        description: "Task summary PDF has been downloaded successfully.",
+      });
+
+    } catch (error) {
+      console.error('Error downloading task PDF:', error);
+      toast({
+        title: "Download Failed",
+        description: "Unable to download the task summary PDF. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDownloadingTaskPDF(false);
+    }
+  };
+
+  const canGenerateTimesheetReport = selectedTeammateId && startDate && endDate && !isGeneratingTimesheetReport;
+  const canGenerateTaskReport = selectedTaskId && !isGeneratingTaskReport;
+
+  if (teammatesLoading || tasksLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[500px]">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-lg text-muted-foreground">Loading report data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex items-center space-x-3">
-        <div className="p-2 bg-jira-blue/10 rounded-lg">
-          <FileText className="h-6 w-6 text-jira-blue" />
+    <div className="space-y-8 p-6">
+      {/* Page Header with Enhanced Design */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-6">
+          <div className="p-4 bg-gradient-to-br from-primary/10 via-primary/5 to-secondary/10 rounded-2xl shadow-lg border border-primary/20">
+            <BarChart3 className="h-10 w-10 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-4xl font-bold text-foreground tracking-tight bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+              Advanced Reports & Analytics
+            </h1>
+            <p className="text-xl text-muted-foreground mt-2 font-medium">
+              Generate comprehensive timesheets and task summaries with authenticated PDF exports
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Reports & Timesheets</h1>
-          <p className="text-muted-foreground">Track team member work hours and daily progress</p>
+        <div className="flex items-center space-x-3 bg-gradient-to-r from-primary/5 to-secondary/5 px-4 py-2 rounded-xl border border-primary/20">
+          <User className="h-5 w-5 text-primary" />
+          <div className="text-right">
+            <div className="font-semibold text-foreground">{user?.fullName}</div>
+            <div className="text-sm text-muted-foreground">{user?.functionalGroup}</div>
+          </div>
         </div>
       </div>
 
-      {/* Filter Controls */}
-      <Card className="border-border/50 shadow-sm">
-        <CardHeader className="bg-gradient-to-r from-jira-blue/5 to-jira-purple/5 border-b border-border/50">
-          <CardTitle className="flex items-center space-x-2 text-foreground">
-            <Users className="h-5 w-5 text-jira-blue" />
-            <span>Report Filters</span>
-          </CardTitle>
-          <CardDescription>Select teammate and date range to generate timesheet report</CardDescription>
-        </CardHeader>
-        <CardContent className="p-6 space-y-6">
-          <div className="grid gap-6 md:grid-cols-3">
-            {/* Teammate Selection */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Teammate *</label>
-              <Select 
-                value={selectedTeammateId?.toString()} 
-                onValueChange={(value) => setSelectedTeammateId(Number(value))}
-              >
-                <SelectTrigger className="border-border/60 focus:border-jira-blue focus:ring-jira-blue/20">
-                  <SelectValue placeholder="Select a teammate" />
-                </SelectTrigger>
-                <SelectContent>
-                  {teammates.map((teammate) => (
-                    <SelectItem key={teammate.id} value={teammate.id.toString()}>
-                      <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-jira-green rounded-full" />
-                        <span>{teammate.name}</span>
-                        <span className="text-xs text-muted-foreground">({teammate.role})</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+      {/* Enhanced Tabs Design */}
+      <Tabs defaultValue="timesheet" className="space-y-8">
+        <TabsList className="grid w-full grid-cols-2 lg:w-[500px] h-14 bg-gradient-to-r from-primary/5 to-secondary/5 border border-primary/20">
+          <TabsTrigger 
+            value="timesheet" 
+            className="flex items-center space-x-3 font-semibold text-base data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+          >
+            <Users className="h-5 w-5" />
+            <span>Teammate Timesheet</span>
+          </TabsTrigger>
+          <TabsTrigger 
+            value="task-summary" 
+            className="flex items-center space-x-3 font-semibold text-base data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+          >
+            <FileText className="h-5 w-5" />
+            <span>Task Summary</span>
+          </TabsTrigger>
+        </TabsList>
 
-            {/* Date Range */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Start Date *</label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "justify-start text-left font-normal border-border/60 focus:border-jira-blue",
-                      !startDate && "text-muted-foreground"
-                    )}
+        {/* Teammate Timesheet Tab */}
+        <TabsContent value="timesheet" className="space-y-8">
+          <Card className="border-0 shadow-2xl bg-gradient-to-br from-primary/5 via-background to-secondary/5">
+            <CardHeader className="bg-gradient-to-r from-primary/10 to-secondary/10 border-b border-primary/20">
+              <CardTitle className="flex items-center space-x-4 text-2xl">
+                <CalendarDaily className="h-7 w-7 text-primary" />
+                <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                  Daily Teammate Timesheet Report
+                </span>
+              </CardTitle>
+              <CardDescription className="text-lg text-muted-foreground">
+                Generate detailed timesheet reports for individual team members with comprehensive daily hour breakdowns
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-10 space-y-10">
+              {/* Enhanced Filter Controls */}
+              <div className="grid gap-10 lg:grid-cols-3">
+                {/* Teammate Selection */}
+                <div className="space-y-4">
+                  <label className="text-base font-bold text-foreground flex items-center space-x-3">
+                    <User className="h-5 w-5 text-primary" />
+                    <span>Select Teammate *</span>
+                  </label>
+                  <Select 
+                    value={selectedTeammateId?.toString()} 
+                    onValueChange={(value) => {
+                      const teammateId = Number(value);
+                      console.log('Selected teammate ID:', teammateId);
+                      setSelectedTeammateId(teammateId);
+                      setTimesheetReportData(null); // Clear previous report data
+                    }}
                   >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {startDate ? format(startDate, "PPP") : "Pick start date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={startDate}
-                    onSelect={setStartDate}
-                    initialFocus
-                    className="pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">End Date *</label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "justify-start text-left font-normal border-border/60 focus:border-jira-blue",
-                      !endDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {endDate ? format(endDate, "PPP") : "Pick end date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={endDate}
-                    onSelect={setEndDate}
-                    initialFocus
-                    className="pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
-
-          {/* Date Presets */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Quick Date Ranges</label>
-            <div className="flex flex-wrap gap-2">
-              {[
-                { label: 'This Week', value: 'thisWeek' },
-                { label: 'Last Week', value: 'lastWeek' },
-                { label: 'This Month', value: 'thisMonth' },
-                { label: 'Last Month', value: 'lastMonth' }
-              ].map((preset) => (
-                <Button
-                  key={preset.value}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setDatePreset(preset.value)}
-                  className="border-border/60 hover:bg-jira-blue/10 hover:border-jira-blue"
-                >
-                  {preset.label}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          {/* Generate Button */}
-          <div className="flex justify-end">
-            <Button
-              onClick={generateReport}
-              disabled={!canGenerateReport || isGeneratingReport}
-              className="bg-jira-blue hover:bg-jira-blue/90 text-white"
-            >
-              {isGeneratingReport ? (
-                <>
-                  <Clock className="mr-2 h-4 w-4 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <FileText className="mr-2 h-4 w-4" />
-                  Generate Report
-                </>
-              )}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Report Display */}
-      {reportData && (
-        <Card className="border-border/50 shadow-sm">
-          <CardHeader className="bg-gradient-to-r from-jira-green/5 to-jira-blue/5 border-b border-border/50">
-            <CardTitle className="text-foreground">
-              Timesheet for {reportData.teammateName}
-            </CardTitle>
-            <CardDescription>
-              Period: {startDate && format(startDate, "PPP")} to {endDate && format(endDate, "PPP")}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-6 space-y-6">
-            {/* Summary Box */}
-            <div className="bg-gradient-to-r from-jira-blue/10 to-jira-purple/10 border border-jira-blue/20 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-foreground">Total Hours for Period</h3>
-                  <p className="text-2xl font-bold text-jira-blue">{reportData.totalHoursForPeriod} hours</p>
+                    <SelectTrigger className="h-12 border-2 border-primary/30 focus:border-primary focus:ring-primary/20 bg-background/80">
+                      <SelectValue placeholder="Choose a team member..." />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-72">
+                      {teammates.map((teammate) => (
+                        <SelectItem key={teammate.id} value={teammate.id.toString()}>
+                          <div className="flex items-center space-x-4 py-2">
+                            <div className="w-4 h-4 bg-gradient-to-r from-green-400 to-green-600 rounded-full shadow-sm" />
+                            <div>
+                              <div className="font-semibold text-foreground">{teammate.name}</div>
+                              <div className="text-sm text-muted-foreground">
+                                {teammate.role} • {teammate.department} • {teammate.email}
+                              </div>
+                            </div>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div className="p-3 bg-jira-blue/20 rounded-full">
-                  <Clock className="h-6 w-6 text-jira-blue" />
+
+                {/* Start Date */}
+                <div className="space-y-4">
+                  <label className="text-base font-bold text-foreground flex items-center space-x-3">
+                    <CalendarIcon className="h-5 w-5 text-primary" />
+                    <span>Start Date *</span>
+                  </label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "h-12 w-full justify-start text-left font-normal border-2 border-primary/30 focus:border-primary bg-background/80",
+                          !startDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-3 h-5 w-5" />
+                        {startDate ? format(startDate, "PPP") : "Select start date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={startDate}
+                        onSelect={(date) => {
+                          setStartDate(date);
+                          setTimesheetReportData(null); // Clear previous report data
+                        }}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                {/* End Date */}
+                <div className="space-y-4">
+                  <label className="text-base font-bold text-foreground flex items-center space-x-3">
+                    <CalendarIcon className="h-5 w-5 text-primary" />
+                    <span>End Date *</span>
+                  </label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "h-12 w-full justify-start text-left font-normal border-2 border-primary/30 focus:border-primary bg-background/80",
+                          !endDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-3 h-5 w-5" />
+                        {endDate ? format(endDate, "PPP") : "Select end date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={endDate}
+                        onSelect={(date) => {
+                          setEndDate(date);
+                          setTimesheetReportData(null); // Clear previous report data
+                        }}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
-            </div>
 
-            {/* Daily Log Table */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-foreground">Daily Work Log</h3>
-              <div className="border border-border/50 rounded-lg overflow-hidden">
-                <div className="bg-muted/30 px-4 py-3 border-b border-border/50">
-                  <div className="grid grid-cols-2 gap-4 font-medium text-foreground">
-                    <span>Date</span>
-                    <span>Total Hours Logged</span>
+              {/* Enhanced Date Presets */}
+              <div className="space-y-4">
+                <label className="text-base font-bold text-foreground">Quick Date Ranges</label>
+                <div className="flex flex-wrap gap-4">
+                  {[
+                    { label: 'This Week', value: 'thisWeek' },
+                    { label: 'Last Week', value: 'lastWeek' },
+                    { label: 'This Month', value: 'thisMonth' },
+                    { label: 'Last Month', value: 'lastMonth' }
+                  ].map((preset) => (
+                    <Button
+                      key={preset.value}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setDatePreset(preset.value);
+                        setTimesheetReportData(null); // Clear previous report data
+                      }}
+                      className="border-primary/40 hover:bg-primary/10 hover:border-primary hover:text-primary font-semibold"
+                    >
+                      {preset.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Enhanced Action Buttons */}
+              <div className="flex justify-between items-center pt-6 border-t border-primary/20">
+                <Button
+                  onClick={generateTimesheetReport}
+                  disabled={!canGenerateTimesheetReport}
+                  className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground px-8 py-3 h-12 font-semibold text-base shadow-lg"
+                >
+                  {isGeneratingTimesheetReport ? (
+                    <>
+                      <Clock className="mr-3 h-5 w-5 animate-spin" />
+                      Generating Report...
+                    </>
+                  ) : (
+                    <>
+                      <BarChart3 className="mr-3 h-5 w-5" />
+                      Generate Timesheet Report
+                    </>
+                  )}
+                </Button>
+                <Button
+                  onClick={downloadTimesheetPDF}
+                  disabled={!timesheetReportData || isDownloadingTimesheetPDF}
+                  variant="outline"
+                  className="border-green-400 hover:bg-green-50 hover:border-green-500 hover:text-green-700 px-8 py-3 h-12 font-semibold text-base"
+                >
+                  {isDownloadingTimesheetPDF ? (
+                    <>
+                      <Clock className="mr-3 h-5 w-5 animate-spin" />
+                      Downloading...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="mr-3 h-5 w-5" />
+                      Download PDF
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Enhanced Timesheet Report Display */}
+          {timesheetReportData && (
+            <Card className="border-0 shadow-2xl">
+              <CardHeader className="bg-gradient-to-r from-green-500/10 to-primary/10 border-b border-green-200">
+                <CardTitle className="text-2xl flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center">
+                    <User className="h-4 w-4 text-white" />
+                  </div>
+                  <span>Timesheet Report for {timesheetReportData.teammateName}</span>
+                </CardTitle>
+                <CardDescription className="text-lg">
+                  Period: {startDate && format(startDate, "PPP")} to {endDate && format(endDate, "PPP")}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-10 space-y-10">
+                {/* Enhanced Summary */}
+                <div className="bg-gradient-to-br from-primary/15 via-primary/10 to-secondary/15 border-2 border-primary/30 rounded-2xl p-8 shadow-inner">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-2xl font-bold text-foreground mb-2">Total Hours for Period</h3>
+                      <p className="text-5xl font-bold text-primary mt-4">{timesheetReportData.totalHoursForPeriod} hours</p>
+                    </div>
+                    <div className="p-6 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-2xl shadow-lg">
+                      <Clock className="h-12 w-12 text-primary" />
+                    </div>
                   </div>
                 </div>
-                <div className="divide-y divide-border/30">
-                  {reportData.dailyLogs.map((log, index) => (
-                    <div
-                      key={index}
-                      className={cn(
-                        "px-4 py-3 grid grid-cols-2 gap-4 transition-colors",
-                        log.totalHours < 8
-                          ? "bg-jira-red/10 border-l-4 border-l-jira-red"
-                          : "bg-jira-green/5 border-l-4 border-l-jira-green hover:bg-jira-green/10"
-                      )}
-                    >
-                      <span className="text-foreground font-medium">
-                        {format(new Date(log.date), "EEEE, PPP")}
-                      </span>
-                      <div className="flex items-center space-x-2">
-                        <span
-                          className={cn(
-                            "font-semibold",
-                            log.totalHours < 8 ? "text-jira-red" : "text-jira-green"
-                          )}
-                        >
-                          {log.totalHours} hours
-                        </span>
-                        {log.totalHours < 8 && (
-                          <span className="text-xs bg-jira-red/20 text-jira-red px-2 py-1 rounded">
-                            Below target
-                          </span>
-                        )}
-                        {log.totalHours >= 8 && (
-                          <span className="text-xs bg-jira-green/20 text-jira-green px-2 py-1 rounded">
-                            Target met
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
 
-            {reportData.dailyLogs.length === 0 && (
-              <div className="text-center py-8 text-muted-foreground">
-                <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No work logs found for the selected period.</p>
+                {/* Enhanced Daily Log Table */}
+                <div className="space-y-6">
+                  <h3 className="text-2xl font-bold text-foreground">Daily Work Log</h3>
+                  <div className="border-2 border-primary/20 rounded-2xl overflow-hidden shadow-xl">
+                    <Table>
+                      <TableHeader className="bg-gradient-to-r from-primary/10 to-secondary/10">
+                        <TableRow>
+                          <TableHead className="font-bold text-foreground py-6 text-base">Date</TableHead>
+                          <TableHead className="font-bold text-foreground py-6 text-base">Total Hours Logged</TableHead>
+                          <TableHead className="font-bold text-foreground py-6 text-base">Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {timesheetReportData.dailyLogs.map((log, index) => (
+                          <TableRow
+                            key={index}
+                            className={cn(
+                              "transition-all duration-200 hover:shadow-md",
+                              log.totalHours < 8
+                                ? "bg-red-50 hover:bg-red-100 border-l-4 border-l-red-500"
+                                : "bg-green-50 hover:bg-green-100 border-l-4 border-l-green-500"
+                            )}
+                          >
+                            <TableCell className="font-semibold py-6 text-base">
+                              {format(new Date(log.date), "EEEE, PPP")}
+                            </TableCell>
+                            <TableCell className="py-6">
+                              <span
+                                className={cn(
+                                  "font-bold text-xl",
+                                  log.totalHours < 8 ? "text-red-600" : "text-green-600"
+                                )}
+                              >
+                                {log.totalHours} hours
+                              </span>
+                            </TableCell>
+                            <TableCell className="py-6">
+                              <span
+                                className={cn(
+                                  "px-4 py-2 rounded-full text-sm font-bold shadow-sm",
+                                  log.totalHours < 8
+                                    ? "bg-red-200 text-red-800 border border-red-300"
+                                    : "bg-green-200 text-green-800 border border-green-300"
+                                )}
+                              >
+                                {log.totalHours < 8 ? "Below Target" : "Target Met"}
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {timesheetReportData.dailyLogs.length === 0 && (
+                    <div className="text-center py-16 text-muted-foreground">
+                      <Clock className="h-20 w-20 mx-auto mb-6 opacity-50" />
+                      <p className="text-xl font-semibold">No work logs found for the selected period.</p>
+                      <p className="text-lg mt-2">The selected teammate may not have logged any hours during this time.</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* Task Summary Tab */}
+        <TabsContent value="task-summary" className="space-y-8">
+          <Card className="border-0 shadow-2xl bg-gradient-to-br from-secondary/5 via-background to-primary/5">
+            <CardHeader className="bg-gradient-to-r from-secondary/10 to-primary/10 border-b border-secondary/20">
+              <CardTitle className="flex items-center space-x-4 text-2xl">
+                <FileText className="h-7 w-7 text-secondary" />
+                <span className="bg-gradient-to-r from-secondary to-primary bg-clip-text text-transparent">
+                  Task Time Summary Report
+                </span>
+              </CardTitle>
+              <CardDescription className="text-lg text-muted-foreground">
+                Generate comprehensive time breakdowns for specific tasks across all disciplines and team members
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-10 space-y-10">
+              {/* Task Selection */}
+              <div className="space-y-4">
+                <label className="text-base font-bold text-foreground flex items-center space-x-3">
+                  <FileText className="h-5 w-5 text-secondary" />
+                  <span>Select Task *</span>
+                </label>
+                <Select 
+                  value={selectedTaskId?.toString()} 
+                  onValueChange={(value) => {
+                    const taskId = Number(value);
+                    console.log('Selected task ID:', taskId);
+                    setSelectedTaskId(taskId);
+                    setTaskReportData(null); // Clear previous report data
+                  }}
+                >
+                  <SelectTrigger className="h-12 border-2 border-secondary/30 focus:border-secondary focus:ring-secondary/20 bg-background/80">
+                    <SelectValue placeholder="Choose a task..." />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    {tasks.map((task) => (
+                      <SelectItem key={task.id} value={task.id.toString()}>
+                        <div className="flex items-center space-x-4 py-2">
+                          <div className={cn(
+                            "w-4 h-4 rounded-full shadow-sm",
+                            task.status === 'COMPLETED' ? "bg-gradient-to-r from-green-400 to-green-600" :
+                            task.status === 'IN_PROGRESS' ? "bg-gradient-to-r from-blue-400 to-blue-600" :
+                            task.status === 'PENDING' ? "bg-gradient-to-r from-yellow-400 to-yellow-600" : 
+                            "bg-gradient-to-r from-gray-400 to-gray-600"
+                          )} />
+                          <div>
+                            <div className="font-semibold text-foreground">{task.name}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {task.taskNumber} • {task.projectName} • {task.status} • Priority: {task.priority}
+                            </div>
+                          </div>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+
+              {/* Enhanced Action Buttons */}
+              <div className="flex justify-between items-center pt-6 border-t border-secondary/20">
+                <Button
+                  onClick={generateTaskReport}
+                  disabled={!canGenerateTaskReport}
+                  className="bg-gradient-to-r from-secondary to-secondary/80 hover:from-secondary/90 hover:to-secondary/70 text-secondary-foreground px-8 py-3 h-12 font-semibold text-base shadow-lg"
+                >
+                  {isGeneratingTaskReport ? (
+                    <>
+                      <Clock className="mr-3 h-5 w-5 animate-spin" />
+                      Generating Report...
+                    </>
+                  ) : (
+                    <>
+                      <BarChart3 className="mr-3 h-5 w-5" />
+                      Generate Task Report
+                    </>
+                  )}
+                </Button>
+                <Button
+                  onClick={downloadTaskPDF}
+                  disabled={!taskReportData || isDownloadingTaskPDF}
+                  variant="outline"
+                  className="border-green-400 hover:bg-green-50 hover:border-green-500 hover:text-green-700 px-8 py-3 h-12 font-semibold text-base"
+                >
+                  {isDownloadingTaskPDF ? (
+                    <>
+                      <Clock className="mr-3 h-5 w-5 animate-spin" />
+                      Downloading...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="mr-3 h-5 w-5" />
+                      Download PDF
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Enhanced Task Report Display */}
+          {taskReportData && (
+            <Card className="border-0 shadow-2xl">
+              <CardHeader className="bg-gradient-to-r from-secondary/10 to-primary/10 border-b border-secondary/20">
+                <CardTitle className="text-2xl flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-secondary to-primary rounded-full flex items-center justify-center">
+                    <FileText className="h-4 w-4 text-white" />
+                  </div>
+                  <span>Time Summary for Task: {taskReportData.taskName}</span>
+                </CardTitle>
+                <CardDescription className="text-lg">
+                  Comprehensive breakdown of effort across all disciplines and team members
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-10 space-y-10">
+                {/* Enhanced Summary */}
+                <div className="bg-gradient-to-br from-secondary/15 via-secondary/10 to-primary/15 border-2 border-secondary/30 rounded-2xl p-8 shadow-inner">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-2xl font-bold text-foreground mb-2">Total Hours Logged</h3>
+                      <p className="text-5xl font-bold text-secondary mt-4">{taskReportData.totalHours} hours</p>
+                    </div>
+                    <div className="p-6 bg-gradient-to-br from-secondary/20 to-primary/20 rounded-2xl shadow-lg">
+                      <Clock className="h-12 w-12 text-secondary" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Enhanced Breakdown Table */}
+                <div className="space-y-6">
+                  <h3 className="text-2xl font-bold text-foreground">Effort Breakdown by Discipline</h3>
+                  <div className="border-2 border-secondary/20 rounded-2xl overflow-hidden shadow-xl">
+                    <Table>
+                      <TableHeader className="bg-gradient-to-r from-secondary/10 to-primary/10">
+                        <TableRow>
+                          <TableHead className="font-bold text-foreground py-6 text-base">Discipline</TableHead>
+                          <TableHead className="font-bold text-foreground py-6 text-base">Hours Logged</TableHead>
+                          <TableHead className="font-bold text-foreground py-6 text-base">Percentage</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <TableRow className="bg-blue-50 hover:bg-blue-100 border-l-4 border-l-blue-500 transition-all duration-200">
+                          <TableCell className="font-semibold py-6 text-base flex items-center space-x-3">
+                            <div className="w-4 h-4 bg-gradient-to-r from-blue-400 to-blue-600 rounded-full shadow-sm" />
+                            <span>Development Hours</span>
+                          </TableCell>
+                          <TableCell className="py-6">
+                            <span className="font-bold text-xl text-blue-600">
+                              {taskReportData.breakdown.developmentHours} hours
+                            </span>
+                          </TableCell>
+                          <TableCell className="py-6">
+                            <span className="text-base font-semibold text-muted-foreground">
+                              {taskReportData.totalHours > 0 
+                                ? ((taskReportData.breakdown.developmentHours / taskReportData.totalHours) * 100).toFixed(1)
+                                : 0}%
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                        <TableRow className="bg-green-50 hover:bg-green-100 border-l-4 border-l-green-500 transition-all duration-200">
+                          <TableCell className="font-semibold py-6 text-base flex items-center space-x-3">
+                            <div className="w-4 h-4 bg-gradient-to-r from-green-400 to-green-600 rounded-full shadow-sm" />
+                            <span>Testing Hours</span>
+                          </TableCell>
+                          <TableCell className="py-6">
+                            <span className="font-bold text-xl text-green-600">
+                              {taskReportData.breakdown.testingHours} hours
+                            </span>
+                          </TableCell>
+                          <TableCell className="py-6">
+                            <span className="text-base font-semibold text-muted-foreground">
+                              {taskReportData.totalHours > 0 
+                                ? ((taskReportData.breakdown.testingHours / taskReportData.totalHours) * 100).toFixed(1)
+                                : 0}%
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                        <TableRow className="bg-gray-50 hover:bg-gray-100 border-l-4 border-l-gray-500 transition-all duration-200">
+                          <TableCell className="font-semibold py-6 text-base flex items-center space-x-3">
+                            <div className="w-4 h-4 bg-gradient-to-r from-gray-400 to-gray-600 rounded-full shadow-sm" />
+                            <span>Other Hours</span>
+                          </TableCell>
+                          <TableCell className="py-6">
+                            <span className="font-bold text-xl text-gray-600">
+                              {taskReportData.breakdown.otherHours} hours
+                            </span>
+                          </TableCell>
+                          <TableCell className="py-6">
+                            <span className="text-base font-semibold text-muted-foreground">
+                              {taskReportData.totalHours > 0 
+                                ? ((taskReportData.breakdown.otherHours / taskReportData.totalHours) * 100).toFixed(1)
+                                : 0}%
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
