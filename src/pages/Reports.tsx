@@ -11,7 +11,7 @@ import { CalendarIcon, FileText, Clock, Users } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks, subMonths } from 'date-fns';
 import { cn } from '@/lib/utils';
 import apiClient from '@/services/apiClient';
-import { useQuery } from '@tanstack/react-query';
+import { toast } from '@/hooks/use-toast';
 
 interface DailyLog {
   date: string;
@@ -86,11 +86,24 @@ const Reports = () => {
 
   const generateReport = async () => {
     if (!selectedTeammateId || !startDate || !endDate) {
+      toast({
+        title: "Missing Information",
+        description: "Please select a teammate and date range.",
+        variant: "destructive",
+      });
       return;
     }
 
     setIsGeneratingReport(true);
+    setReportData(null);
+    
     try {
+      console.log('Generating report with params:', {
+        teammateId: selectedTeammateId,
+        startDate: format(startDate, 'yyyy-MM-dd'),
+        endDate: format(endDate, 'yyyy-MM-dd')
+      });
+
       const response = await apiClient.get('/api/reports/timesheet', {
         params: {
           teammateId: selectedTeammateId,
@@ -98,9 +111,21 @@ const Reports = () => {
           endDate: format(endDate, 'yyyy-MM-dd')
         }
       });
+      
+      console.log('Report response:', response.data);
       setReportData(response.data);
+      
+      toast({
+        title: "Success",
+        description: "Report generated successfully.",
+      });
     } catch (error) {
       console.error('Error generating report:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate report. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsGeneratingReport(false);
     }

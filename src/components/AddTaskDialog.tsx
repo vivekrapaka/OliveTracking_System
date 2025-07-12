@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -35,7 +34,6 @@ export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps
   const { user } = useAuth();
   const { data: tasksData } = useTasksData();
   const { data: projectsData } = useProjects();
-
 
   // Form state
   const [taskName, setTaskName] = useState("");
@@ -132,14 +130,6 @@ export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps
     if (!dueDate) errors.dueDate = "Due date is required";
     if (!selectedProjectId) errors.projectId = "Project selection is required";
 
-
-
-
-
-
-
-
-
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -149,11 +139,6 @@ export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps
       console.log('Validation failed', validationErrors);
       return;
     }
-
-
-
-
-
 
     const taskData = {
       taskName,
@@ -168,7 +153,7 @@ export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps
       priority,
       documentPath: documentPath || undefined,
       commitId: commitId || undefined,
-      projectId: selectedProjectId, // Send the selected project ID
+      projectId: selectedProjectId,
     };
 
     console.log('Submitting task:', taskData);
@@ -396,7 +381,8 @@ export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps
           >
             {addTaskMutation.isPending ? "Adding..." : "Add Task"}
           </Button>
-@@ -381,45 +230,3 @@ export const AddTaskDialog = ({ isOpen, onClose, teammates }: AddTaskDialogProps
+        </div>
+      </DialogContent>
     </Dialog>
   );
 };
