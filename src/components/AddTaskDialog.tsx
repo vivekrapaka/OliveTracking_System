@@ -1,500 +1,715 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { format, parseISO, isValid } from "date-fns";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { CalendarIcon, RefreshCw, Code, TestTube, Clock } from "lucide-react";
+import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { ParentTaskSelector } from "./ParentTaskSelector";
 import { useAddTask } from "@/hooks/useAddTask";
-import { useEditTask } from "@/hooks/useEditTask";
+
 import { useTaskSequenceNumber } from "@/hooks/useTaskSequenceNumber";
-import { useProjects } from "@/hooks/useProjects";
-import { useUsers } from "@/hooks/useUsers";
-import { MultiSelect } from "react-multi-select-component";
+import { useAuth } from "@/contexts/AuthContext";
+import { useTasksData } from "@/hooks/useTasksData";
+import { useProjectTeammates } from "@/hooks/useProjectTeammates";
+import { DisciplineBasedTeammateSelector } from "./DisciplineBasedTeammateSelector";
+
+interface Teammate {
+  id: number;
+  name: string;
+  role: string;
+  functionalGroup: string;
+}
 
 interface AddTaskDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  task?: any; // Optional, for editing existing tasks
-  teammates: any[]; // Pass all teammates for filtering
+  teammates: Teammate[];
 }
 
-export const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
+export const AddTaskDialog = ({
   isOpen,
   onClose,
-  task,
   teammates,
-}) => {
-  const isEditing = !!task;
-  const { mutate: addTask, isLoading: isAdding } = useAddTask();
-  const { mutate: editTask, isLoading: isEditingTask } = useEditTask();
-  const { data: projectsData } = useProjects();
-  const { data: usersData } = useUsers();
+}: AddTaskDialogProps) => {
+  const { user } = useAuth();
+  const { data: tasksData } = useTasksData();
 
-  const [formData, setFormData] = useState({
-    taskName: "",
-    description: "",
-    currentStage: "BACKLOG",
-    priority: "MEDIUM",
-    projectId: "",
-    taskType: "TASK",
-    receivedDate: new Date(),
-    developmentStartDate: undefined,
-    testingStartDate: undefined,
-    uatTestingStartDate: undefined,
-    uatTestingEndDate: undefined,
-    productionReleaseDate: undefined,
-    developerIds: [],
-    testerIds: [],
-    developmentDueHours: 0,
-    testingDueHours: 0,
-    documentPath: "",
-  });
+  // Form state
+  const [taskName, setTaskName] = useState("");
+  const [description, setDescription] = useState("");
+  const [status, setStatus] = useState("BACKLOG");
+  const [taskType, setTaskType] = useState("TASK");
+  const [parentId, setParentId] = useState<number | undefined>(undefined);
+  const [priority, setPriority] = useState("");
+  const [selectedDeveloperIds, setSelectedDeveloperIds] = useState<number[]>(
+    []
+  );
+  const [selectedTesterIds, setSelectedTesterIds] = useState<number[]>([]);
+  const [receivedDate, setReceivedDate] = useState<Date>();
+  const [developmentStartDate, setDevelopmentStartDate] = useState<Date>();
+  const [documentPath, setDocumentPath] = useState("");
+  const [commitId, setCommitId] = useState("");
+  const [selectedProjectId, setSelectedProjectId] = useState<
+    number | undefined
+  >(undefined);
+  const [developmentDueHours, setDevelopmentDueHours] = useState<number>(0);
+  const [testingDueHours, setTestingDueHours] = useState<number>(0);
+  const [validationErrors, setValidationErrors] = useState<
+    Record<string, string>
+  >({});
 
-  const { data: taskSequenceNumberData } = useTaskSequenceNumber(formData.projectId);
+  // Hooks
+  const addTaskMutation = useAddTask();
+  const {
+    data: taskSequenceNumber,
+    isLoading: isLoadingSequence,
+    refetch: refetchSequence,
+  } = useTaskSequenceNumber();
 
-  useEffect(() => {
-    if (task) {
-      setFormData({
-        taskName: task.name || "",
-        description: task.description || "",
-        currentStage: task.status || "BACKLOG",
-        priority: task.priority || "MEDIUM",
-        projectId: task.projectId || "",
-        taskType: task.taskType || "TASK",
-        receivedDate: task.receivedDate ? parseISO(task.receivedDate) : new Date(),
-        developmentStartDate: task.developmentStartDate ? parseISO(task.developmentStartDate) : undefined,
-        testingStartDate: task.testingStartDate ? parseISO(task.testingStartDate) : undefined,
-        uatTestingStartDate: task.uatTestingStartDate ? parseISO(task.uatTestingStartDate) : undefined,
-        uatTestingEndDate: task.uatTestingEndDate ? parseISO(task.uatTestingEndDate) : undefined,
-        productionReleaseDate: task.productionReleaseDate ? parseISO(task.productionReleaseDate) : undefined,
-        developerIds: task.developerIds || [],
-        testerIds: task.testerIds || [],
-        developmentDueHours: task.developmentDueHours || 0,
-        testingDueHours: task.testingDueHours || 0,
-        documentPath: task.documentPath || "",
-      });
-    } else {
-      // Reset form for new task
-      setFormData({
-        taskName: "",
-        description: "",
-        currentStage: "BACKLOG",
-        priority: "MEDIUM",
-        projectId: "",
-        taskType: "TASK",
-        receivedDate: new Date(),
-        developmentStartDate: undefined,
-        testingStartDate: undefined,
-        uatTestingStartDate: undefined,
-        uatTestingEndDate: undefined,
-        productionReleaseDate: undefined,
-        developerIds: [],
-        testerIds: [],
-        developmentDueHours: 0,
-        testingDueHours: 0,
-        documentPath: "",
-      });
+  // Fetch project teammates when project is selected
+  const { data: projectTeammatesData } = useProjectTeammates(selectedProjectId);
+  const projectTeammates = projectTeammatesData?.teammates || [];
+
+  // Constants with new status values
+  const statuses = [
+    { value: "BACKLOG", label: "Backlog" },
+    { value: "ANALYSIS", label: "Analysis" },
+    { value: "DEVELOPMENT", label: "Development" },
+    { value: "CODE_REVIEW", label: "Code Review" },
+    { value: "UAT_TESTING", label: "UAT Testing" },
+    { value: "UAT_FAILED", label: "UAT Failed" },
+    { value: "READY_FOR_PREPROD", label: "Ready for Pre-Production" },
+    { value: "PREPROD", label: "Pre-Production" },
+    { value: "PROD", label: "Production" },
+    { value: "COMPLETED", label: "Completed" },
+    { value: "CLOSED", label: "Closed" },
+    { value: "REOPENED", label: "Reopened" },
+    { value: "BLOCKED", label: "Blocked" },
+  ];
+
+  const taskTypes = [
+    { value: "BRD", label: "Business Requirement Document" },
+    { value: "EPIC", label: "Epic" },
+    { value: "STORY", label: "Story" },
+    { value: "TASK", label: "Task" },
+    { value: "BUG", label: "Bug" },
+    { value: "SUB_TASK", label: "Sub-Task" },
+    { value: "ANALYSIS_TASK", label: "Analysis Task" },
+  ];
+
+  const priorities = ["CRITICAL", "HIGH", "MEDIUM", "LOW"];
+
+  // Available parent tasks
+  const availableParentTasks =
+    tasksData?.tasks?.map((task) => ({
+      id: task.id,
+      name: task.name,
+      taskNumber: task.taskNumber,
+      taskType: task.taskType || "TASK",
+    })) || [];
+
+  // Separate developers and testers from project teammates
+  const developers = projectTeammates.filter(
+    (t) => t.functionalGroup === "DEVELOPER" || t.functionalGroup === "DEV_LEAD"
+  );
+  const testers = projectTeammates.filter(
+    (t) => t.functionalGroup === "TESTER" || t.functionalGroup === "TEST_LEAD"
+  );
+
+  const resetForm = () => {
+    setTaskName("");
+    setDescription("");
+    setStatus("BACKLOG");
+    setTaskType("TASK");
+    setParentId(undefined);
+    setPriority("");
+    setSelectedDeveloperIds([]);
+    setSelectedTesterIds([]);
+    setReceivedDate(undefined);
+    setDevelopmentStartDate(undefined);
+    setDocumentPath("");
+    setCommitId("");
+    setSelectedProjectId(undefined);
+    setDevelopmentDueHours(0);
+    setTestingDueHours(0);
+    setValidationErrors({});
+  };
+
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+
+    if (!taskName) errors.taskName = "Task name is required";
+    if (!status) errors.status = "Status is required";
+    if (!taskType) errors.taskType = "Task type is required";
+    if (!priority) errors.priority = "Priority is required";
+    if (!receivedDate) errors.receivedDate = "Received date is required";
+    if (!selectedProjectId) errors.projectId = "Project selection is required";
+    if (developmentDueHours <= 0)
+      errors.developmentDueHours =
+        "Development due hours must be greater than 0";
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSave = () => {
+    if (!validateForm()) {
+      console.log("Validation failed", validationErrors);
+      return;
     }
-  }, [task]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { id, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [id]: value,
-    }));
-  };
-
-  const handleSelectChange = (id: string, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      [id]: value,
-    }));
-  };
-
-  const handleDateChange = (id: string, date: Date | undefined) => {
-    setFormData((prev) => ({
-      ...prev,
-      [id]: date,
-    }));
-  };
-
-  const handleMultiSelectChange = (id: string, selectedOptions: any[]) => {
-    setFormData((prev) => ({
-      ...prev,
-      [id]: selectedOptions.map((option) => option.value),
-    }));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const payload = {
-      ...formData,
-      receivedDate: formData.receivedDate?.toISOString(),
-      developmentStartDate: formData.developmentStartDate?.toISOString(),
-      testingStartDate: formData.testingStartDate?.toISOString(),
-      uatTestingStartDate: formData.uatTestingStartDate?.toISOString(),
-      uatTestingEndDate: formData.uatTestingEndDate?.toISOString(),
-      productionReleaseDate: formData.productionReleaseDate?.toISOString(),
-      // Ensure developerIds and testerIds are arrays of numbers
-      developerIds: formData.developerIds.map(Number),
-      testerIds: formData.testerIds.map(Number),
+    const taskData = {
+      taskName,
+      description,
+      status,
+      taskType,
+      parentId,
+      receivedDate: format(receivedDate!, "yyyy-MM-dd"),
+      developmentStartDate: developmentStartDate
+        ? format(developmentStartDate, "yyyy-MM-dd")
+        : undefined,
+      developerIds: selectedDeveloperIds,
+      testerIds: selectedTesterIds,
+      priority,
+      documentPath: documentPath || undefined,
+      commitId: commitId || undefined,
+      projectId: selectedProjectId,
+      developmentDueHours,
+      testingDueHours,
     };
 
-    if (isEditing) {
-      editTask({ taskId: task.id, ...payload });
-    } else {
-      addTask(payload);
-    }
+    console.log("Submitting task:", taskData);
+
+    addTaskMutation.mutate(taskData, {
+      onSuccess: () => {
+        console.log("Task added successfully");
+        resetForm();
+        refetchSequence();
+        onClose();
+      },
+      onError: (error) => {
+        console.error("Add task error:", error);
+      },
+    });
+  };
+
+  const handleClose = () => {
+    resetForm();
     onClose();
   };
 
-  const developerOptions = teammates
-    .filter(t => t.functionalGroup === 'DEVELOPER' || t.functionalGroup === 'DEV_LEAD')
-    .map(t => ({ label: t.fullName, value: t.id }));
-
-  const testerOptions = teammates
-    .filter(t => t.functionalGroup === 'TESTER' || t.functionalGroup === 'TEST_LEAD')
-    .map(t => ({ label: t.fullName, value: t.id }));
-
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] p-6">
-        <DialogHeader>
-          <DialogTitle>{isEditing ? "Edit Task" : "Add New Task"}</DialogTitle>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="pb-4 border-b border-gray-200">
+          <DialogTitle className="text-2xl font-bold text-gray-900">
+            Add New Task
+          </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="taskName" className="text-right">Task Name</Label>
-            <Input
-              id="taskName"
-              value={formData.taskName}
-              onChange={handleChange}
-              className="col-span-3"
-              required
-            />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="description" className="text-right">Description</Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={handleChange}
-              className="col-span-3"
-            />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="projectId" className="text-right">Project</Label>
+
+        <div className="space-y-8 py-6">
+          {/* Project Selection */}
+          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <Label className="text-sm font-medium text-gray-700">
+              Project *
+            </Label>
+
             <Select
-              value={formData.projectId}
-              onValueChange={(value) => handleSelectChange("projectId", value)}
+              value={selectedProjectId?.toString()}
+              onValueChange={(value) => {
+                console.log("Selected Project ID (as string):", value);
+                setSelectedProjectId(Number(value));
+                // Reset team selections when project changes
+                setSelectedDeveloperIds([]);
+                setSelectedTesterIds([]);
+              }}
             >
-              <SelectTrigger className="col-span-3">
+              <SelectTrigger
+                className={cn(
+                  "mt-1",
+                  validationErrors.projectId && "border-red-300"
+                )}
+              >
                 <SelectValue placeholder="Select a project" />
               </SelectTrigger>
               <SelectContent>
-                {projectsData?.projects.map((project: any) => (
-                  <SelectItem key={project.id} value={project.id.toString()}>
-                    {project.name}
-                  </SelectItem>
-                ))}
+                {user?.projectNames?.map((projectNames, index) => {
+                  const projectId = user.projectIds[index];
+                  console.log(
+                    `Rendering: Name = ${projectNames}, ID = ${projectId}`
+                  );
+                  return (
+                    <SelectItem key={projectId} value={projectId.toString()}>
+                      {projectNames}
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
+            {validationErrors.projectId && (
+              <p className="text-red-600 text-sm mt-1">
+                {validationErrors.projectId}
+              </p>
+            )}
           </div>
-          {formData.projectId && !isEditing && (
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="taskNumber" className="text-right">Task Number</Label>
-              <Input
-                id="taskNumber"
-                value={taskSequenceNumberData?.taskNumber || "Generating..."}
-                className="col-span-3 bg-gray-100"
-                readOnly
+
+          <div className="grid lg:grid-cols-2 gap-8">
+            {/* Left Column */}
+            <div className="space-y-6">
+              {/* Basic Information */}
+              <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  Basic Information
+                </h3>
+
+                {/* Task Number */}
+                <div className="mb-4">
+                  <Label className="text-sm font-medium text-gray-700">
+                    Task Number
+                  </Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Input
+                      value={
+                        isLoadingSequence
+                          ? "Loading..."
+                          : taskSequenceNumber || "TSK-001"
+                      }
+                      readOnly
+                      className="bg-gray-50 text-gray-600 font-mono"
+                      placeholder="TSK-001"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => refetchSequence()}
+                      disabled={isLoadingSequence}
+                      className="px-3"
+                    >
+                      <RefreshCw
+                        className={cn(
+                          "h-4 w-4",
+                          isLoadingSequence && "animate-spin"
+                        )}
+                      />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Task Name */}
+                <div className="mb-4">
+                  <Label
+                    htmlFor="taskName"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    Task Name *
+                  </Label>
+                  <Input
+                    id="taskName"
+                    value={taskName}
+                    onChange={(e) => setTaskName(e.target.value)}
+                    placeholder="Enter task name"
+                    className={cn(
+                      "mt-1",
+                      validationErrors.taskName && "border-red-300"
+                    )}
+                  />
+                  {validationErrors.taskName && (
+                    <p className="text-red-600 text-sm mt-1">
+                      {validationErrors.taskName}
+                    </p>
+                  )}
+                </div>
+
+                {/* Task Type */}
+                <div className="mb-4">
+                  <Label className="text-sm font-medium text-gray-700">
+                    Task Type *
+                  </Label>
+                  <Select value={taskType} onValueChange={setTaskType}>
+                    <SelectTrigger
+                      className={cn(
+                        "mt-1",
+                        validationErrors.taskType && "border-red-300"
+                      )}
+                    >
+                      <SelectValue placeholder="Select task type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {taskTypes.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {validationErrors.taskType && (
+                    <p className="text-red-600 text-sm mt-1">
+                      {validationErrors.taskType}
+                    </p>
+                  )}
+                </div>
+
+                {/* Priority */}
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">
+                    Priority *
+                  </Label>
+                  <Select value={priority} onValueChange={setPriority}>
+                    <SelectTrigger
+                      className={cn(
+                        "mt-1",
+                        validationErrors.priority && "border-red-300"
+                      )}
+                    >
+                      <SelectValue placeholder="Select priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {priorities.map((priority) => (
+                        <SelectItem key={priority} value={priority}>
+                          {priority}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {validationErrors.priority && (
+                    <p className="text-red-600 text-sm mt-1">
+                      {validationErrors.priority}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Due Hours */}
+              <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-orange-500" />
+                  Effort Estimation
+                </h3>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label
+                      htmlFor="developmentDueHours"
+                      className="text-sm font-medium text-gray-700 flex items-center gap-2"
+                    >
+                      <Code className="h-4 w-4 text-blue-500" />
+                      Dev Hours *
+                    </Label>
+                    <Input
+                      id="developmentDueHours"
+                      type="number"
+                      value={developmentDueHours}
+                      onChange={(e) =>
+                        setDevelopmentDueHours(Number(e.target.value))
+                      }
+                      className={cn(
+                        "mt-1",
+                        validationErrors.developmentDueHours && "border-red-300"
+                      )}
+                      min="0"
+                      step="0.5"
+                      placeholder="0"
+                    />
+                    {validationErrors.developmentDueHours && (
+                      <p className="text-red-600 text-xs mt-1">
+                        {validationErrors.developmentDueHours}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <Label
+                      htmlFor="testingDueHours"
+                      className="text-sm font-medium text-gray-700 flex items-center gap-2"
+                    >
+                      <TestTube className="h-4 w-4 text-green-500" />
+                      Test Hours
+                    </Label>
+                    <Input
+                      id="testingDueHours"
+                      type="number"
+                      value={testingDueHours}
+                      onChange={(e) =>
+                        setTestingDueHours(Number(e.target.value))
+                      }
+                      className="mt-1"
+                      min="0"
+                      step="0.5"
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column */}
+            <div className="space-y-6">
+              {/* Status & Other Details */}
+              <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Task Configuration
+                </h3>
+
+                {/* Status */}
+                <div className="mb-4">
+                  <Label className="text-sm font-medium text-gray-700">
+                    Status *
+                  </Label>
+                  <Select value={status} onValueChange={setStatus}>
+                    <SelectTrigger
+                      className={cn(
+                        "mt-1",
+                        validationErrors.status && "border-red-300"
+                      )}
+                    >
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {statuses.map((statusOption) => (
+                        <SelectItem
+                          key={statusOption.value}
+                          value={statusOption.value}
+                        >
+                          {statusOption.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {validationErrors.status && (
+                    <p className="text-red-600 text-sm mt-1">
+                      {validationErrors.status}
+                    </p>
+                  )}
+                </div>
+
+                {/* Document Path */}
+                <div className="mb-4">
+                  <Label
+                    htmlFor="documentPath"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    Document Path
+                  </Label>
+                  <Input
+                    id="documentPath"
+                    value={documentPath}
+                    onChange={(e) => setDocumentPath(e.target.value)}
+                    placeholder="Enter document path (optional)"
+                    className="mt-1"
+                  />
+                </div>
+
+                {/* Commit ID */}
+                <div>
+                  <Label
+                    htmlFor="commitId"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    Commit ID
+                  </Label>
+                  <Input
+                    id="commitId"
+                    value={commitId}
+                    onChange={(e) => setCommitId(e.target.value)}
+                    placeholder="Enter commit ID (optional)"
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+
+              {/* Date Fields */}
+              <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <CalendarIcon className="h-5 w-5 text-purple-500" />
+                  Important Dates
+                </h3>
+
+                <div className="space-y-4">
+                  {/* Received Date */}
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">
+                      Received Date *
+                    </Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal mt-1",
+                            !receivedDate && "text-muted-foreground",
+                            validationErrors.receivedDate && "border-red-300"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {receivedDate ? (
+                            format(receivedDate, "PPP")
+                          ) : (
+                            <span>Pick received date</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={receivedDate}
+                          onSelect={setReceivedDate}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    {validationErrors.receivedDate && (
+                      <p className="text-red-600 text-sm mt-1">
+                        {validationErrors.receivedDate}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Development Start Date */}
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">
+                      Development Start Date
+                    </Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal mt-1",
+                            !developmentStartDate && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {developmentStartDate ? (
+                            format(developmentStartDate, "PPP")
+                          ) : (
+                            <span>Pick development start date</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={developmentStartDate}
+                          onSelect={setDevelopmentStartDate}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Parent Task */}
+          <ParentTaskSelector
+            availableTasks={availableParentTasks}
+            selectedTaskId={parentId}
+            onTaskSelect={setParentId}
+            currentTaskType={taskType}
+          />
+
+          {/* Team Assignment Section */}
+      <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+        <h3 className="text-lg font-semibold text-gray-900 mb-6">Team Assignment</h3>
+        <DisciplineBasedTeammateSelector
+          developers={developers}
+          testers={testers}
+          selectedDeveloperIds={selectedDeveloperIds}
+          selectedTesterIds={selectedTesterIds}
+          onDeveloperToggle={(id) => {
+            setSelectedDeveloperIds(prev => 
+              prev.includes(id) ? prev.filter(devId => devId !== id) : [...prev, id]
+            );
+          }}
+          onTesterToggle={(id) => {
+            setSelectedTesterIds(prev => 
+              prev.includes(id) ? prev.filter(testId => testId !== id) : [...prev, id]
+            );
+          }}
+        />
+      </div>
+
+          {/* Team Assignment */}
+          {selectedProjectId && projectTeammates.length > 0 && (
+            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">
+                Team Assignment
+              </h3>
+              <DisciplineBasedTeammateSelector
+                developers={developers}
+                testers={testers}
+                selectedDeveloperIds={selectedDeveloperIds}
+                selectedTesterIds={selectedTesterIds}
+                onDeveloperToggle={(id) => {
+                  setSelectedDeveloperIds((prev) =>
+                    prev.includes(id)
+                      ? prev.filter((devId) => devId !== id)
+                      : [...prev, id]
+                  );
+                }}
+                onTesterToggle={(id) => {
+                  setSelectedTesterIds((prev) =>
+                    prev.includes(id)
+                      ? prev.filter((testId) => testId !== id)
+                      : [...prev, id]
+                  );
+                }}
               />
             </div>
           )}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="taskType" className="text-right">Task Type</Label>
-            <Select
-              value={formData.taskType}
-              onValueChange={(value) => handleSelectChange("taskType", value)}
-            >
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Select task type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="BRD">BRD</SelectItem>
-                <SelectItem value="EPIC">Epic</SelectItem>
-                <SelectItem value="STORY">Story</SelectItem>
-                <SelectItem value="TASK">Task</SelectItem>
-                <SelectItem value="BUG">Bug</SelectItem>
-                <SelectItem value="SUB_TASK">Sub-Task</SelectItem>
-                <SelectItem value="ANALYSIS_TASK">Analysis Task</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="priority" className="text-right">Priority</Label>
-            <Select
-              value={formData.priority}
-              onValueChange={(value) => handleSelectChange("priority", value)}
-            >
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Select priority" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="CRITICAL">Critical</SelectItem>
-                <SelectItem value="HIGH">High</SelectItem>
-                <SelectItem value="MEDIUM">Medium</SelectItem>
-                <SelectItem value="LOW">Low</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="currentStage" className="text-right">Current Stage</Label>
-            <Select
-              value={formData.currentStage}
-              onValueChange={(value) => handleSelectChange("currentStage", value)}
-            >
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Select stage" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="BACKLOG">Backlog</SelectItem>
-                <SelectItem value="ANALYSIS">Analysis</SelectItem>
-                <SelectItem value="DEVELOPMENT">Development</SelectItem>
-                <SelectItem value="CODE_REVIEW">Code Review</SelectItem>
-                <SelectItem value="UAT_TESTING">UAT Testing</SelectItem>
-                <SelectItem value="UAT_FAILED">UAT Failed</SelectItem>
-                <SelectItem value="READY_FOR_PREPROD">Ready for Pre-Prod</SelectItem>
-                <SelectItem value="PREPROD">Pre-Production</SelectItem>
-                <SelectItem value="PROD">Production</SelectItem>
-                <SelectItem value="COMPLETED">Completed</SelectItem>
-                <SelectItem value="CLOSED">Closed</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
 
-          {/* Discipline-Based Assignment */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="developerIds" className="text-right">Assign Developer(s)</Label>
-            <div className="col-span-3">
-              <MultiSelect
-                options={developerOptions}
-                value={developerOptions.filter(option => formData.developerIds.includes(option.value))}
-                onChange={(selected) => handleMultiSelectChange("developerIds", selected)}
-                labelledBy="Select Developers"
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="testerIds" className="text-right">Assign Tester(s)</Label>
-            <div className="col-span-3">
-              <MultiSelect
-                options={testerOptions}
-                value={testerOptions.filter(option => formData.testerIds.includes(option.value))}
-                onChange={(selected) => handleMultiSelectChange("testerIds", selected)}
-                labelledBy="Select Testers"
-              />
-            </div>
-          </div>
-
-          {/* Effort Estimation */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="developmentDueHours" className="text-right">Dev Due Hours</Label>
-            <Input
-              id="developmentDueHours"
-              type="number"
-              value={formData.developmentDueHours}
-              onChange={handleChange}
-              className="col-span-3"
+          {/* Description */}
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Task Description
+            </h3>
+            <Textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Enter task description (optional)"
+              className="min-h-[120px]"
             />
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="testingDueHours" className="text-right">Test Due Hours</Label>
-            <Input
-              id="testingDueHours"
-              type="number"
-              value={formData.testingDueHours}
-              onChange={handleChange}
-              className="col-span-3"
-            />
-          </div>
+        </div>
 
-          {/* Dates */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="receivedDate" className="text-right">Received Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className={cn(
-                    "col-span-3 justify-start text-left font-normal",
-                    !formData.receivedDate && "text-muted-foreground"
-                  )}
-                >
-                  <Calendar className="mr-2 h-4 w-4" />
-                  {formData.receivedDate ? format(formData.receivedDate, "PPP") : "Pick a date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={formData.receivedDate}
-                  onSelect={(date) => handleDateChange("receivedDate", date)}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="developmentStartDate" className="text-right">Dev Start Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className={cn(
-                    "col-span-3 justify-start text-left font-normal",
-                    !formData.developmentStartDate && "text-muted-foreground"
-                  )}
-                >
-                  <Calendar className="mr-2 h-4 w-4" />
-                  {formData.developmentStartDate ? format(formData.developmentStartDate, "PPP") : "Pick a date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={formData.developmentStartDate}
-                  onSelect={(date) => handleDateChange("developmentStartDate", date)}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="testingStartDate" className="text-right">Test Start Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className={cn(
-                    "col-span-3 justify-start text-left font-normal",
-                    !formData.testingStartDate && "text-muted-foreground"
-                  )}
-                >
-                  <Calendar className="mr-2 h-4 w-4" />
-                  {formData.testingStartDate ? format(formData.testingStartDate, "PPP") : "Pick a date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={formData.testingStartDate}
-                  onSelect={(date) => handleDateChange("testingStartDate", date)}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="uatTestingStartDate" className="text-right">UAT Start Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className={cn(
-                    "col-span-3 justify-start text-left font-normal",
-                    !formData.uatTestingStartDate && "text-muted-foreground"
-                  )}
-                >
-                  <Calendar className="mr-2 h-4 w-4" />
-                  {formData.uatTestingStartDate ? format(formData.uatTestingStartDate, "PPP") : "Pick a date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={formData.uatTestingStartDate}
-                  onSelect={(date) => handleDateChange("uatTestingStartDate", date)}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="uatTestingEndDate" className="text-right">UAT End Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className={cn(
-                    "col-span-3 justify-start text-left font-normal",
-                    !formData.uatTestingEndDate && "text-muted-foreground"
-                  )}
-                >
-                  <Calendar className="mr-2 h-4 w-4" />
-                  {formData.uatTestingEndDate ? format(formData.uatTestingEndDate, "PPP") : "Pick a date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={formData.uatTestingEndDate}
-                  onSelect={(date) => handleDateChange("uatTestingEndDate", date)}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="productionReleaseDate" className="text-right">Prod Release Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className={cn(
-                    "col-span-3 justify-start text-left font-normal",
-                    !formData.productionReleaseDate && "text-muted-foreground"
-                  )}
-                >
-                  <Calendar className="mr-2 h-4 w-4" />
-                  {formData.productionReleaseDate ? format(formData.productionReleaseDate, "PPP") : "Pick a date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={formData.productionReleaseDate}
-                  onSelect={(date) => handleDateChange("productionReleaseDate", date)}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="documentPath" className="text-right">Document Path</Label>
-            <Input
-              id="documentPath"
-              value={formData.documentPath}
-              onChange={handleChange}
-              className="col-span-3"
-            />
-          </div>
-        </form>
-        <DialogFooter>
-          <Button type="submit" onClick={handleSubmit} disabled={isAdding || isEditingTask}>
-            {isEditing ? "Save Changes" : "Add Task"}
+        {/* Actions */}
+        <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+          <Button variant="outline" onClick={handleClose} className="px-6">
+            Cancel
           </Button>
-        </DialogFooter>
+          <Button
+            onClick={handleSave}
+            className="bg-blue-600 hover:bg-blue-700 px-6"
+            disabled={addTaskMutation.isPending}
+          >
+            {addTaskMutation.isPending ? "Adding..." : "Add Task"}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
 };
-
-
