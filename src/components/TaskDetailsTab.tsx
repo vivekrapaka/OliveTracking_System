@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -520,3 +519,5 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
     </div>
   );
 };
+
+

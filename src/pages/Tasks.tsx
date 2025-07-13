@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -103,7 +102,7 @@ export const Tasks = () => {
     if (user.functionalGroup === 'DEVELOPER' && task.developerName === userFullName) {
       return true;
     }
-    if (user.functionalGroup === 'TESTER' && task.testerName === userFullName) {
+    if (['TESTER', 'TEST_LEAD'].includes(user.functionalGroup) && task.testerName === userFullName) {
       return true;
     }
     
@@ -305,12 +304,22 @@ export const Tasks = () => {
             const isAssignedToUser = isTaskAssignedToCurrentUser(task);
             const canEdit = canEditTask(task);
             
+            // Determine highlight class based on user's role and assignment
+            let highlightClass = "";
+            if (isAssignedToUser) {
+              if (user?.functionalGroup === 'DEVELOPER' || user?.functionalGroup === 'DEV_LEAD') {
+                highlightClass = "ring-2 ring-blue-500/50 bg-blue-50/30"; // Highlight for assigned developer
+              } else if (user?.functionalGroup === 'TESTER' || user?.functionalGroup === 'TEST_LEAD') {
+                highlightClass = "ring-2 ring-green-500/50 bg-green-50/30"; // Highlight for assigned tester
+              }
+            }
+
             return (
               <Card 
                 key={task.id} 
                 className={cn(
                   "professional-card professional-hover transition-all duration-300",
-                  isAssignedToUser && "ring-2 ring-professional-blue/30 bg-gradient-to-r from-professional-blue/5 to-professional-cyan/5",
+                  highlightClass, // Apply highlight class here
                   canEdit && "cursor-pointer",
                   task.status === 'UAT_FAILED' && "border-professional-red/30 bg-professional-red/5"
                 )}
@@ -442,3 +451,5 @@ export const Tasks = () => {
 };
 
 export default Tasks;
+
+

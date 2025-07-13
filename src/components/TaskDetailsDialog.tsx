@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -62,7 +61,7 @@ export const TaskDetailsDialog = ({ isOpen, onClose, task, onSave, teammates }: 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[800px] max-h-[80vh] bg-white/95 backdrop-blur-md border-professional-slate/20">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-md border-professional-slate/20">
         <DialogHeader>
           <DialogTitle className="text-professional-navy">Task Details - {task.taskNumber}</DialogTitle>
         </DialogHeader>
@@ -101,3 +100,5 @@ export const TaskDetailsDialog = ({ isOpen, onClose, task, onSave, teammates }: 
     </Dialog>
   );
 };
+
+

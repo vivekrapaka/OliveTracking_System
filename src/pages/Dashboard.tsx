@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +16,9 @@ import {
   Timer,
   Award,
   User,
-  Briefcase
+  Briefcase,
+  Code,
+  TestTube
 } from "lucide-react";
 import { format, isValid, parseISO } from "date-fns";
 import { useDashboardData } from "@/hooks/useDashboardData";
@@ -73,16 +74,16 @@ export const Dashboard = () => {
   }
 
   // Prepare chart data
- const tasksByStageData = Object.entries(data.tasksByStage || {}).map(([stage, count]) => ({
-  name: stage.replace(/_/g, ' '),
-  value: count,
-  count
-}));
+  const tasksByStageData = Object.entries(data.tasksByStage || {}).map(([stage, count]) => ({
+    name: stage.replace(/_/g, ' '),
+    value: count,
+    count
+  }));
 
-const tasksByTypeData = Object.entries(data.tasksByIssueType || {}).map(([type, count]) => ({
-  name: type,
-  value: count
-}));
+  const tasksByTypeData = Object.entries(data.tasksByIssueType || {}).map(([type, count]) => ({
+    name: type,
+    value: count
+  }));
 
   const COLORS = [
     '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', 
@@ -310,14 +311,22 @@ const tasksByTypeData = Object.entries(data.tasksByIssueType || {}).map(([type, 
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {data.recentTasks?.map((task, index) => (
+                  {data.recentTasks?.map((task) => (
                     <div key={task.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-professional-blue/5 to-professional-cyan/5 rounded-lg border border-professional-slate/20">
                       <div className="flex items-center gap-4">
                         <div className="w-2 h-2 rounded-full bg-professional-blue"></div>
                         <div>
                           <p className="font-medium text-professional-navy">{task.name}</p>
                           <p className="text-sm text-professional-slate-dark">
-                            Assigned to: {task.assignee} • Due: {formatSafeDate(task.dueDate)}
+                            <span className="flex items-center gap-1">
+                              <Code className="h-3 w-3" /> {task.developerName || "Unassigned"}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <TestTube className="h-3 w-3" /> {task.testerName || "Unassigned"}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Timer className="h-3 w-3" /> Dev: {task.developmentDueHours || 0}h • Test: {task.testingDueHours || 0}h
+                            </span>
                           </p>
                         </div>
                       </div>
@@ -454,3 +463,5 @@ const tasksByTypeData = Object.entries(data.tasksByIssueType || {}).map(([type, 
 };
 
 export default Dashboard;
+
+
