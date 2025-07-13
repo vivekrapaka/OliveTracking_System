@@ -13,17 +13,19 @@ interface ProjectTeammatesResponse {
   teammates: ProjectTeammate[];
 }
 
-const fetchProjectTeammates = async (projectId: number): Promise<ProjectTeammatesResponse> => {
-  const url = `/api/projects/${projectId}/teammates`;
+
+const fetchProjectTeammates = async (taskId: number) => {
+  const url = `/api/tasks/${taskId}/history`;
   
-  console.log('Fetching project teammates from:', url);
+  console.log('Fetchinwertyui:', url);
   
   try {
+
     const response = await apiClient.get(url);
-    console.log('Project teammates response:', response.data);
+    console.log('Task history response:', response.data);
     return response.data;
   } catch (error) {
-    console.error('Project teammates fetch error:', error);
+    console.error('Task history fetch error:', error);
     throw error;
   }
 };

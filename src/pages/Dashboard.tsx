@@ -73,16 +73,16 @@ export const Dashboard = () => {
   }
 
   // Prepare chart data
-  const tasksByStageData = Object.entries(data.tasksByStage).map(([stage, count]) => ({
-    name: stage.replace(/_/g, ' '),
-    value: count,
-    count
-  }));
+ const tasksByStageData = Object.entries(data.tasksByStage || {}).map(([stage, count]) => ({
+  name: stage.replace(/_/g, ' '),
+  value: count,
+  count
+}));
 
-  const tasksByTypeData = Object.entries(data.tasksByIssueType).map(([type, count]) => ({
-    name: type,
-    value: count
-  }));
+const tasksByTypeData = Object.entries(data.tasksByIssueType || {}).map(([type, count]) => ({
+  name: type,
+  value: count
+}));
 
   const COLORS = [
     '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', 
