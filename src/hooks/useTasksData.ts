@@ -17,6 +17,8 @@ export interface BackendTask {
   dueDate: string;
   assignedTeammateIds: number[];
   assignedTeammateNames: string[];
+  developerName?: string;
+  testerName?: string;
   priority: string;
   projectId: number;
   projectName: string;

@@ -15,7 +15,8 @@ import {
   AlertCircle,
   Calendar,
   Users,
-  Link
+  Link,
+  Lock
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -43,6 +44,8 @@ interface Task {
   dueDate: string;
   assignedTeammates: string[];
   assignedTeammateIds: number[];
+  developerName?: string;
+  testerName?: string;
   priority: string;
   projectId: number;
   projectName: string;
@@ -80,6 +83,8 @@ export const Tasks = () => {
       dueDate: backendTask.dueDate,
       assignedTeammates: backendTask.assignedTeammateNames || [],
       assignedTeammateIds: backendTask.assignedTeammateIds || [],
+      developerName: backendTask.developerName,
+      testerName: backendTask.testerName,
       priority: backendTask.priority,
       projectId: backendTask.projectId,
       projectName: backendTask.projectName,
@@ -102,6 +107,29 @@ export const Tasks = () => {
     name: teammate.name,
     role: teammate.role
   })) || [];
+
+  // Check if current user can edit a task
+  const canEditTask = (task: Task): boolean => {
+    if (!user?.fullName || !user?.functionalGroup) return false;
+    
+    // Managers and analysts can edit all tasks
+    const managerRoles = ["ADMIN", "MANAGER", "DEV_MANAGER", "TEST_MANAGER", "DEV_LEAD", "TEST_LEAD", "BUSINESS_ANALYST"];
+    if (managerRoles.includes(user.functionalGroup)) {
+      return true;
+    }
+    
+    // Regular developers and testers can only edit if they are assigned
+    const isAssignedDeveloper = task.developerName === user.fullName;
+    const isAssignedTester = task.testerName === user.fullName;
+    
+    return isAssignedDeveloper || isAssignedTester;
+  };
+
+  // Check if task is assigned to current user (for highlighting)
+  const isTaskAssignedToUser = (task: Task): boolean => {
+    if (!user?.fullName) return false;
+    return task.developerName === user.fullName || task.testerName === user.fullName;
+  };
 
   const filteredTasks = tasksData.filter(task => {
     const matchesSearch = searchTerm === "" || 
@@ -144,44 +172,44 @@ export const Tasks = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "BACKLOG": return "bg-jira-gray-light text-gray-800 border-gray-200";
-      case "ANALYSIS": return "bg-jira-blue-light text-blue-800 border-blue-200";
-      case "DEVELOPMENT": return "bg-jira-purple-light text-purple-800 border-purple-200";
-      case "SIT_TESTING": return "bg-jira-orange-light text-orange-800 border-orange-200";
-      case "SIT_FAILED": return "bg-jira-red-light text-red-800 border-red-200";
-      case "UAT_TESTING": return "bg-jira-orange-light text-orange-800 border-orange-200";
-      case "UAT_FAILED": return "bg-jira-red-light text-red-800 border-red-200";
-      case "PREPROD": return "bg-indigo-100 text-indigo-800 border-indigo-200";
-      case "PROD": return "bg-jira-green-light text-green-800 border-green-200";
-      case "COMPLETED": return "bg-jira-green-light text-green-800 border-green-200";
-      case "CLOSED": return "bg-jira-gray-light text-gray-800 border-gray-200";
-      case "REOPENED": return "bg-jira-red-light text-red-800 border-red-200";
-      case "BLOCKED": return "bg-jira-red-light text-red-800 border-red-200";
-      default: return "bg-jira-gray-light text-gray-800 border-gray-200";
+      case "BACKLOG": return "bg-professional-gray-light text-professional-gray-dark border-professional-gray-dark";
+      case "ANALYSIS": return "bg-professional-blue-light text-professional-blue-dark border-professional-blue-dark";
+      case "DEVELOPMENT": return "bg-professional-purple-light text-professional-purple-dark border-professional-purple-dark";
+      case "SIT_TESTING": return "bg-professional-orange-light text-professional-orange-dark border-professional-orange-dark";
+      case "SIT_FAILED": return "bg-professional-red-light text-professional-red-dark border-professional-red-dark";
+      case "UAT_TESTING": return "bg-professional-orange-light text-professional-orange-dark border-professional-orange-dark";
+      case "UAT_FAILED": return "bg-professional-red-light text-professional-red-dark border-professional-red-dark";
+      case "PREPROD": return "bg-professional-indigo-light text-professional-indigo-dark border-professional-indigo-dark";
+      case "PROD": return "bg-professional-green-light text-professional-green-dark border-professional-green-dark";
+      case "COMPLETED": return "bg-professional-green-light text-professional-green-dark border-professional-green-dark";
+      case "CLOSED": return "bg-professional-gray-light text-professional-gray-dark border-professional-gray-dark";
+      case "REOPENED": return "bg-professional-red-light text-professional-red-dark border-professional-red-dark";
+      case "BLOCKED": return "bg-professional-red-light text-professional-red-dark border-professional-red-dark";
+      default: return "bg-professional-gray-light text-professional-gray-dark border-professional-gray-dark";
     }
   };
 
   const getTaskTypeColor = (taskType: string) => {
     switch (taskType) {
-      case "BRD": return "bg-jira-blue-light text-blue-800 border-blue-200";
-      case "EPIC": return "bg-jira-purple-light text-purple-800 border-purple-200";
-      case "STORY": return "bg-jira-green-light text-green-800 border-green-200";
-      case "TASK": return "bg-jira-gray-light text-gray-800 border-gray-200";
-      case "BUG": return "bg-jira-red-light text-red-800 border-red-200";
-      case "SUB_TASK": return "bg-jira-orange-light text-orange-800 border-orange-200";
-      default: return "bg-jira-gray-light text-gray-800 border-gray-200";
+      case "BRD": return "bg-professional-blue-light text-professional-blue-dark border-professional-blue-dark";
+      case "EPIC": return "bg-professional-purple-light text-professional-purple-dark border-professional-purple-dark";
+      case "STORY": return "bg-professional-green-light text-professional-green-dark border-professional-green-dark";
+      case "TASK": return "bg-professional-gray-light text-professional-gray-dark border-professional-gray-dark";
+      case "BUG": return "bg-professional-red-light text-professional-red-dark border-professional-red-dark";
+      case "SUB_TASK": return "bg-professional-orange-light text-professional-orange-dark border-professional-orange-dark";
+      default: return "bg-professional-gray-light text-professional-gray-dark border-professional-gray-dark";
     }
   };
 
   const getPriorityColor = (priority: string) => {
     const normalizedPriority = priority.toLowerCase();
     switch (normalizedPriority) {
-      case "critical": return "bg-jira-red-light text-red-800 border-red-200";
+      case "critical": return "bg-professional-red-light text-professional-red-dark border-professional-red-dark";
       case "high": 
-      case "hig": return "bg-jira-orange-light text-orange-800 border-orange-200";
-      case "medium": return "bg-jira-orange-light text-yellow-800 border-yellow-200";
-      case "low": return "bg-jira-green-light text-green-800 border-green-200";
-      default: return "bg-jira-gray-light text-gray-800 border-gray-200";
+      case "hig": return "bg-professional-orange-light text-professional-orange-dark border-professional-orange-dark";
+      case "medium": return "bg-professional-yellow-light text-professional-yellow-dark border-professional-yellow-dark";
+      case "low": return "bg-professional-green-light text-professional-green-dark border-professional-green-dark";
+      default: return "bg-professional-gray-light text-professional-gray-dark border-professional-gray-dark";
     }
   };
 
@@ -201,12 +229,16 @@ export const Tasks = () => {
     ));
   };
 
+  // Check if user can create tasks - exclude TEST roles
+  const canCreateTasks = user?.functionalGroup && 
+    ["ADMIN", "MANAGER", "DEV_MANAGER", "BUSINESS_ANALYST", "DEV_LEAD"].includes(user.functionalGroup);
+
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex items-center justify-center h-64 bg-gradient-to-br from-professional-blue/5 to-professional-cyan/5">
         <div className="text-center">
-          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-jira-blue" />
-          <p className="text-slate-600">Loading tasks...</p>
+          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-professional-blue" />
+          <p className="text-professional-slate-dark">Loading tasks...</p>
         </div>
       </div>
     );
@@ -214,29 +246,29 @@ export const Tasks = () => {
 
   if (error) {
     return (
-      <div className="text-center py-12">
-        <div className="text-red-600 mb-4">
+      <div className="text-center py-12 bg-gradient-to-br from-professional-blue/5 to-professional-cyan/5">
+        <div className="text-professional-red mb-4">
           <AlertCircle className="h-12 w-12 mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">Failed to load tasks</h3>
-          <p className="text-slate-600 mb-4">{error.message}</p>
+          <p className="text-professional-slate-dark mb-4">{error.message}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 bg-background min-h-screen">
-      {/* Header with Jira-inspired styling */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0 bg-card border-b border-border p-6">
+    <div className="space-y-6 bg-gradient-to-br from-professional-blue/5 to-professional-cyan/5 min-h-screen">
+      {/* Header with Professional styling */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0 bg-white/80 backdrop-blur-md border-b border-professional-slate/20 p-6 shadow-professional">
         <div>
-          <h1 className="text-3xl font-bold text-foreground font-inter">Tasks</h1>
-          <p className="text-muted-foreground mt-1">Manage and track your project tasks</p>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-professional-blue to-professional-cyan bg-clip-text text-transparent">Tasks</h1>
+          <p className="text-professional-slate-dark mt-1">Manage and track your project tasks</p>
         </div>
 
         <div className="flex items-center space-x-2">
-          {user?.functionalGroup && ["ADMIN", "MANAGER","DEV_MANAGER","TEST_MANAGER", "BUSINESS_ANALYST", "DEV_LEAD","TEST_LEAD"].includes(user.functionalGroup) && (
+          {canCreateTasks && (
             <Button 
-              className="bg-jira-blue hover:bg-jira-blue/90 text-white"
+              className="bg-gradient-to-r from-professional-blue to-professional-cyan hover:from-professional-blue-dark hover:to-professional-cyan-dark text-white shadow-professional"
               onClick={() => setIsCreateModalOpen(true)}
               data-testid="add-task-button"
             >
@@ -248,15 +280,15 @@ export const Tasks = () => {
       </div>
 
       <div className="px-6">
-        {/* Search and Filters with Jira styling */}
+        {/* Search and Filters with Professional styling */}
         <div className="space-y-4">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-professional-slate-dark h-4 w-4" />
             <Input
               placeholder="Search tasks by name or task number..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-card border-border"
+              className="pl-10 bg-white/80 backdrop-blur-md border-professional-slate/30 focus:border-professional-blue focus:ring-professional-blue/20"
             />
           </div>
 
@@ -287,7 +319,7 @@ export const Tasks = () => {
                 variant="ghost"
                 size="sm"
                 onClick={clearAllFilters}
-                className="text-muted-foreground hover:text-foreground"
+                className="text-professional-slate-dark hover:text-professional-blue hover:bg-professional-blue/10"
               >
                 <X className="h-4 w-4 mr-1" />
                 Clear all ({activeFiltersCount})
@@ -296,155 +328,185 @@ export const Tasks = () => {
           </div>
 
           {/* Results Count */}
-          <div className="text-sm text-muted-foreground">
+          <div className="text-sm text-professional-slate-dark">
             Showing {filteredTasks.length} of {tasksData.length} tasks
           </div>
         </div>
 
-        {/* Task Stats with Jira-inspired cards */}
+        {/* Task Stats with Professional cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 my-6">
-          <Card className="jira-card">
+          <Card className="bg-white/80 backdrop-blur-md border-professional-slate/20 shadow-professional hover:shadow-professional-lg transition-all duration-300">
             <CardContent className="p-6">
-              <div className="text-2xl font-bold text-foreground">{tasksApiData?.totalTasksCount || 0}</div>
-              <p className="text-sm text-muted-foreground">Total Tasks</p>
+              <div className="text-2xl font-bold bg-gradient-to-r from-professional-blue to-professional-cyan bg-clip-text text-transparent">{tasksApiData?.totalTasksCount || 0}</div>
+              <p className="text-sm text-professional-slate-dark">Total Tasks</p>
             </CardContent>
           </Card>
-          <Card className="jira-card">
+          <Card className="bg-white/80 backdrop-blur-md border-professional-slate/20 shadow-professional hover:shadow-professional-lg transition-all duration-300">
             <CardContent className="p-6">
-              <div className="text-2xl font-bold text-jira-blue">
+              <div className="text-2xl font-bold text-professional-blue">
                 {tasksData.filter(t => t.status === "DEVELOPMENT" || t.status === "ANALYSIS").length}
               </div>
-              <p className="text-sm text-muted-foreground">In Development</p>
+              <p className="text-sm text-professional-slate-dark">In Development</p>
             </CardContent>
           </Card>
-          <Card className="jira-card">
+          <Card className="bg-white/80 backdrop-blur-md border-professional-slate/20 shadow-professional hover:shadow-professional-lg transition-all duration-300">
             <CardContent className="p-6">
-              <div className="text-2xl font-bold text-jira-orange">
+              <div className="text-2xl font-bold text-professional-orange">
                 {tasksData.filter(t => t.status === "UAT_TESTING").length}
               </div>
-              <p className="text-sm text-muted-foreground">In Testing</p>
+              <p className="text-sm text-professional-slate-dark">In Testing</p>
             </CardContent>
           </Card>
-          <Card className="jira-card">
+          <Card className="bg-white/80 backdrop-blur-md border-professional-slate/20 shadow-professional hover:shadow-professional-lg transition-all duration-300">
             <CardContent className="p-6">
-              <div className="text-2xl font-bold text-jira-green">
+              <div className="text-2xl font-bold text-professional-green">
                 {tasksData.filter(t => t.status === "COMPLETED").length}
               </div>
-              <p className="text-sm text-muted-foreground">Completed</p>
+              <p className="text-sm text-professional-slate-dark">Completed</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Tasks Table with Jira styling */}
-        <Card className="jira-card">
+        {/* Tasks Table with Professional styling */}
+        <Card className="bg-white/80 backdrop-blur-md border-professional-slate/20 shadow-professional-lg">
           <CardHeader>
-            <CardTitle className="text-foreground font-inter">All Tasks</CardTitle>
+            <CardTitle className="bg-gradient-to-r from-professional-blue to-professional-cyan bg-clip-text text-transparent">All Tasks</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {filteredTasks.map((task) => (
-                <div 
-                  key={task.id} 
-                  className={cn(
-                    "flex items-center justify-between p-4 rounded-lg transition-all duration-200 border border-border",
-                    task.status === "COMPLETED" ? "bg-jira-green-light/50" : 
-                    task.status === "BLOCKED" ? "bg-jira-red-light/50" : 
-                    "bg-card hover:bg-accent/50"
-                  )}
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-1">
-                      <div className="bg-jira-gray text-white px-2 py-1 rounded font-mono text-xs font-bold border border-border">
-                        {task.taskNumber}
-                      </div>
-                      <h3 className="font-medium text-foreground font-inter">{task.name}</h3>
-                    </div>
-                    {task.description && (
-                      <p className="text-sm text-muted-foreground mb-2">{task.description}</p>
+              {filteredTasks.map((task) => {
+                const isAssigned = isTaskAssignedToUser(task);
+                const canEdit = canEditTask(task);
+                return (
+                  <div 
+                    key={task.id} 
+                    className={cn(
+                      "flex items-center justify-between p-4 rounded-lg transition-all duration-200 border",
+                      // Highlight assigned tasks
+                      isAssigned 
+                        ? "border-professional-blue/50 bg-gradient-to-r from-professional-blue/10 to-professional-cyan/5 shadow-professional ring-2 ring-professional-blue/20" 
+                        : "border-professional-slate/20",
+                      task.status === "COMPLETED" ? "bg-professional-green/5" : 
+                      task.status === "BLOCKED" ? "bg-professional-red/5" : 
+                      "bg-white/50 hover:bg-professional-blue/5"
                     )}
-                    {/* Parent Task Link */}
-                    {task.parentTaskTitle && (
-                      <div className="flex items-center gap-2 mb-2">
-                        <Link className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">
-                          Parent: {task.parentTaskFormattedNumber} - {task.parentTaskTitle}
-                        </span>
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-1">
+                        <div className="bg-gradient-to-r from-professional-navy to-professional-blue text-white px-2 py-1 rounded font-mono text-xs font-bold shadow-sm">
+                          {task.taskNumber}
+                        </div>
+                        <h3 className="font-medium text-professional-navy">{task.name}</h3>
+                        {isAssigned && (
+                          <Badge className="bg-professional-green/10 text-professional-green-dark border-professional-green/20 text-xs">
+                            Assigned to You
+                          </Badge>
+                        )}
                       </div>
-                    )}
-                    <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                      <span className="flex items-center">
-                        <Calendar className="h-3 w-3 mr-1" />
-                        Received: {format(new Date(task.receivedDate), "MMM dd, yyyy")}
-                      </span>
-                      <span className="flex items-center">
-                        <Calendar className="h-3 w-3 mr-1" />
-                        Start: {format(new Date(task.developmentStartDate), "MMM dd, yyyy")}
-                      </span>
-                      <span className="flex items-center">
-                        <Calendar className="h-3 w-3 mr-1" />
-                        Due: {format(new Date(task.dueDate), "MMM dd, yyyy")}
-                      </span>
-                      <span className="flex items-center">
-                        <Users className="h-3 w-3 mr-1" />
-                        {task.assignedTeammates.join(", ")}
-                      </span>
-                      {task.projectName && (
-                        <span className="text-xs bg-jira-blue-light text-blue-800 px-2 py-1 rounded border border-blue-200">
-                          {task.projectName}
-                        </span>
+                      {task.description && (
+                        <p className="text-sm text-professional-slate-dark mb-2 line-clamp-2">{task.description}</p>
                       )}
+                      {/* Parent Task Link */}
+                      {task.parentTaskTitle && (
+                        <div className="flex items-center gap-2 mb-2">
+                          <Link className="h-3 w-3 text-professional-slate-dark" />
+                          <span className="text-xs text-professional-slate-dark">
+                            Parent: {task.parentTaskFormattedNumber} - {task.parentTaskTitle}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex flex-wrap items-center gap-4 text-sm text-professional-slate-dark">
+                        <span className="flex items-center">
+                          <Calendar className="h-3 w-3 mr-1" />
+                          Received: {format(new Date(task.receivedDate), "MMM dd, yyyy")}
+                        </span>
+                        <span className="flex items-center">
+                          <Calendar className="h-3 w-3 mr-1" />
+                          Start: {format(new Date(task.developmentStartDate), "MMM dd, yyyy")}
+                        </span>
+                        <span className="flex items-center">
+                          <Calendar className="h-3 w-3 mr-1" />
+                          Due: {format(new Date(task.dueDate), "MMM dd, yyyy")}
+                        </span>
+                        {/* Display developer and tester names */}
+                        {(task.developerName || task.testerName) && (
+                          <span className="flex items-center">
+                            <Users className="h-3 w-3 mr-1" />
+                            {[task.developerName, task.testerName].filter(Boolean).join(", ")}
+                          </span>
+                        )}
+                        {task.projectName && (
+                          <span className="text-xs bg-professional-cyan/10 text-professional-cyan-dark px-2 py-1 rounded border border-professional-cyan/20">
+                            {task.projectName}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Badge className={getTaskTypeColor(task.taskType)}>
+                        {task.taskType}
+                      </Badge>
+                      <Badge className={getPriorityColor(task.priority)}>
+                        {task.priority}
+                      </Badge>
+                      <Badge className={getStatusColor(task.status)}>
+                        {task.status}
+                      </Badge>
+                      <div className="flex items-center space-x-1">
+                        {/* Edit button - based on new permission logic */}
+                        {canEdit ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleViewTask(task)}
+                            className="hover:bg-professional-blue/10 text-professional-blue hover:text-professional-blue-dark"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            disabled
+                            className="opacity-50 cursor-not-allowed"
+                            title="You don't have permission to edit this task"
+                          >
+                            <Lock className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {/* Delete button - only for admins and managers */}
+                        {user?.functionalGroup && ["ADMIN", "MANAGER", "BUSINESS_ANALYST"].includes(user.functionalGroup) && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="sm" className="hover:bg-professional-red/10 text-professional-red hover:text-professional-red-dark">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent className="bg-white/95 backdrop-blur-md border-professional-slate/20">
+                              <AlertDialogHeader>
+                                <AlertDialogTitle className="text-professional-navy">Delete Task</AlertDialogTitle>
+                                <AlertDialogDescription className="text-professional-slate-dark">
+                                  Are you sure you want to delete task "{task.name}"? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel className="hover:bg-professional-slate/10">Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteTask(task)}
+                                  className="bg-professional-red hover:bg-professional-red-dark text-white"
+                                  disabled={deleteTaskMutation.isPending}
+                                >
+                                  {deleteTaskMutation.isPending ? "Deleting..." : "Delete"}
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Badge className={getTaskTypeColor(task.taskType)}>
-                      {task.taskType}
-                    </Badge>
-                    <Badge className={getPriorityColor(task.priority)}>
-                      {task.priority}
-                    </Badge>
-                    <Badge className={getStatusColor(task.status)}>
-                      {task.status}
-                    </Badge>
-                    <div className="flex items-center space-x-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleViewTask(task)}
-                        className="hover:bg-accent"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      {user?.functionalGroup && ["ADMIN", "MANAGER", "BUSINESS_ANALYST"].includes(user.functionalGroup) && (
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm" className="hover:bg-destructive/10">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Task</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete task "{task.name}"? This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDeleteTask(task)}
-                                className="bg-destructive hover:bg-destructive/90"
-                                disabled={deleteTaskMutation.isPending}
-                              >
-                                {deleteTaskMutation.isPending ? "Deleting..." : "Delete"}
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>
@@ -466,10 +528,10 @@ export const Tasks = () => {
         />
 
         {filteredTasks.length === 0 && !isLoading && (
-          <div className="text-center py-12">
-            <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-foreground mb-2">No tasks found</h3>
-            <p className="text-muted-foreground">Try adjusting your search criteria or add a new task.</p>
+          <div className="text-center py-12 bg-white/80 backdrop-blur-md rounded-xl border border-professional-slate/20">
+            <Users className="h-12 w-12 text-professional-slate-dark mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-professional-navy mb-2">No tasks found</h3>
+            <p className="text-professional-slate-dark">Try adjusting your search criteria or add a new task.</p>
           </div>
         )}
       </div>
