@@ -24,6 +24,8 @@ export interface BackendTask {
   projectName: string;
   documentPath?: string;
   commitId?: string;
+  developmentDueHours?: number;
+  testingDueHours?: number;
 }
 
 export interface TasksApiResponse {

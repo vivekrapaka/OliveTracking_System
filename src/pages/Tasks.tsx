@@ -16,7 +16,11 @@ import {
   Calendar,
   Users,
   Link,
-  Lock
+  Lock,
+  AlertTriangle,
+  Code,
+  TestTube,
+  Timer
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -51,6 +55,8 @@ interface Task {
   projectName: string;
   documentPath?: string;
   commitId?: string;
+  developmentDueHours?: number;
+  testingDueHours?: number;
 }
 
 export const Tasks = () => {
@@ -89,7 +95,9 @@ export const Tasks = () => {
       projectId: backendTask.projectId,
       projectName: backendTask.projectName,
       documentPath: backendTask.documentPath,
-      commitId: backendTask.commitId
+      commitId: backendTask.commitId,
+      developmentDueHours: backendTask.developmentDueHours,
+      testingDueHours: backendTask.testingDueHours
     };
   };
 
@@ -105,14 +113,15 @@ export const Tasks = () => {
   const teammates = teammatesApiData?.teammates?.map(teammate => ({
     id: teammate.id,
     name: teammate.name,
-    role: teammate.role
+    role: teammate.role,
+    functionalGroup: teammate.functionalGroup
   })) || [];
 
-  // Check if current user can edit a task
+  // Check if current user can edit a task based on new logic
   const canEditTask = (task: Task): boolean => {
     if (!user?.fullName || !user?.functionalGroup) return false;
     
-    // Managers and analysts can edit all tasks
+    // Manager roles can edit all tasks
     const managerRoles = ["ADMIN", "MANAGER", "DEV_MANAGER", "TEST_MANAGER", "DEV_LEAD", "TEST_LEAD", "BUSINESS_ANALYST"];
     if (managerRoles.includes(user.functionalGroup)) {
       return true;
@@ -175,10 +184,10 @@ export const Tasks = () => {
       case "BACKLOG": return "bg-professional-gray-light text-professional-gray-dark border-professional-gray-dark";
       case "ANALYSIS": return "bg-professional-blue-light text-professional-blue-dark border-professional-blue-dark";
       case "DEVELOPMENT": return "bg-professional-purple-light text-professional-purple-dark border-professional-purple-dark";
-      case "SIT_TESTING": return "bg-professional-orange-light text-professional-orange-dark border-professional-orange-dark";
-      case "SIT_FAILED": return "bg-professional-red-light text-professional-red-dark border-professional-red-dark";
+      case "CODE_REVIEW": return "bg-professional-indigo-light text-professional-indigo-dark border-professional-indigo-dark";
       case "UAT_TESTING": return "bg-professional-orange-light text-professional-orange-dark border-professional-orange-dark";
       case "UAT_FAILED": return "bg-professional-red-light text-professional-red-dark border-professional-red-dark";
+      case "READY_FOR_PREPROD": return "bg-professional-cyan-light text-professional-cyan-dark border-professional-cyan-dark";
       case "PREPROD": return "bg-professional-indigo-light text-professional-indigo-dark border-professional-indigo-dark";
       case "PROD": return "bg-professional-green-light text-professional-green-dark border-professional-green-dark";
       case "COMPLETED": return "bg-professional-green-light text-professional-green-dark border-professional-green-dark";
@@ -197,6 +206,7 @@ export const Tasks = () => {
       case "TASK": return "bg-professional-gray-light text-professional-gray-dark border-professional-gray-dark";
       case "BUG": return "bg-professional-red-light text-professional-red-dark border-professional-red-dark";
       case "SUB_TASK": return "bg-professional-orange-light text-professional-orange-dark border-professional-orange-dark";
+      case "ANALYSIS_TASK": return "bg-professional-cyan-light text-professional-cyan-dark border-professional-cyan-dark";
       default: return "bg-professional-gray-light text-professional-gray-dark border-professional-gray-dark";
     }
   };
@@ -204,9 +214,8 @@ export const Tasks = () => {
   const getPriorityColor = (priority: string) => {
     const normalizedPriority = priority.toLowerCase();
     switch (normalizedPriority) {
-      case "critical": return "bg-professional-red-light text-professional-red-dark border-professional-red-dark";
-      case "high": 
-      case "hig": return "bg-professional-orange-light text-professional-orange-dark border-professional-orange-dark";
+      case "critical": return "bg-professional-red text-white border-professional-red-dark font-bold";
+      case "high": return "bg-professional-orange-light text-professional-orange-dark border-professional-orange-dark";
       case "medium": return "bg-professional-yellow-light text-professional-yellow-dark border-professional-yellow-dark";
       case "low": return "bg-professional-green-light text-professional-green-dark border-professional-green-dark";
       default: return "bg-professional-gray-light text-professional-gray-dark border-professional-gray-dark";
@@ -231,7 +240,7 @@ export const Tasks = () => {
 
   // Check if user can create tasks - exclude TEST roles
   const canCreateTasks = user?.functionalGroup && 
-    ["ADMIN", "MANAGER", "DEV_MANAGER", "BUSINESS_ANALYST", "DEV_LEAD"].includes(user.functionalGroup);
+    !["TEST_LEAD", "TESTER", "TEST_MANAGER"].includes(user.functionalGroup);
 
   if (isLoading) {
     return (
@@ -261,14 +270,16 @@ export const Tasks = () => {
       {/* Header with Professional styling */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0 bg-white/80 backdrop-blur-md border-b border-professional-slate/20 p-6 shadow-professional">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-professional-blue to-professional-cyan bg-clip-text text-transparent">Tasks</h1>
-          <p className="text-professional-slate-dark mt-1">Manage and track your project tasks</p>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-professional-blue to-professional-cyan bg-clip-text text-transparent">
+            Task Management
+          </h1>
+          <p className="text-professional-slate-dark mt-1">Manage and track your project tasks efficiently</p>
         </div>
 
         <div className="flex items-center space-x-2">
           {canCreateTasks && (
             <Button 
-              className="bg-gradient-to-r from-professional-blue to-professional-cyan hover:from-professional-blue-dark hover:to-professional-cyan-dark text-white shadow-professional"
+              className="professional-button shadow-professional-lg"
               onClick={() => setIsCreateModalOpen(true)}
               data-testid="add-task-button"
             >
@@ -288,7 +299,7 @@ export const Tasks = () => {
               placeholder="Search tasks by name or task number..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-white/80 backdrop-blur-md border-professional-slate/30 focus:border-professional-blue focus:ring-professional-blue/20"
+              className="pl-10 professional-input"
             />
           </div>
 
@@ -328,130 +339,200 @@ export const Tasks = () => {
           </div>
 
           {/* Results Count */}
-          <div className="text-sm text-professional-slate-dark">
-            Showing {filteredTasks.length} of {tasksData.length} tasks
+          <div className="text-sm text-professional-slate-dark bg-white/60 px-3 py-2 rounded-lg border border-professional-slate/20">
+            Showing <span className="font-semibold text-professional-blue">{filteredTasks.length}</span> of <span className="font-semibold">{tasksData.length}</span> tasks
           </div>
         </div>
 
         {/* Task Stats with Professional cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 my-6">
-          <Card className="bg-white/80 backdrop-blur-md border-professional-slate/20 shadow-professional hover:shadow-professional-lg transition-all duration-300">
+          <Card className="professional-card">
             <CardContent className="p-6">
-              <div className="text-2xl font-bold bg-gradient-to-r from-professional-blue to-professional-cyan bg-clip-text text-transparent">{tasksApiData?.totalTasksCount || 0}</div>
-              <p className="text-sm text-professional-slate-dark">Total Tasks</p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-2xl font-bold bg-gradient-to-r from-professional-blue to-professional-cyan bg-clip-text text-transparent">
+                    {tasksApiData?.totalTasksCount || 0}
+                  </div>
+                  <p className="text-sm text-professional-slate-dark">Total Tasks</p>
+                </div>
+                <div className="h-12 w-12 bg-gradient-to-br from-professional-blue/20 to-professional-cyan/20 rounded-lg flex items-center justify-center">
+                  <Users className="h-6 w-6 text-professional-blue" />
+                </div>
+              </div>
             </CardContent>
           </Card>
-          <Card className="bg-white/80 backdrop-blur-md border-professional-slate/20 shadow-professional hover:shadow-professional-lg transition-all duration-300">
+          
+          <Card className="professional-card">
             <CardContent className="p-6">
-              <div className="text-2xl font-bold text-professional-blue">
-                {tasksData.filter(t => t.status === "DEVELOPMENT" || t.status === "ANALYSIS").length}
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-2xl font-bold text-professional-blue">
+                    {tasksData.filter(t => t.status === "DEVELOPMENT" || t.status === "ANALYSIS").length}
+                  </div>
+                  <p className="text-sm text-professional-slate-dark">In Development</p>
+                </div>
+                <div className="h-12 w-12 bg-gradient-to-br from-professional-purple/20 to-professional-blue/20 rounded-lg flex items-center justify-center">
+                  <Code className="h-6 w-6 text-professional-purple" />
+                </div>
               </div>
-              <p className="text-sm text-professional-slate-dark">In Development</p>
             </CardContent>
           </Card>
-          <Card className="bg-white/80 backdrop-blur-md border-professional-slate/20 shadow-professional hover:shadow-professional-lg transition-all duration-300">
+          
+          <Card className="professional-card">
             <CardContent className="p-6">
-              <div className="text-2xl font-bold text-professional-orange">
-                {tasksData.filter(t => t.status === "UAT_TESTING").length}
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-2xl font-bold text-professional-orange">
+                    {tasksData.filter(t => t.status === "UAT_TESTING" || t.status === "UAT_FAILED").length}
+                  </div>
+                  <p className="text-sm text-professional-slate-dark">In Testing</p>
+                </div>
+                <div className="h-12 w-12 bg-gradient-to-br from-professional-orange/20 to-professional-red/20 rounded-lg flex items-center justify-center">
+                  <TestTube className="h-6 w-6 text-professional-orange" />
+                </div>
               </div>
-              <p className="text-sm text-professional-slate-dark">In Testing</p>
             </CardContent>
           </Card>
-          <Card className="bg-white/80 backdrop-blur-md border-professional-slate/20 shadow-professional hover:shadow-professional-lg transition-all duration-300">
+          
+          <Card className="professional-card">
             <CardContent className="p-6">
-              <div className="text-2xl font-bold text-professional-green">
-                {tasksData.filter(t => t.status === "COMPLETED").length}
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-2xl font-bold text-professional-green">
+                    {tasksData.filter(t => t.status === "COMPLETED").length}
+                  </div>
+                  <p className="text-sm text-professional-slate-dark">Completed</p>
+                </div>
+                <div className="h-12 w-12 bg-gradient-to-br from-professional-green/20 to-professional-cyan/20 rounded-lg flex items-center justify-center">
+                  <Clock className="h-6 w-6 text-professional-green" />
+                </div>
               </div>
-              <p className="text-sm text-professional-slate-dark">Completed</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Tasks Table with Professional styling */}
-        <Card className="bg-white/80 backdrop-blur-md border-professional-slate/20 shadow-professional-lg">
-          <CardHeader>
-            <CardTitle className="bg-gradient-to-r from-professional-blue to-professional-cyan bg-clip-text text-transparent">All Tasks</CardTitle>
+        {/* Tasks Table with Enhanced Professional styling */}
+        <Card className="professional-card shadow-professional-xl">
+          <CardHeader className="bg-gradient-to-r from-professional-blue/10 to-professional-cyan/10 border-b border-professional-slate/20">
+            <CardTitle className="bg-gradient-to-r from-professional-blue to-professional-cyan bg-clip-text text-transparent text-xl">
+              All Tasks
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
+          <CardContent className="p-0">
+            <div className="space-y-0">
               {filteredTasks.map((task) => {
                 const isAssigned = isTaskAssignedToUser(task);
                 const canEdit = canEditTask(task);
+                const isUatFailed = task.status === "UAT_FAILED";
+                
                 return (
                   <div 
                     key={task.id} 
                     className={cn(
-                      "flex items-center justify-between p-4 rounded-lg transition-all duration-200 border",
-                      // Highlight assigned tasks
-                      isAssigned 
-                        ? "border-professional-blue/50 bg-gradient-to-r from-professional-blue/10 to-professional-cyan/5 shadow-professional ring-2 ring-professional-blue/20" 
-                        : "border-professional-slate/20",
-                      task.status === "COMPLETED" ? "bg-professional-green/5" : 
-                      task.status === "BLOCKED" ? "bg-professional-red/5" : 
-                      "bg-white/50 hover:bg-professional-blue/5"
+                      "flex items-center justify-between p-6 transition-all duration-200 border-b border-professional-slate/10 hover:bg-gradient-to-r hover:from-professional-blue/5 hover:to-professional-cyan/5",
+                      // Highlight assigned tasks with a stronger gradient
+                      isAssigned && "bg-gradient-to-r from-professional-blue/10 to-professional-cyan/5 shadow-professional ring-2 ring-professional-blue/20 border-l-4 border-l-professional-blue",
+                      // Special styling for UAT failed tasks assigned to developers
+                      isUatFailed && isAssigned && "bg-gradient-to-r from-professional-red/10 to-professional-orange/5 ring-professional-red/30 border-l-professional-red",
+                      // Completed tasks
+                      task.status === "COMPLETED" && "bg-professional-green/5",
+                      // Blocked tasks
+                      task.status === "BLOCKED" && "bg-professional-red/5"
                     )}
                   >
                     <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-1">
-                        <div className="bg-gradient-to-r from-professional-navy to-professional-blue text-white px-2 py-1 rounded font-mono text-xs font-bold shadow-sm">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <div className="bg-gradient-to-r from-professional-navy to-professional-blue text-white px-3 py-1 rounded-lg font-mono text-xs font-bold shadow-professional">
                           {task.taskNumber}
                         </div>
-                        <h3 className="font-medium text-professional-navy">{task.name}</h3>
-                        {isAssigned && (
-                          <Badge className="bg-professional-green/10 text-professional-green-dark border-professional-green/20 text-xs">
-                            Assigned to You
-                          </Badge>
-                        )}
+                        <h3 className="font-semibold text-professional-navy text-lg">{task.name}</h3>
+                        
+                        {/* Status and Assignment Indicators */}
+                        <div className="flex items-center gap-2">
+                          {isAssigned && (
+                            <Badge className="bg-professional-green/10 text-professional-green-dark border-professional-green/20 text-xs font-medium">
+                              Assigned to You
+                            </Badge>
+                          )}
+                          {isUatFailed && (
+                            <div className="flex items-center gap-1 bg-professional-red/10 text-professional-red-dark px-2 py-1 rounded-full border border-professional-red/30">
+                              <AlertTriangle className="h-3 w-3" />
+                              <span className="text-xs font-medium">UAT Failed</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
+                      
                       {task.description && (
-                        <p className="text-sm text-professional-slate-dark mb-2 line-clamp-2">{task.description}</p>
+                        <p className="text-sm text-professional-slate-dark mb-3 line-clamp-2 leading-relaxed">{task.description}</p>
                       )}
+                      
                       {/* Parent Task Link */}
                       {task.parentTaskTitle && (
-                        <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center gap-2 mb-3">
                           <Link className="h-3 w-3 text-professional-slate-dark" />
-                          <span className="text-xs text-professional-slate-dark">
-                            Parent: {task.parentTaskFormattedNumber} - {task.parentTaskTitle}
+                          <span className="text-xs text-professional-slate-dark bg-professional-slate/10 px-2 py-1 rounded">
+                            Parent: <span className="font-medium">{task.parentTaskFormattedNumber}</span> - {task.parentTaskTitle}
                           </span>
                         </div>
                       )}
+                      
                       <div className="flex flex-wrap items-center gap-4 text-sm text-professional-slate-dark">
-                        <span className="flex items-center">
-                          <Calendar className="h-3 w-3 mr-1" />
+                        <span className="flex items-center gap-1 bg-white/60 px-2 py-1 rounded border border-professional-slate/20">
+                          <Calendar className="h-3 w-3" />
                           Received: {format(new Date(task.receivedDate), "MMM dd, yyyy")}
                         </span>
-                        <span className="flex items-center">
-                          <Calendar className="h-3 w-3 mr-1" />
+                        <span className="flex items-center gap-1 bg-white/60 px-2 py-1 rounded border border-professional-slate/20">
+                          <Calendar className="h-3 w-3" />
                           Start: {format(new Date(task.developmentStartDate), "MMM dd, yyyy")}
                         </span>
-                        <span className="flex items-center">
-                          <Calendar className="h-3 w-3 mr-1" />
+                        <span className="flex items-center gap-1 bg-white/60 px-2 py-1 rounded border border-professional-slate/20">
+                          <Calendar className="h-3 w-3" />
                           Due: {format(new Date(task.dueDate), "MMM dd, yyyy")}
                         </span>
-                        {/* Display developer and tester names */}
-                        {(task.developerName || task.testerName) && (
-                          <span className="flex items-center">
-                            <Users className="h-3 w-3 mr-1" />
-                            {[task.developerName, task.testerName].filter(Boolean).join(", ")}
+                        
+                        {/* Display Due Hours */}
+                        {(task.developmentDueHours || task.testingDueHours) && (
+                          <span className="flex items-center gap-1 bg-professional-blue/10 text-professional-blue-dark px-2 py-1 rounded border border-professional-blue/20">
+                            <Timer className="h-3 w-3" />
+                            Due: {task.developmentDueHours || 0}h dev, {task.testingDueHours || 0}h test
                           </span>
                         )}
+                        
+                        {/* Display Developer and Tester Names */}
+                        {(task.developerName || task.testerName) && (
+                          <span className="flex items-center gap-1 bg-professional-green/10 text-professional-green-dark px-2 py-1 rounded border border-professional-green/20">
+                            <Users className="h-3 w-3" />
+                            {[
+                              task.developerName && `Dev: ${task.developerName}`,
+                              task.testerName && `Test: ${task.testerName}`
+                            ].filter(Boolean).join(" | ")}
+                          </span>
+                        )}
+                        
                         {task.projectName && (
-                          <span className="text-xs bg-professional-cyan/10 text-professional-cyan-dark px-2 py-1 rounded border border-professional-cyan/20">
+                          <span className="text-xs bg-professional-cyan/10 text-professional-cyan-dark px-2 py-1 rounded border border-professional-cyan/20 font-medium">
                             {task.projectName}
                           </span>
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Badge className={getTaskTypeColor(task.taskType)}>
-                        {task.taskType}
-                      </Badge>
-                      <Badge className={getPriorityColor(task.priority)}>
-                        {task.priority}
-                      </Badge>
-                      <Badge className={getStatusColor(task.status)}>
-                        {task.status}
-                      </Badge>
+                    
+                    <div className="flex items-center space-x-3">
+                      <div className="flex flex-col items-end space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <Badge className={cn("font-medium", getTaskTypeColor(task.taskType))}>
+                            {task.taskType}
+                          </Badge>
+                          <Badge className={cn("font-medium", getPriorityColor(task.priority))}>
+                            {task.priority}
+                          </Badge>
+                          <Badge className={cn("font-medium", getStatusColor(task.status))}>
+                            {task.status.replace(/_/g, ' ')}
+                          </Badge>
+                        </div>
+                      </div>
+                      
                       <div className="flex items-center space-x-1">
                         {/* Edit button - based on new permission logic */}
                         {canEdit ? (
@@ -459,7 +540,7 @@ export const Tasks = () => {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleViewTask(task)}
-                            className="hover:bg-professional-blue/10 text-professional-blue hover:text-professional-blue-dark"
+                            className="hover:bg-professional-blue/10 text-professional-blue hover:text-professional-blue-dark shadow-sm"
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
@@ -474,15 +555,16 @@ export const Tasks = () => {
                             <Lock className="h-4 w-4" />
                           </Button>
                         )}
+                        
                         {/* Delete button - only for admins and managers */}
                         {user?.functionalGroup && ["ADMIN", "MANAGER", "BUSINESS_ANALYST"].includes(user.functionalGroup) && (
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="sm" className="hover:bg-professional-red/10 text-professional-red hover:text-professional-red-dark">
+                              <Button variant="ghost" size="sm" className="hover:bg-professional-red/10 text-professional-red hover:text-professional-red-dark shadow-sm">
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </AlertDialogTrigger>
-                            <AlertDialogContent className="bg-white/95 backdrop-blur-md border-professional-slate/20">
+                            <AlertDialogContent className="professional-card">
                               <AlertDialogHeader>
                                 <AlertDialogTitle className="text-professional-navy">Delete Task</AlertDialogTitle>
                                 <AlertDialogDescription className="text-professional-slate-dark">
@@ -511,14 +593,13 @@ export const Tasks = () => {
           </CardContent>
         </Card>
 
-        {/* Add Task Modal */}
+        {/* Modals */}
         <AddTaskDialog 
           isOpen={isCreateModalOpen} 
           onClose={() => setIsCreateModalOpen(false)}   
           teammates={teammates}
         />
 
-        {/* Task Details Modal */}
         <TaskDetailsDialog 
           isOpen={isDetailsModalOpen} 
           onClose={() => setIsDetailsModalOpen(false)} 
@@ -528,7 +609,7 @@ export const Tasks = () => {
         />
 
         {filteredTasks.length === 0 && !isLoading && (
-          <div className="text-center py-12 bg-white/80 backdrop-blur-md rounded-xl border border-professional-slate/20">
+          <div className="text-center py-12 professional-card">
             <Users className="h-12 w-12 text-professional-slate-dark mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-professional-navy mb-2">No tasks found</h3>
             <p className="text-professional-slate-dark">Try adjusting your search criteria or add a new task.</p>

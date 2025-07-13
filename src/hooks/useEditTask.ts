@@ -11,10 +11,13 @@ interface EditTaskData {
   dueDate: string;
   receivedDate: string;
   developmentStartDate: string;
-  assignedTeammateNames: string[];
+  developerIds: number[];
+  testerIds: number[];
   priority: string;
   commitId?: string;
   comment?: string;
+  developmentDueHours?: number;
+  testingDueHours?: number;
 }
 
 interface EditTaskRequest {
