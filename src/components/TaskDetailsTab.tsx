@@ -7,11 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, AlertTriangle } from "lucide-react";
+import { CalendarIcon, AlertTriangle, Code, TestTube, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useEditTask } from "@/hooks/useEditTask";
 import { useAuth } from "@/contexts/AuthContext";
+import { useProjectTeammates } from "@/hooks/useProjectTeammates";
 import { getAvailableStatuses, requiresCommitId, requiresComment } from "@/utils/statusWorkflowUtils";
 import { DisciplineBasedTeammateSelector } from "./DisciplineBasedTeammateSelector";
 
@@ -64,15 +65,26 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
   const [priority, setPriority] = useState(task.priority);
   const [commitId, setCommitId] = useState(task.commitId || "");
   const [comment, setComment] = useState("");
-  const [selectedDate, setSelectedDate] = useState<Date>();
-  const [selectedDevelopmentStartDate, setSelectedDevelopmentStartDate] = useState<Date>();
   const [selectedReceivedDate, setSelectedReceivedDate] = useState<Date>();
+  const [selectedDevelopmentStartDate, setSelectedDevelopmentStartDate] = useState<Date>();
   const [selectedDeveloperIds, setSelectedDeveloperIds] = useState<number[]>([]);
   const [selectedTesterIds, setSelectedTesterIds] = useState<number[]>([]);
   const [developmentDueHours, setDevelopmentDueHours] = useState(task.developmentDueHours || 0);
   const [testingDueHours, setTestingDueHours] = useState(task.testingDueHours || 0);
 
   const editTaskMutation = useEditTask();
+
+  // Fetch project teammates
+  const { data: projectTeammatesData } = useProjectTeammates(task.projectId);
+  const projectTeammates = projectTeammatesData?.teammates || [];
+
+  // Separate developers and testers from project teammates
+  const developers = projectTeammates.filter(t => 
+    t.functionalGroup === "DEVELOPER" || t.functionalGroup === "DEV_LEAD"
+  );
+  const testers = projectTeammates.filter(t => 
+    t.functionalGroup === "TESTER" || t.functionalGroup === "TEST_LEAD"
+  );
 
   // Get available status transitions based on current status and user functionalGroup
   const availableStatusTransitions = getAvailableStatuses(
@@ -106,14 +118,6 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
 
   const priorities = ["CRITICAL", "HIGH", "MEDIUM", "LOW"];
 
-  // Separate developers and testers
-  const developers = teammates.filter(t => 
-    t.functionalGroup === "DEVELOPER" || t.functionalGroup === "DEV_LEAD"
-  );
-  const testers = teammates.filter(t => 
-    t.functionalGroup === "TESTER" || t.functionalGroup === "TEST_LEAD"
-  );
-
   useEffect(() => {
     setTaskName(task.name);
     setDescription(task.description || "");
@@ -124,29 +128,28 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
     setDevelopmentDueHours(task.developmentDueHours || 0);
     setTestingDueHours(task.testingDueHours || 0);
     
-    if (task.dueDate) {
-      setSelectedDate(new Date(task.dueDate));
+    if (task.receivedDate) {
+      setSelectedReceivedDate(new Date(task.receivedDate));
     }
     if (task.developmentStartDate) {
       setSelectedDevelopmentStartDate(new Date(task.developmentStartDate));
     }
-    if (task.receivedDate) {
-      setSelectedReceivedDate(new Date(task.receivedDate));
-    }
 
-    // Set initial developer and tester selections based on task data
-    const devIds = teammates
-      .filter(t => (t.functionalGroup === "DEVELOPER" || t.functionalGroup === "DEV_LEAD") && 
-                   task.assignedTeammates.includes(t.name))
-      .map(t => t.id);
-    const testIds = teammates
-      .filter(t => (t.functionalGroup === "TESTER" || t.functionalGroup === "TEST_LEAD") && 
-                   task.assignedTeammates.includes(t.name))
-      .map(t => t.id);
-    
-    setSelectedDeveloperIds(devIds);
-    setSelectedTesterIds(testIds);
-  }, [task, teammates]);
+    // Set initial developer and tester selections based on project teammates
+    if (projectTeammates.length > 0) {
+      const devIds = projectTeammates
+        .filter(t => (t.functionalGroup === "DEVELOPER" || t.functionalGroup === "DEV_LEAD") && 
+                     task.assignedTeammates.includes(t.name))
+        .map(t => t.id);
+      const testIds = projectTeammates
+        .filter(t => (t.functionalGroup === "TESTER" || t.functionalGroup === "TEST_LEAD") && 
+                     task.assignedTeammates.includes(t.name))
+        .map(t => t.id);
+      
+      setSelectedDeveloperIds(devIds);
+      setSelectedTesterIds(testIds);
+    }
+  }, [task, projectTeammates]);
 
   const handleStatusChange = (newStatus: string) => {
     setCurrentStage(newStatus);
@@ -176,7 +179,6 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
       description: description,
       status: currentStage,
       taskType: taskType,
-      dueDate: selectedDate ? format(selectedDate, "yyyy-MM-dd") : task.dueDate,
       receivedDate: selectedReceivedDate ? format(selectedReceivedDate, "yyyy-MM-dd") : task.receivedDate,
       developmentStartDate: selectedDevelopmentStartDate ? format(selectedDevelopmentStartDate, "yyyy-MM-dd") : task.developmentStartDate,
       developerIds: selectedDeveloperIds,
@@ -199,289 +201,317 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
   };
 
   return (
-    <div className="grid gap-6 py-4 max-h-[70vh] overflow-y-auto professional-scrollbar">
+    <div className="space-y-6 max-h-[75vh] overflow-y-auto">
       {/* Header with Task Number */}
-      <div className="bg-gradient-to-r from-professional-blue/10 to-professional-cyan/10 p-4 rounded-lg border border-professional-blue/20">
-        <div className="flex items-center gap-3">
-          <div className="bg-gradient-to-r from-professional-navy to-professional-blue text-white px-3 py-1 rounded-lg font-mono text-sm font-bold shadow-professional">
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200 shadow-sm">
+        <div className="flex items-center gap-4">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-lg font-mono text-lg font-bold shadow-md">
             {task.taskNumber}
           </div>
-          <h2 className="text-lg font-semibold text-professional-navy">{task.name}</h2>
-          {task.status === "UAT_FAILED" && (
-            <div className="flex items-center gap-1 bg-professional-red/10 text-professional-red-dark px-2 py-1 rounded-full border border-professional-red/30">
-              <AlertTriangle className="h-4 w-4" />
-              <span className="text-xs font-medium">UAT Failed</span>
-            </div>
-          )}
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">{task.name}</h2>
+            <p className="text-sm text-gray-600">{task.projectName}</p>
+          </div>
         </div>
+        {task.status === 'UAT_FAILED' && (
+          <div className="mt-3 flex items-center gap-2 bg-red-50 text-red-700 px-3 py-2 rounded-lg border border-red-200">
+            <AlertTriangle className="h-5 w-5" />
+            <span className="font-medium">UAT Failed - Requires attention</span>
+          </div>
+        )}
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid lg:grid-cols-2 gap-8">
         {/* Left Column */}
-        <div className="space-y-4">
-          <div className="grid gap-2">
-            <Label htmlFor="taskName" className="text-professional-navy font-medium">Task Name</Label>
-            <Input
-              id="taskName"
-              value={taskName}
-              onChange={(e) => setTaskName(e.target.value)}
-              className="professional-input"
-            />
-          </div>
-          
-          <div className="grid gap-2">
-            <Label htmlFor="taskType" className="text-professional-navy font-medium">Task Type</Label>
-            <Select value={taskType} onValueChange={setTaskType}>
-              <SelectTrigger className="professional-input">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-white/95 backdrop-blur-md border-professional-slate/30">
-                {taskTypes.map((type) => (
-                  <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="grid gap-2">
-            <Label htmlFor="priority" className="text-professional-navy font-medium">Priority</Label>
-            <Select value={priority} onValueChange={setPriority}>
-              <SelectTrigger className="professional-input">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-white/95 backdrop-blur-md border-professional-slate/30">
-                {priorities.map((priorityOption) => (
-                  <SelectItem key={priorityOption} value={priorityOption}>{priorityOption}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <div className="space-y-6">
+          {/* Basic Information */}
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              Basic Information
+            </h3>
+            
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="taskName" className="text-sm font-medium text-gray-700">Task Name</Label>
+                <Input
+                  id="taskName"
+                  value={taskName}
+                  onChange={(e) => setTaskName(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="taskType" className="text-sm font-medium text-gray-700">Task Type</Label>
+                  <Select value={taskType} onValueChange={setTaskType}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {taskTypes.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <Label htmlFor="priority" className="text-sm font-medium text-gray-700">Priority</Label>
+                  <Select value={priority} onValueChange={setPriority}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {priorities.map((priorityOption) => (
+                        <SelectItem key={priorityOption} value={priorityOption}>{priorityOption}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Due Hours Section */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="grid gap-2">
-              <Label htmlFor="developmentDueHours" className="text-professional-navy font-medium">Dev Due Hours</Label>
-              <Input
-                id="developmentDueHours"
-                type="number"
-                value={developmentDueHours}
-                onChange={(e) => setDevelopmentDueHours(Number(e.target.value))}
-                className="professional-input"
-                min="0"
-                step="0.5"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="testingDueHours" className="text-professional-navy font-medium">Test Due Hours</Label>
-              <Input
-                id="testingDueHours"
-                type="number"
-                value={testingDueHours}
-                onChange={(e) => setTestingDueHours(Number(e.target.value))}
-                className="professional-input"
-                min="0"
-                step="0.5"
-              />
+          {/* Due Hours */}
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <Clock className="h-5 w-5 text-orange-500" />
+              Effort Estimation
+            </h3>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="developmentDueHours" className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                  <Code className="h-4 w-4 text-blue-500" />
+                  Development Hours
+                </Label>
+                <Input
+                  id="developmentDueHours"
+                  type="number"
+                  value={developmentDueHours}
+                  onChange={(e) => setDevelopmentDueHours(Number(e.target.value))}
+                  className="mt-1"
+                  min="0"
+                  step="0.5"
+                />
+              </div>
+              <div>
+                <Label htmlFor="testingDueHours" className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                  <TestTube className="h-4 w-4 text-green-500" />
+                  Testing Hours
+                </Label>
+                <Input
+                  id="testingDueHours"
+                  type="number"
+                  value={testingDueHours}
+                  onChange={(e) => setTestingDueHours(Number(e.target.value))}
+                  className="mt-1"
+                  min="0"
+                  step="0.5"
+                />
+              </div>
             </div>
           </div>
         </div>
 
         {/* Right Column */}
-        <div className="space-y-4">
-          {/* Date Fields */}
-          <div className="grid gap-2">
-            <Label className="text-professional-navy font-medium">Received Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "justify-start text-left font-normal professional-input",
-                    !selectedReceivedDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {selectedReceivedDate ? format(selectedReceivedDate, "PPP") : <span>Pick received date</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 bg-white/95 backdrop-blur-md border-professional-slate/30" align="start">
-                <Calendar
-                  mode="single"
-                  selected={selectedReceivedDate}
-                  onSelect={setSelectedReceivedDate}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
+        <div className="space-y-6">
+          {/* Dates */}
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <CalendarIcon className="h-5 w-5 text-purple-500" />
+              Important Dates
+            </h3>
+            
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium text-gray-700">Received Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal mt-1",
+                        !selectedReceivedDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {selectedReceivedDate ? format(selectedReceivedDate, "PPP") : <span>Pick received date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={selectedReceivedDate}
+                      onSelect={setSelectedReceivedDate}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-gray-700">Development Start Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal mt-1",
+                        !selectedDevelopmentStartDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {selectedDevelopmentStartDate ? format(selectedDevelopmentStartDate, "PPP") : <span>Pick development start date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={selectedDevelopmentStartDate}
+                      onSelect={setSelectedDevelopmentStartDate}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
           </div>
 
-          <div className="grid gap-2">
-            <Label className="text-professional-navy font-medium">Development Start Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "justify-start text-left font-normal professional-input",
-                    !selectedDevelopmentStartDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {selectedDevelopmentStartDate ? format(selectedDevelopmentStartDate, "PPP") : <span>Pick development start date</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 bg-white/95 backdrop-blur-md border-professional-slate/30" align="start">
-                <Calendar
-                  mode="single"
-                  selected={selectedDevelopmentStartDate}
-                  onSelect={setSelectedDevelopmentStartDate}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          <div className="grid gap-2">
-            <Label className="text-professional-navy font-medium">Due Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "justify-start text-left font-normal professional-input",
-                    !selectedDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 bg-white/95 backdrop-blur-md border-professional-slate/30" align="start">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={setSelectedDate}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
+          {/* Status */}
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Status Management</h3>
+            
+            <div>
+              <Label htmlFor="status" className="text-sm font-medium text-gray-700">Current Status</Label>
+              <Select 
+                value={currentStage} 
+                onValueChange={handleStatusChange}
+                disabled={isStatusDropdownDisabled}
+              >
+                <SelectTrigger className={cn("mt-1", isStatusDropdownDisabled && "opacity-50 cursor-not-allowed")}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableStatusTransitions.map((status) => (
+                    <SelectItem key={status.value} value={status.value}>{status.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {isStatusDropdownDisabled && (
+                <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded mt-2 border border-amber-200">
+                  No status changes available for your role at this stage.
+                </p>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-
-      {/* Status Section */}
-      <div className="grid gap-2">
-        <Label htmlFor="status" className="text-professional-navy font-medium">Status</Label>
-        <Select 
-          value={currentStage} 
-          onValueChange={handleStatusChange}
-          disabled={isStatusDropdownDisabled}
-        >
-          <SelectTrigger className={cn("professional-input", isStatusDropdownDisabled && "opacity-50 cursor-not-allowed")}>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="bg-white/95 backdrop-blur-md border-professional-slate/30">
-            {availableStatusTransitions.map((status) => (
-              <SelectItem key={status.value} value={status.value}>{status.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {isStatusDropdownDisabled && (
-          <p className="text-xs text-professional-slate-dark bg-professional-yellow/10 p-2 rounded border border-professional-yellow/30">
-            No status changes available for your role at this stage.
-          </p>
-        )}
       </div>
 
       {/* Team Assignment Section */}
-      <DisciplineBasedTeammateSelector
-        developers={developers}
-        testers={testers}
-        selectedDeveloperIds={selectedDeveloperIds}
-        selectedTesterIds={selectedTesterIds}
-        onDeveloperToggle={(id) => {
-          setSelectedDeveloperIds(prev => 
-            prev.includes(id) ? prev.filter(devId => devId !== id) : [...prev, id]
-          );
-        }}
-        onTesterToggle={(id) => {
-          setSelectedTesterIds(prev => 
-            prev.includes(id) ? prev.filter(testId => testId !== id) : [...prev, id]
-          );
-        }}
-      />
+      <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+        <h3 className="text-lg font-semibold text-gray-900 mb-6">Team Assignment</h3>
+        <DisciplineBasedTeammateSelector
+          developers={developers}
+          testers={testers}
+          selectedDeveloperIds={selectedDeveloperIds}
+          selectedTesterIds={selectedTesterIds}
+          onDeveloperToggle={(id) => {
+            setSelectedDeveloperIds(prev => 
+              prev.includes(id) ? prev.filter(devId => devId !== id) : [...prev, id]
+            );
+          }}
+          onTesterToggle={(id) => {
+            setSelectedTesterIds(prev => 
+              prev.includes(id) ? prev.filter(testId => testId !== id) : [...prev, id]
+            );
+          }}
+        />
+      </div>
 
       {/* Conditional Fields */}
-      {showCommentField && (
-        <div className="grid gap-2">
-          <Label htmlFor="comment" className="text-professional-navy font-medium">
-            Comment {isCommentRequired && <span className="text-professional-red">*</span>}
-          </Label>
-          <Textarea
-            id="comment"
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            placeholder={
-              isCommentRequired 
-                ? "A comment is required for this status transition..." 
-                : "Add a comment about this status change (optional)..."
-            }
-            className={cn(
-              "min-h-[80px] professional-input",
-              isCommentRequired && !comment.trim() && "border-professional-red focus:border-professional-red"
+      {(showCommentField || showCommitIdField) && (
+        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Additional Information</h3>
+          
+          <div className="space-y-4">
+            {showCommentField && (
+              <div>
+                <Label htmlFor="comment" className="text-sm font-medium text-gray-700">
+                  Comment {isCommentRequired && <span className="text-red-500">*</span>}
+                </Label>
+                <Textarea
+                  id="comment"
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  placeholder={
+                    isCommentRequired 
+                      ? "A comment is required for this status transition..." 
+                      : "Add a comment about this status change (optional)..."
+                  }
+                  className={cn(
+                    "min-h-[80px] mt-1",
+                    isCommentRequired && !comment.trim() && "border-red-300 focus:border-red-500"
+                  )}
+                />
+                {isCommentRequired && !comment.trim() && (
+                  <p className="text-xs text-red-600 bg-red-50 p-2 rounded mt-2 border border-red-200">
+                    A comment is required for this status transition.
+                  </p>
+                )}
+              </div>
             )}
-          />
-          {isCommentRequired && !comment.trim() && (
-            <p className="text-xs text-professional-red bg-professional-red/10 p-2 rounded border border-professional-red/30">
-              A comment is required for this status transition.
-            </p>
-          )}
-        </div>
-      )}
 
-      {showCommitIdField && (
-        <div className="grid gap-2">
-          <Label htmlFor="commitId" className="text-professional-navy font-medium">
-            Commit ID {isCommitIdRequired && <span className="text-professional-red">*</span>}
-          </Label>
-          <Input
-            id="commitId"
-            value={commitId}
-            onChange={(e) => setCommitId(e.target.value)}
-            placeholder="Enter commit ID (required for UAT Testing and Pre-Production)"
-            className={cn(
-              "professional-input",
-              isCommitIdRequired && !commitId.trim() && "border-professional-red focus:border-professional-red"
+            {showCommitIdField && (
+              <div>
+                <Label htmlFor="commitId" className="text-sm font-medium text-gray-700">
+                  Commit ID {isCommitIdRequired && <span className="text-red-500">*</span>}
+                </Label>
+                <Input
+                  id="commitId"
+                  value={commitId}
+                  onChange={(e) => setCommitId(e.target.value)}
+                  placeholder="Enter commit ID (required for UAT Testing and Pre-Production)"
+                  className={cn(
+                    "mt-1",
+                    isCommitIdRequired && !commitId.trim() && "border-red-300 focus:border-red-500"
+                  )}
+                />
+                {isCommitIdRequired && !commitId.trim() && (
+                  <p className="text-xs text-red-600 bg-red-50 p-2 rounded mt-2 border border-red-200">
+                    Commit ID is required when moving to UAT Testing or Pre-Production.
+                  </p>
+                )}
+              </div>
             )}
-          />
-          {isCommitIdRequired && !commitId.trim() && (
-            <p className="text-xs text-professional-red bg-professional-red/10 p-2 rounded border border-professional-red/30">
-              Commit ID is required when moving to UAT Testing or Pre-Production.
-            </p>
-          )}
+          </div>
         </div>
       )}
       
-      <div className="grid gap-2">
-        <Label htmlFor="taskDescription" className="text-professional-navy font-medium">Description</Label>
+      {/* Description */}
+      <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Task Description</h3>
         <Textarea
           id="taskDescription"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Enter task description (max 1000 words)"
           maxLength={1000}
-          className="min-h-[100px] professional-input"
+          className="min-h-[120px]"
         />
-        <p className="text-xs text-professional-slate-dark">{description.length}/1000 characters</p>
+        <p className="text-xs text-gray-500 mt-2">{description.length}/1000 characters</p>
       </div>
 
-      <div className="flex justify-end space-x-3 pt-4 border-t border-professional-slate/20">
-        <Button variant="outline" onClick={onClose} className="hover:bg-professional-slate/10">
+      {/* Action Buttons */}
+      <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+        <Button variant="outline" onClick={onClose} className="px-6">
           Cancel
         </Button>
         <Button 
           onClick={handleSave} 
-          className="professional-button shadow-professional-lg"
+          className="bg-blue-600 hover:bg-blue-700 px-6"
           disabled={editTaskMutation.isPending || !isFormValid()}
         >
           {editTaskMutation.isPending ? "Saving..." : "Save Changes"}
