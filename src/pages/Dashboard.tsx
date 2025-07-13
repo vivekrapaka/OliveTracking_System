@@ -19,11 +19,24 @@ import {
   User,
   Briefcase
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, isValid, parseISO } from "date-fns";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+
+// Helper function to safely format dates
+const formatSafeDate = (dateString: string, formatStr: string = "MMM dd") => {
+  try {
+    if (!dateString) return "N/A";
+    const date = parseISO(dateString);
+    if (!isValid(date)) return "N/A";
+    return format(date, formatStr);
+  } catch (error) {
+    console.warn("Invalid date format:", dateString);
+    return "N/A";
+  }
+};
 
 export const Dashboard = () => {
   const { user } = useAuth();
@@ -91,7 +104,7 @@ export const Dashboard = () => {
           </div>
           <div className="text-right">
             <p className="text-sm text-professional-slate-dark">
-              Last updated: {format(new Date(), "PPP")}
+              Last updated: {formatSafeDate(new Date().toISOString(), "PPP")}
             </p>
             <Badge className="bg-professional-green/10 text-professional-green-dark border-professional-green/30 mt-2">
               {user?.functionalGroup?.replace(/_/g, ' ')}
@@ -304,7 +317,7 @@ export const Dashboard = () => {
                         <div>
                           <p className="font-medium text-professional-navy">{task.name}</p>
                           <p className="text-sm text-professional-slate-dark">
-                            Assigned to: {task.assignee} • Due: {format(new Date(task.dueDate), "MMM dd")}
+                            Assigned to: {task.assignee} • Due: {formatSafeDate(task.dueDate)}
                           </p>
                         </div>
                       </div>

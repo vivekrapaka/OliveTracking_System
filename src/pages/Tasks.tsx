@@ -1,287 +1,197 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import {
-  Plus,
-  Search,
-  Edit,
-  Trash2,
-  RefreshCw,
-  X,
-  Clock,
-  AlertCircle,
-  Calendar,
-  Users,
-  Link,
-  Lock,
-  AlertTriangle,
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { 
+  Plus, 
+  Search, 
+  Filter, 
+  Calendar, 
+  User, 
+  Clock, 
+  AlertTriangle, 
+  CheckCircle2, 
+  FileText,
   Code,
   TestTube,
+  Target,
   Timer
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, parseISO, isValid } from "date-fns";
 import { cn } from "@/lib/utils";
-import { toast } from "@/hooks/use-toast";
-import { FilterDropdown } from "@/components/FilterDropdown";
-import { useTasksData, BackendTask } from "@/hooks/useTasksData";
+import { useAuth } from "@/contexts/AuthContext";
+import { useTasksData } from "@/hooks/useTasksData";
 import { useTeammatesData } from "@/hooks/useTeammatesData";
 import { AddTaskDialog } from "@/components/AddTaskDialog";
-import { useDeleteTask } from "@/hooks/useDeleteTask";
-import { useAuth } from "@/contexts/AuthContext";
 import { TaskDetailsDialog } from "@/components/TaskDetailsDialog";
 
-interface Task {
-  id: number;
-  taskNumber: string;
-  name: string;
-  description?: string;
-  status: string;
-  taskType: string;
-  parentId?: number;
-  parentTaskTitle?: string;
-  parentTaskFormattedNumber?: string;
-  receivedDate: string;
-  developmentStartDate: string;
-  dueDate: string;
-  assignedTeammates: string[];
-  assignedTeammateIds: number[];
-  developerName?: string;
-  testerName?: string;
-  priority: string;
-  projectId: number;
-  projectName: string;
-  documentPath?: string;
-  commitId?: string;
-  developmentDueHours?: number;
-  testingDueHours?: number;
-}
+// Helper function to safely format dates
+const formatSafeDate = (dateString: string, formatStr: string = "MMM dd, yyyy") => {
+  try {
+    if (!dateString) return "N/A";
+    const date = parseISO(dateString);
+    if (!isValid(date)) return "N/A";
+    return format(date, formatStr);
+  } catch (error) {
+    console.warn("Invalid date format:", dateString);
+    return "N/A";
+  }
+};
+
+// Helper function to get status badge styling
+const getStatusBadgeClass = (status: string) => {
+  const statusClasses = {
+    'BACKLOG': 'bg-professional-slate/10 text-professional-slate-dark border-professional-slate/30',
+    'ANALYSIS': 'bg-professional-purple/10 text-professional-purple-dark border-professional-purple/30',
+    'DEVELOPMENT': 'bg-professional-blue/10 text-professional-blue-dark border-professional-blue/30',
+    'CODE_REVIEW': 'bg-professional-cyan/10 text-professional-cyan-dark border-professional-cyan/30',
+    'UAT_TESTING': 'bg-professional-yellow/10 text-professional-yellow-dark border-professional-yellow/30',
+    'UAT_FAILED': 'bg-professional-red/10 text-professional-red-dark border-professional-red/30',
+    'READY_FOR_PREPROD': 'bg-professional-green/10 text-professional-green-dark border-professional-green/30',
+    'PREPROD': 'bg-professional-indigo/10 text-professional-indigo-dark border-professional-indigo/30',
+    'PROD': 'bg-professional-emerald/10 text-professional-emerald-dark border-professional-emerald/30',
+    'COMPLETED': 'bg-professional-green/10 text-professional-green-dark border-professional-green/30',
+    'CLOSED': 'bg-professional-slate/10 text-professional-slate-dark border-professional-slate/30',
+    'REOPENED': 'bg-professional-orange/10 text-professional-orange-dark border-professional-orange/30',
+    'BLOCKED': 'bg-professional-red/10 text-professional-red-dark border-professional-red/30'
+  };
+  return statusClasses[status as keyof typeof statusClasses] || statusClasses.BACKLOG;
+};
+
+// Helper function to get priority badge styling
+const getPriorityBadgeClass = (priority: string) => {
+  const priorityClasses = {
+    'CRITICAL': 'bg-professional-red/10 text-professional-red-dark border-professional-red/30',
+    'HIGH': 'bg-professional-orange/10 text-professional-orange-dark border-professional-orange/30',
+    'MEDIUM': 'bg-professional-yellow/10 text-professional-yellow-dark border-professional-yellow/30',
+    'LOW': 'bg-professional-green/10 text-professional-green-dark border-professional-green/30'
+  };
+  return priorityClasses[priority as keyof typeof priorityClasses] || priorityClasses.MEDIUM;
+};
 
 export const Tasks = () => {
   const { user } = useAuth();
-  const { data: tasksApiData, isLoading, error } = useTasksData();
-  const { data: teammatesApiData } = useTeammatesData();
-  const deleteTaskMutation = useDeleteTask();
-
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const { data: tasksData, isLoading: tasksLoading, error: tasksError } = useTasksData();
+  const { data: teammatesData, isLoading: teammatesLoading } = useTeammatesData();
+  
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
-  const [selectedTaskTypes, setSelectedTaskTypes] = useState<string[]>([]);
-  const [selectedPriorities, setSelectedPriorities] = useState<string[]>([]);
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [priorityFilter, setPriorityFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
 
-  const convertBackendToFrontend = (backendTask: BackendTask): Task => {
-    return {
-      id: backendTask.id,
-      taskNumber: backendTask.taskNumber,
-      name: backendTask.name,
-      description: backendTask.description,
-      status: backendTask.status,
-      taskType: backendTask.taskType,
-      parentId: backendTask.parentId,
-      parentTaskTitle: backendTask.parentTaskTitle,
-      parentTaskFormattedNumber: backendTask.parentTaskFormattedNumber,
-      receivedDate: backendTask.receivedDate,
-      developmentStartDate: backendTask.developmentStartDate,
-      dueDate: backendTask.dueDate,
-      assignedTeammates: backendTask.assignedTeammateNames || [],
-      assignedTeammateIds: backendTask.assignedTeammateIds || [],
-      developerName: backendTask.developerName,
-      testerName: backendTask.testerName,
-      priority: backendTask.priority,
-      projectId: backendTask.projectId,
-      projectName: backendTask.projectName,
-      documentPath: backendTask.documentPath,
-      commitId: backendTask.commitId,
-      developmentDueHours: backendTask.developmentDueHours,
-      testingDueHours: backendTask.testingDueHours
-    };
-  };
+  // Check if user can add tasks (exclude TEST_LEAD, TESTER, TEST_MANAGER)
+  const canAddTasks = user?.functionalGroup && !['TEST_LEAD', 'TESTER', 'TEST_MANAGER'].includes(user.functionalGroup);
 
-  const apiTasksData = tasksApiData?.tasks?.map(convertBackendToFrontend) || [];
-  const [tasksData, setTasksData] = useState<Task[]>([]);
-
-  useEffect(() => {
-    if (apiTasksData.length > 0) {
-      setTasksData(apiTasksData);
-    }
-  }, [apiTasksData]);
-
-  const teammates = teammatesApiData?.teammates?.map(teammate => ({
-    id: teammate.id,
-    name: teammate.name,
-    role: teammate.role,
-    functionalGroup: teammate.functionalGroup
-  })) || [];
-
-  // Check if current user can edit a task based on new logic
-  const canEditTask = (task: Task): boolean => {
-    if (!user?.fullName || !user?.functionalGroup) return false;
+  // Helper function to check if user can edit a task
+  const canEditTask = (task: any) => {
+    if (!user?.functionalGroup) return false;
     
-    // Manager roles can edit all tasks
-    const managerRoles = ["ADMIN", "MANAGER", "DEV_MANAGER", "TEST_MANAGER", "DEV_LEAD", "TEST_LEAD", "BUSINESS_ANALYST"];
-    if (managerRoles.includes(user.functionalGroup)) {
+    // Management roles can edit any task
+    const managementRoles = ['ADMIN', 'MANAGER', 'DEV_MANAGER', 'TEST_MANAGER', 'DEV_LEAD', 'TEST_LEAD', 'BUSINESS_ANALYST'];
+    if (managementRoles.includes(user.functionalGroup)) {
       return true;
     }
     
-    // Regular developers and testers can only edit if they are assigned
-    const isAssignedDeveloper = task.developerName === user.fullName;
-    const isAssignedTester = task.testerName === user.fullName;
+    // Check if user is assigned to the task based on their role and the task assignment
+    const userFullName = user.fullName;
+    if (user.functionalGroup === 'DEVELOPER' && task.developerName === userFullName) {
+      return true;
+    }
+    if (user.functionalGroup === 'TESTER' && task.testerName === userFullName) {
+      return true;
+    }
     
-    return isAssignedDeveloper || isAssignedTester;
+    return false;
   };
 
-  // Check if task is assigned to current user (for highlighting)
-  const isTaskAssignedToUser = (task: Task): boolean => {
+  // Helper function to check if task is assigned to current user
+  const isTaskAssignedToCurrentUser = (task: any) => {
     if (!user?.fullName) return false;
-    return task.developerName === user.fullName || task.testerName === user.fullName;
+    
+    const userFullName = user.fullName;
+    if (user.functionalGroup === 'DEVELOPER' && task.developerName === userFullName) {
+      return true;
+    }
+    if (['TESTER', 'TEST_LEAD'].includes(user.functionalGroup) && task.testerName === userFullName) {
+      return true;
+    }
+    
+    return false;
   };
 
-  const filteredTasks = tasksData.filter(task => {
-    const matchesSearch = searchTerm === "" || 
-      task.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      task.taskNumber.toLowerCase().includes(searchTerm.toLowerCase());
+  // Filter and search tasks
+  const filteredTasks = useMemo(() => {
+    if (!tasksData?.tasks) return [];
 
-    const matchesStatus = selectedStatuses.length === 0 || selectedStatuses.includes(task.status);
-    const matchesTaskType = selectedTaskTypes.length === 0 || selectedTaskTypes.includes(task.taskType);
-    const matchesPriority = selectedPriorities.length === 0 || selectedPriorities.includes(task.priority);
+    return tasksData.tasks.filter((task) => {
+      const matchesSearch = task.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           task.taskNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           task.description?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesStatus = statusFilter === "all" || task.status === statusFilter;
+      const matchesPriority = priorityFilter === "all" || task.priority === priorityFilter;
+      const matchesType = typeFilter === "all" || task.taskType === typeFilter;
 
-    return matchesSearch && matchesStatus && matchesTaskType && matchesPriority;
-  });
+      return matchesSearch && matchesStatus && matchesPriority && matchesType;
+    });
+  }, [tasksData?.tasks, searchTerm, statusFilter, priorityFilter, typeFilter]);
 
-  const filterOptions = {
-    statuses: [...new Set(tasksData.map(t => t.status))].map(s => ({ 
-      label: s, 
-      value: s, 
-      count: tasksData.filter(t => t.status === s).length 
-    })),
-    taskTypes: [...new Set(tasksData.map(t => t.taskType))].map(t => ({ 
-      label: t, 
-      value: t, 
-      count: tasksData.filter(task => task.taskType === t).length 
-    })),
-    priorities: [...new Set(tasksData.map(t => t.priority))].map(p => ({ 
-      label: p, 
-      value: p, 
-      count: tasksData.filter(t => t.priority === p).length 
-    }))
-  };
-
-  const activeFiltersCount = selectedStatuses.length + selectedTaskTypes.length + selectedPriorities.length;
-
-  const clearAllFilters = () => {
-    setSelectedStatuses([]);
-    setSelectedTaskTypes([]);
-    setSelectedPriorities([]);
-    setSearchTerm("");
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "BACKLOG": return "bg-professional-gray-light text-professional-gray-dark border-professional-gray-dark";
-      case "ANALYSIS": return "bg-professional-blue-light text-professional-blue-dark border-professional-blue-dark";
-      case "DEVELOPMENT": return "bg-professional-purple-light text-professional-purple-dark border-professional-purple-dark";
-      case "CODE_REVIEW": return "bg-professional-indigo-light text-professional-indigo-dark border-professional-indigo-dark";
-      case "UAT_TESTING": return "bg-professional-orange-light text-professional-orange-dark border-professional-orange-dark";
-      case "UAT_FAILED": return "bg-professional-red-light text-professional-red-dark border-professional-red-dark";
-      case "READY_FOR_PREPROD": return "bg-professional-cyan-light text-professional-cyan-dark border-professional-cyan-dark";
-      case "PREPROD": return "bg-professional-indigo-light text-professional-indigo-dark border-professional-indigo-dark";
-      case "PROD": return "bg-professional-green-light text-professional-green-dark border-professional-green-dark";
-      case "COMPLETED": return "bg-professional-green-light text-professional-green-dark border-professional-green-dark";
-      case "CLOSED": return "bg-professional-gray-light text-professional-gray-dark border-professional-gray-dark";
-      case "REOPENED": return "bg-professional-red-light text-professional-red-dark border-professional-red-dark";
-      case "BLOCKED": return "bg-professional-red-light text-professional-red-dark border-professional-red-dark";
-      default: return "bg-professional-gray-light text-professional-gray-dark border-professional-gray-dark";
+  const handleTaskClick = (task: any) => {
+    if (canEditTask(task)) {
+      setSelectedTask(task);
+      setIsDetailsDialogOpen(true);
     }
   };
 
-  const getTaskTypeColor = (taskType: string) => {
-    switch (taskType) {
-      case "BRD": return "bg-professional-blue-light text-professional-blue-dark border-professional-blue-dark";
-      case "EPIC": return "bg-professional-purple-light text-professional-purple-dark border-professional-purple-dark";
-      case "STORY": return "bg-professional-green-light text-professional-green-dark border-professional-green-dark";
-      case "TASK": return "bg-professional-gray-light text-professional-gray-dark border-professional-gray-dark";
-      case "BUG": return "bg-professional-red-light text-professional-red-dark border-professional-red-dark";
-      case "SUB_TASK": return "bg-professional-orange-light text-professional-orange-dark border-professional-orange-dark";
-      case "ANALYSIS_TASK": return "bg-professional-cyan-light text-professional-cyan-dark border-professional-cyan-dark";
-      default: return "bg-professional-gray-light text-professional-gray-dark border-professional-gray-dark";
-    }
+  const handleTaskSave = (updatedTask: any) => {
+    // Handle task update
+    console.log('Task updated:', updatedTask);
   };
 
-  const getPriorityColor = (priority: string) => {
-    const normalizedPriority = priority.toLowerCase();
-    switch (normalizedPriority) {
-      case "critical": return "bg-professional-red text-white border-professional-red-dark font-bold";
-      case "high": return "bg-professional-orange-light text-professional-orange-dark border-professional-orange-dark";
-      case "medium": return "bg-professional-yellow-light text-professional-yellow-dark border-professional-yellow-dark";
-      case "low": return "bg-professional-green-light text-professional-green-dark border-professional-green-dark";
-      default: return "bg-professional-gray-light text-professional-gray-dark border-professional-gray-dark";
-    }
-  };
-
-  const handleViewTask = (task: Task) => {
-    console.log("View task:", task);
-    setSelectedTask(task);
-    setIsDetailsModalOpen(true);
-  };
-
-  const handleDeleteTask = (task: Task) => {
-    deleteTaskMutation.mutate(task.id);
-  };
-
-  const handleSaveTask = (updatedTask: Task) => {
-    setTasksData(tasksData.map(task => 
-      task.id === updatedTask.id ? updatedTask : task
-    ));
-  };
-
-  // Check if user can create tasks - exclude TEST roles
-  const canCreateTasks = user?.functionalGroup && 
-    !["TEST_LEAD", "TESTER", "TEST_MANAGER"].includes(user.functionalGroup);
-
-  if (isLoading) {
+  if (tasksLoading || teammatesLoading) {
     return (
-      <div className="flex items-center justify-center h-64 bg-gradient-to-br from-professional-blue/5 to-professional-cyan/5">
-        <div className="text-center">
-          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-professional-blue" />
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-professional-blue border-t-transparent mx-auto"></div>
           <p className="text-professional-slate-dark">Loading tasks...</p>
         </div>
       </div>
     );
   }
 
-  if (error) {
+  if (tasksError) {
     return (
-      <div className="text-center py-12 bg-gradient-to-br from-professional-blue/5 to-professional-cyan/5">
-        <div className="text-professional-red mb-4">
-          <AlertCircle className="h-12 w-12 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">Failed to load tasks</h3>
-          <p className="text-professional-slate-dark mb-4">{error.message}</p>
-        </div>
+      <div className="text-center py-12">
+        <AlertTriangle className="h-12 w-12 text-professional-red mx-auto mb-4" />
+        <h3 className="text-lg font-semibold mb-2">Failed to load tasks</h3>
+        <p className="text-professional-slate-dark">{tasksError.message}</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 bg-gradient-to-br from-professional-blue/5 to-professional-cyan/5 min-h-screen">
-      {/* Header with Professional styling */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0 bg-white/80 backdrop-blur-md border-b border-professional-slate/20 p-6 shadow-professional">
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-professional-blue to-professional-cyan bg-clip-text text-transparent">
-            Task Management
-          </h1>
-          <p className="text-professional-slate-dark mt-1">Manage and track your project tasks efficiently</p>
-        </div>
-
-        <div className="flex items-center space-x-2">
-          {canCreateTasks && (
+    <div className="space-y-6 bg-gradient-to-br from-professional-blue/5 to-professional-cyan/5 min-h-screen p-6">
+      {/* Header */}
+      <div className="bg-white/80 backdrop-blur-md border border-professional-slate/20 rounded-xl p-6 shadow-professional">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-professional-blue to-professional-cyan bg-clip-text text-transparent">
+              Tasks Management
+            </h1>
+            <p className="text-professional-slate-dark mt-1">
+              Manage and track project tasks • {filteredTasks.length} tasks found
+            </p>
+          </div>
+          {canAddTasks && (
             <Button 
+              onClick={() => setIsAddDialogOpen(true)}
               className="professional-button shadow-professional-lg"
-              onClick={() => setIsCreateModalOpen(true)}
-              data-testid="add-task-button"
             >
               <Plus className="h-4 w-4 mr-2" />
               Add Task
@@ -290,332 +200,243 @@ export const Tasks = () => {
         </div>
       </div>
 
-      <div className="px-6">
-        {/* Search and Filters with Professional styling */}
-        <div className="space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-professional-slate-dark h-4 w-4" />
-            <Input
-              placeholder="Search tasks by name or task number..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 professional-input"
-            />
-          </div>
-
-          {/* Filter Bar */}
-          <div className="flex flex-wrap gap-3 items-center">
-            <FilterDropdown
-              title="Status"
-              options={filterOptions.statuses}
-              selectedValues={selectedStatuses}
-              onSelectionChange={setSelectedStatuses}
-            />
-            <FilterDropdown
-              title="Task Type"
-              options={filterOptions.taskTypes}
-              selectedValues={selectedTaskTypes}
-              onSelectionChange={setSelectedTaskTypes}
-            />
-            <FilterDropdown
-              title="Priority"
-              options={filterOptions.priorities}
-              selectedValues={selectedPriorities}
-              onSelectionChange={setSelectedPriorities}
-            />
-
-            {/* Clear Filters */}
-            {activeFiltersCount > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearAllFilters}
-                className="text-professional-slate-dark hover:text-professional-blue hover:bg-professional-blue/10"
-              >
-                <X className="h-4 w-4 mr-1" />
-                Clear all ({activeFiltersCount})
-              </Button>
-            )}
-          </div>
-
-          {/* Results Count */}
-          <div className="text-sm text-professional-slate-dark bg-white/60 px-3 py-2 rounded-lg border border-professional-slate/20">
-            Showing <span className="font-semibold text-professional-blue">{filteredTasks.length}</span> of <span className="font-semibold">{tasksData.length}</span> tasks
-          </div>
-        </div>
-
-        {/* Task Stats with Professional cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 my-6">
-          <Card className="professional-card">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-2xl font-bold bg-gradient-to-r from-professional-blue to-professional-cyan bg-clip-text text-transparent">
-                    {tasksApiData?.totalTasksCount || 0}
-                  </div>
-                  <p className="text-sm text-professional-slate-dark">Total Tasks</p>
-                </div>
-                <div className="h-12 w-12 bg-gradient-to-br from-professional-blue/20 to-professional-cyan/20 rounded-lg flex items-center justify-center">
-                  <Users className="h-6 w-6 text-professional-blue" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="professional-card">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-2xl font-bold text-professional-blue">
-                    {tasksData.filter(t => t.status === "DEVELOPMENT" || t.status === "ANALYSIS").length}
-                  </div>
-                  <p className="text-sm text-professional-slate-dark">In Development</p>
-                </div>
-                <div className="h-12 w-12 bg-gradient-to-br from-professional-purple/20 to-professional-blue/20 rounded-lg flex items-center justify-center">
-                  <Code className="h-6 w-6 text-professional-purple" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="professional-card">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-2xl font-bold text-professional-orange">
-                    {tasksData.filter(t => t.status === "UAT_TESTING" || t.status === "UAT_FAILED").length}
-                  </div>
-                  <p className="text-sm text-professional-slate-dark">In Testing</p>
-                </div>
-                <div className="h-12 w-12 bg-gradient-to-br from-professional-orange/20 to-professional-red/20 rounded-lg flex items-center justify-center">
-                  <TestTube className="h-6 w-6 text-professional-orange" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="professional-card">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-2xl font-bold text-professional-green">
-                    {tasksData.filter(t => t.status === "COMPLETED").length}
-                  </div>
-                  <p className="text-sm text-professional-slate-dark">Completed</p>
-                </div>
-                <div className="h-12 w-12 bg-gradient-to-br from-professional-green/20 to-professional-cyan/20 rounded-lg flex items-center justify-center">
-                  <Clock className="h-6 w-6 text-professional-green" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Tasks Table with Enhanced Professional styling */}
-        <Card className="professional-card shadow-professional-xl">
-          <CardHeader className="bg-gradient-to-r from-professional-blue/10 to-professional-cyan/10 border-b border-professional-slate/20">
-            <CardTitle className="bg-gradient-to-r from-professional-blue to-professional-cyan bg-clip-text text-transparent text-xl">
-              All Tasks
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="space-y-0">
-              {filteredTasks.map((task) => {
-                const isAssigned = isTaskAssignedToUser(task);
-                const canEdit = canEditTask(task);
-                const isUatFailed = task.status === "UAT_FAILED";
-                
-                return (
-                  <div 
-                    key={task.id} 
-                    className={cn(
-                      "flex items-center justify-between p-6 transition-all duration-200 border-b border-professional-slate/10 hover:bg-gradient-to-r hover:from-professional-blue/5 hover:to-professional-cyan/5",
-                      // Highlight assigned tasks with a stronger gradient
-                      isAssigned && "bg-gradient-to-r from-professional-blue/10 to-professional-cyan/5 shadow-professional ring-2 ring-professional-blue/20 border-l-4 border-l-professional-blue",
-                      // Special styling for UAT failed tasks assigned to developers
-                      isUatFailed && isAssigned && "bg-gradient-to-r from-professional-red/10 to-professional-orange/5 ring-professional-red/30 border-l-professional-red",
-                      // Completed tasks
-                      task.status === "COMPLETED" && "bg-professional-green/5",
-                      // Blocked tasks
-                      task.status === "BLOCKED" && "bg-professional-red/5"
-                    )}
-                  >
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <div className="bg-gradient-to-r from-professional-navy to-professional-blue text-white px-3 py-1 rounded-lg font-mono text-xs font-bold shadow-professional">
-                          {task.taskNumber}
-                        </div>
-                        <h3 className="font-semibold text-professional-navy text-lg">{task.name}</h3>
-                        
-                        {/* Status and Assignment Indicators */}
-                        <div className="flex items-center gap-2">
-                          {isAssigned && (
-                            <Badge className="bg-professional-green/10 text-professional-green-dark border-professional-green/20 text-xs font-medium">
-                              Assigned to You
-                            </Badge>
-                          )}
-                          {isUatFailed && (
-                            <div className="flex items-center gap-1 bg-professional-red/10 text-professional-red-dark px-2 py-1 rounded-full border border-professional-red/30">
-                              <AlertTriangle className="h-3 w-3" />
-                              <span className="text-xs font-medium">UAT Failed</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {task.description && (
-                        <p className="text-sm text-professional-slate-dark mb-3 line-clamp-2 leading-relaxed">{task.description}</p>
-                      )}
-                      
-                      {/* Parent Task Link */}
-                      {task.parentTaskTitle && (
-                        <div className="flex items-center gap-2 mb-3">
-                          <Link className="h-3 w-3 text-professional-slate-dark" />
-                          <span className="text-xs text-professional-slate-dark bg-professional-slate/10 px-2 py-1 rounded">
-                            Parent: <span className="font-medium">{task.parentTaskFormattedNumber}</span> - {task.parentTaskTitle}
-                          </span>
-                        </div>
-                      )}
-                      
-                      <div className="flex flex-wrap items-center gap-4 text-sm text-professional-slate-dark">
-                        <span className="flex items-center gap-1 bg-white/60 px-2 py-1 rounded border border-professional-slate/20">
-                          <Calendar className="h-3 w-3" />
-                          Received: {format(new Date(task.receivedDate), "MMM dd, yyyy")}
-                        </span>
-                        <span className="flex items-center gap-1 bg-white/60 px-2 py-1 rounded border border-professional-slate/20">
-                          <Calendar className="h-3 w-3" />
-                          Start: {format(new Date(task.developmentStartDate), "MMM dd, yyyy")}
-                        </span>
-                        <span className="flex items-center gap-1 bg-white/60 px-2 py-1 rounded border border-professional-slate/20">
-                          <Calendar className="h-3 w-3" />
-                          Due: {format(new Date(task.dueDate), "MMM dd, yyyy")}
-                        </span>
-                        
-                        {/* Display Due Hours */}
-                        {(task.developmentDueHours || task.testingDueHours) && (
-                          <span className="flex items-center gap-1 bg-professional-blue/10 text-professional-blue-dark px-2 py-1 rounded border border-professional-blue/20">
-                            <Timer className="h-3 w-3" />
-                            Due: {task.developmentDueHours || 0}h dev, {task.testingDueHours || 0}h test
-                          </span>
-                        )}
-                        
-                        {/* Display Developer and Tester Names */}
-                        {(task.developerName || task.testerName) && (
-                          <span className="flex items-center gap-1 bg-professional-green/10 text-professional-green-dark px-2 py-1 rounded border border-professional-green/20">
-                            <Users className="h-3 w-3" />
-                            {[
-                              task.developerName && `Dev: ${task.developerName}`,
-                              task.testerName && `Test: ${task.testerName}`
-                            ].filter(Boolean).join(" | ")}
-                          </span>
-                        )}
-                        
-                        {task.projectName && (
-                          <span className="text-xs bg-professional-cyan/10 text-professional-cyan-dark px-2 py-1 rounded border border-professional-cyan/20 font-medium">
-                            {task.projectName}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center space-x-3">
-                      <div className="flex flex-col items-end space-y-2">
-                        <div className="flex items-center space-x-2">
-                          <Badge className={cn("font-medium", getTaskTypeColor(task.taskType))}>
-                            {task.taskType}
-                          </Badge>
-                          <Badge className={cn("font-medium", getPriorityColor(task.priority))}>
-                            {task.priority}
-                          </Badge>
-                          <Badge className={cn("font-medium", getStatusColor(task.status))}>
-                            {task.status.replace(/_/g, ' ')}
-                          </Badge>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center space-x-1">
-                        {/* Edit button - based on new permission logic */}
-                        {canEdit ? (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleViewTask(task)}
-                            className="hover:bg-professional-blue/10 text-professional-blue hover:text-professional-blue-dark shadow-sm"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            disabled
-                            className="opacity-50 cursor-not-allowed"
-                            title="You don't have permission to edit this task"
-                          >
-                            <Lock className="h-4 w-4" />
-                          </Button>
-                        )}
-                        
-                        {/* Delete button - only for admins and managers */}
-                        {user?.functionalGroup && ["ADMIN", "MANAGER", "BUSINESS_ANALYST"].includes(user.functionalGroup) && (
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="sm" className="hover:bg-professional-red/10 text-professional-red hover:text-professional-red-dark shadow-sm">
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent className="professional-card">
-                              <AlertDialogHeader>
-                                <AlertDialogTitle className="text-professional-navy">Delete Task</AlertDialogTitle>
-                                <AlertDialogDescription className="text-professional-slate-dark">
-                                  Are you sure you want to delete task "{task.name}"? This action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel className="hover:bg-professional-slate/10">Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleDeleteTask(task)}
-                                  className="bg-professional-red hover:bg-professional-red-dark text-white"
-                                  disabled={deleteTaskMutation.isPending}
-                                >
-                                  {deleteTaskMutation.isPending ? "Deleting..." : "Delete"}
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+      {/* Filters */}
+      <Card className="professional-card">
+        <CardContent className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-professional-slate-dark h-4 w-4" />
+              <Input
+                placeholder="Search tasks..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 professional-input"
+              />
             </div>
-          </CardContent>
-        </Card>
+            
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="professional-input">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent className="bg-white/95 backdrop-blur-md border-professional-slate/30">
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="BACKLOG">Backlog</SelectItem>
+                <SelectItem value="ANALYSIS">Analysis</SelectItem>
+                <SelectItem value="DEVELOPMENT">Development</SelectItem>
+                <SelectItem value="CODE_REVIEW">Code Review</SelectItem>
+                <SelectItem value="UAT_TESTING">UAT Testing</SelectItem>
+                <SelectItem value="UAT_FAILED">UAT Failed</SelectItem>
+                <SelectItem value="READY_FOR_PREPROD">Ready for Pre-Prod</SelectItem>
+                <SelectItem value="PREPROD">Pre-Production</SelectItem>
+                <SelectItem value="PROD">Production</SelectItem>
+                <SelectItem value="COMPLETED">Completed</SelectItem>
+                <SelectItem value="CLOSED">Closed</SelectItem>
+              </SelectContent>
+            </Select>
 
-        {/* Modals */}
-        <AddTaskDialog 
-          isOpen={isCreateModalOpen} 
-          onClose={() => setIsCreateModalOpen(false)}   
-          teammates={teammates}
-        />
+            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+              <SelectTrigger className="professional-input">
+                <SelectValue placeholder="Filter by priority" />
+              </SelectTrigger>
+              <SelectContent className="bg-white/95 backdrop-blur-md border-professional-slate/30">
+                <SelectItem value="all">All Priorities</SelectItem>
+                <SelectItem value="CRITICAL">Critical</SelectItem>
+                <SelectItem value="HIGH">High</SelectItem>
+                <SelectItem value="MEDIUM">Medium</SelectItem>
+                <SelectItem value="LOW">Low</SelectItem>
+              </SelectContent>
+            </Select>
 
-        <TaskDetailsDialog 
-          isOpen={isDetailsModalOpen} 
-          onClose={() => setIsDetailsModalOpen(false)} 
-          task={selectedTask} 
-          onSave={handleSaveTask} 
-          teammates={teammates} 
-        />
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="professional-input">
+                <SelectValue placeholder="Filter by type" />
+              </SelectTrigger>
+              <SelectContent className="bg-white/95 backdrop-blur-md border-professional-slate/30">
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="BRD">BRD</SelectItem>
+                <SelectItem value="EPIC">Epic</SelectItem>
+                <SelectItem value="STORY">Story</SelectItem>
+                <SelectItem value="TASK">Task</SelectItem>
+                <SelectItem value="BUG">Bug</SelectItem>
+                <SelectItem value="SUB_TASK">Sub-Task</SelectItem>
+                <SelectItem value="ANALYSIS_TASK">Analysis Task</SelectItem>
+              </SelectContent>
+            </Select>
 
-        {filteredTasks.length === 0 && !isLoading && (
-          <div className="text-center py-12 professional-card">
-            <Users className="h-12 w-12 text-professional-slate-dark mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-professional-navy mb-2">No tasks found</h3>
-            <p className="text-professional-slate-dark">Try adjusting your search criteria or add a new task.</p>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSearchTerm("");
+                setStatusFilter("all");
+                setPriorityFilter("all");
+                setTypeFilter("all");
+              }}
+              className="hover:bg-professional-slate/10"
+            >
+              <Filter className="h-4 w-4 mr-2" />
+              Clear Filters
+            </Button>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Tasks Grid */}
+      <div className="grid gap-4">
+        {filteredTasks.length === 0 ? (
+          <Card className="professional-card">
+            <CardContent className="p-12 text-center">
+              <FileText className="h-12 w-12 text-professional-slate-dark mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No tasks found</h3>
+              <p className="text-professional-slate-dark mb-4">
+                {searchTerm || statusFilter !== "all" || priorityFilter !== "all" || typeFilter !== "all"
+                  ? "Try adjusting your search criteria or filters."
+                  : "Get started by creating your first task."}
+              </p>
+              {canAddTasks && (
+                <Button onClick={() => setIsAddDialogOpen(true)} className="professional-button">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add First Task
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        ) : (
+          filteredTasks.map((task) => {
+            const isAssignedToUser = isTaskAssignedToCurrentUser(task);
+            const canEdit = canEditTask(task);
+            
+            return (
+              <Card 
+                key={task.id} 
+                className={cn(
+                  "professional-card professional-hover transition-all duration-300",
+                  isAssignedToUser && "ring-2 ring-professional-blue/30 bg-gradient-to-r from-professional-blue/5 to-professional-cyan/5",
+                  canEdit && "cursor-pointer",
+                  task.status === 'UAT_FAILED' && "border-professional-red/30 bg-professional-red/5"
+                )}
+                onClick={() => handleTaskClick(task)}
+              >
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-gradient-to-r from-professional-navy to-professional-blue text-white px-3 py-1 rounded-lg font-mono text-sm font-bold shadow-professional">
+                        {task.taskNumber}
+                      </div>
+                      {task.status === 'UAT_FAILED' && (
+                        <div className="flex items-center gap-1 bg-professional-red/10 text-professional-red-dark px-2 py-1 rounded-full border border-professional-red/30">
+                          <AlertTriangle className="h-4 w-4" />
+                          <span className="text-xs font-medium">UAT Failed</span>
+                        </div>
+                      )}
+                      {isAssignedToUser && (
+                        <div className="flex items-center gap-1 bg-professional-blue/10 text-professional-blue-dark px-2 py-1 rounded-full border border-professional-blue/30">
+                          <Target className="h-4 w-4" />
+                          <span className="text-xs font-medium">Assigned to You</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge className={getStatusBadgeClass(task.status)}>
+                        {task.status.replace(/_/g, ' ')}
+                      </Badge>
+                      <Badge className={getPriorityBadgeClass(task.priority)}>
+                        {task.priority}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-lg font-semibold text-professional-navy mb-2">{task.name}</h3>
+                      {task.description && (
+                        <p className="text-professional-slate-dark text-sm line-clamp-2">{task.description}</p>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {/* Developer Assignment */}
+                      <div className="flex items-center gap-2">
+                        <Code className="h-4 w-4 text-professional-blue" />
+                        <div>
+                          <p className="text-xs text-professional-slate-dark">Developer</p>
+                          <p className="text-sm font-medium text-professional-navy">
+                            {task.developerName || "Unassigned"}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Tester Assignment */}
+                      <div className="flex items-center gap-2">
+                        <TestTube className="h-4 w-4 text-professional-green" />
+                        <div>
+                          <p className="text-xs text-professional-slate-dark">Tester</p>
+                          <p className="text-sm font-medium text-professional-navy">
+                            {task.testerName || "Unassigned"}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Due Hours */}
+                      <div className="flex items-center gap-2">
+                        <Timer className="h-4 w-4 text-professional-orange" />
+                        <div>
+                          <p className="text-xs text-professional-slate-dark">Due Hours</p>
+                          <p className="text-sm font-medium text-professional-navy">
+                            Dev: {task.developmentDueHours || 0}h • Test: {task.testingDueHours || 0}h
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Dates */}
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-professional-purple" />
+                        <div>
+                          <p className="text-xs text-professional-slate-dark">Received</p>
+                          <p className="text-sm font-medium text-professional-navy">
+                            {formatSafeDate(task.receivedDate, "MMM dd")}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {task.projectName && (
+                      <div className="flex items-center gap-2 pt-2 border-t border-professional-slate/20">
+                        <Badge variant="outline" className="text-xs bg-professional-slate/5">
+                          {task.projectName}
+                        </Badge>
+                        <Badge variant="outline" className="text-xs bg-professional-slate/5">
+                          {task.taskType.replace(/_/g, ' ')}
+                        </Badge>
+                        {!canEdit && (
+                          <Badge variant="outline" className="text-xs bg-professional-yellow/10 text-professional-yellow-dark border-professional-yellow/30">
+                            View Only
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })
         )}
       </div>
+
+      {/* Add Task Dialog */}
+      <AddTaskDialog
+        isOpen={isAddDialogOpen}
+        onClose={() => setIsAddDialogOpen(false)}
+        teammates={teammatesData?.teammates || []}
+      />
+
+      {/* Task Details Dialog */}
+      <TaskDetailsDialog
+        isOpen={isDetailsDialogOpen}
+        onClose={() => setIsDetailsDialogOpen(false)}
+        task={selectedTask}
+        onSave={handleTaskSave}
+        teammates={teammatesData?.teammates || []}
+      />
     </div>
   );
 };
