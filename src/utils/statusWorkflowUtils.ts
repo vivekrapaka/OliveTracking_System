@@ -6,6 +6,14 @@ interface StatusOption {
 
 export const getAvailableStatuses = (currentStatus: string, userFunctionalGroup: string): StatusOption[] => {
   const statusTransitions: Record<string, Record<string, StatusOption[]>> = {
+    'BACKLOG': {
+      'DEVELOPER': [{ value: 'ANALYSIS', label: 'Analysis' }],
+      'DEV_LEAD': [{ value: 'ANALYSIS', label: 'Analysis' }]
+    },
+    'ANALYSIS': {
+      'DEVELOPER': [{ value: 'DEVELOPMENT', label: 'Development' }],
+      'DEV_LEAD': [{ value: 'DEVELOPMENT', label: 'Development' }]
+    },
     'DEVELOPMENT': {
       'DEVELOPER': [{ value: 'CODE_REVIEW', label: 'Code Review' }],
       'DEV_LEAD': [{ value: 'CODE_REVIEW', label: 'Code Review' }]
@@ -53,7 +61,11 @@ export const getAvailableStatuses = (currentStatus: string, userFunctionalGroup:
     'PREPROD': {
       'DEVELOPER': [{ value: 'PROD', label: 'Production' }],
       'DEV_LEAD': [{ value: 'PROD', label: 'Production' }]
-    }
+    },
+    'PROD': {
+      'DEVELOPER': [{ value: 'COMPLETED', label: 'Completed' }],
+      'DEV_LEAD': [{ value: 'COMPLETED', label: 'Completed' }]
+    },
   };
 
   return statusTransitions[currentStatus]?.[userFunctionalGroup] || [];

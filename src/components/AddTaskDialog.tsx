@@ -105,7 +105,7 @@ export const AddTaskDialog = ({
     { value: "PREPROD", label: "Pre-Production" },
     { value: "PROD", label: "Production" },
     { value: "COMPLETED", label: "Completed" },
-    { value: "CLOSED", label: "Closed" },
+
     { value: "REOPENED", label: "Reopened" },
     { value: "BLOCKED", label: "Blocked" },
   ];
@@ -134,12 +134,17 @@ export const AddTaskDialog = ({
   // Separate developers and testers from project teammates
   console.log("printing the projectTeammats -{}",projectTeammates)
  const developers = projectTeammates.filter(
-  (t) => t.department === "DEVELOPER" || t.department === "DEV_LEAD"
+  (t) =>
+    (t.department === "DEVELOPER" || t.department === "DEV_LEAD") &&
+    t.projectIds?.includes(selectedProjectId!)
 );
 
 const testers = projectTeammates.filter(
-  (t) => t.department === "TESTER" || t.department === "TEST_LEAD"
+  (t) =>
+    (t.department === "TESTER" || t.department === "TEST_LEAD") &&
+    t.projectIds?.includes(selectedProjectId!)
 );
+
 console.log("printing the developers", developers)
   const resetForm = () => {
     setTaskName("");

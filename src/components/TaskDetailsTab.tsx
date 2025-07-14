@@ -39,6 +39,8 @@ interface Task {
   commitId?: string;
   developmentDueHours?: number;
   testingDueHours?: number;
+  assignedDeveloperIds: number[],
+  assignedTesterIds: number[],
 }
 
 interface Teammate {
@@ -70,7 +72,7 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
   const [selectedTesterIds, setSelectedTesterIds] = useState<number[]>([]);
   const [developmentDueHours, setDevelopmentDueHours] = useState(task.developmentDueHours || 0);
   const [testingDueHours, setTestingDueHours] = useState(task.testingDueHours || 0);
-
+  const [selectedProjectId, setSelectedProjectId] = useState<number | undefined>();
   const editTaskMutation = useEditTask();
 
   // Fetch project teammates
@@ -78,17 +80,17 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
   const projectTeammates = projectTeammatesData?.teammates || [];
 
   // Separate developers and testers from project teammates
-  const developers = projectTeammates.filter(t => 
-    t.functionalGroup === "DEVELOPER" || t.functionalGroup === "DEV_LEAD"
+  const developers = projectTeammates.filter(t =>
+    t.department === "DEVELOPER" || t.department === "DEV_LEAD"
   );
-  const testers = projectTeammates.filter(t => 
-    t.functionalGroup === "TESTER" || t.functionalGroup === "TEST_LEAD"
+  const testers = projectTeammates.filter(t =>
+    t.department === "TESTER" || t.department === "TEST_LEAD"
   );
 
   // Get available status transitions based on current status and user functionalGroup
   const availableStatusTransitions = getAvailableStatuses(
     task.status,
-    user?.functionalGroup || ""
+    user?.department || ""
   );
 
   // Check if the status dropdown should be disabled
@@ -100,7 +102,7 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
 
   // Check if comment is required for the status change
   const isCommentRequired = requiresComment(task.status, currentStage);
-  const showCommentField = isCommentRequired || 
+  const showCommentField = isCommentRequired ||
     (task.status === "CODE_REVIEW" && availableStatusTransitions.length > 0) ||
     (task.status === "UAT_TESTING" && currentStage === "UAT_FAILED") ||
     (task.status === "UAT_FAILED" && currentStage === "UAT_TESTING");
@@ -124,30 +126,47 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
     setTaskType(task.taskType);
     setPriority(task.priority);
     setCommitId(task.commitId || "");
+    setSelectedProjectId(task.id);
     setDevelopmentDueHours(task.developmentDueHours || 0);
     setTestingDueHours(task.testingDueHours || 0);
-    
+
     if (task.receivedDate) {
       setSelectedReceivedDate(new Date(task.receivedDate));
     }
     if (task.developmentStartDate) {
       setSelectedDevelopmentStartDate(new Date(task.developmentStartDate));
     }
-
+console.log("Edit Task Loaded:", task);
     // Set initial developer and tester selections based on project teammates
-    if (projectTeammates.length > 0) {
-      const devIds = projectTeammates
-        .filter(t => (t.functionalGroup === "DEVELOPER" || t.functionalGroup === "DEV_LEAD") && 
-                     task.assignedTeammates.includes(t.name))
-        .map(t => t.id);
-      const testIds = projectTeammates
-        .filter(t => (t.functionalGroup === "TESTER" || t.functionalGroup === "TEST_LEAD") && 
-                     task.assignedTeammates.includes(t.name))
-        .map(t => t.id);
-      
-      setSelectedDeveloperIds(devIds);
-      setSelectedTesterIds(testIds);
-    }
+   if (projectTeammates.length > 0 && Array.isArray(task.assignedTeammates)) {
+    const assignedNames = task.assignedTeammates.map((name: string) =>
+      name.trim().toLowerCase()
+    );
+
+    const devIds = projectTeammates
+      .filter(
+        (t) =>
+          (t.department === "DEVELOPER" || t.department === "DEV_LEAD") &&
+          assignedNames.includes(t.name.trim().toLowerCase())
+      )
+      .map((t) => t.id);
+
+    const testIds = projectTeammates
+      .filter(
+        (t) =>
+          (t.department === "TESTER" || t.department === "TEST_LEAD") &&
+          assignedNames.includes(t.name.trim().toLowerCase())
+      )
+      .map((t) => t.id);
+
+    console.log("✅ Pre-filled developer IDs:", devIds);
+    console.log("✅ Pre-filled tester IDs:", testIds);
+
+    setSelectedDeveloperIds(devIds);
+    setSelectedTesterIds(testIds);
+  }
+
+
   }, [task, projectTeammates]);
 
   const handleStatusChange = (newStatus: string) => {
@@ -229,7 +248,7 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
               <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
               Basic Information
             </h3>
-            
+
             <div className="space-y-4">
               <div>
                 <Label htmlFor="taskName" className="text-sm font-medium text-gray-700">Task Name</Label>
@@ -240,7 +259,7 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
                   className="mt-1"
                 />
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="taskType" className="text-sm font-medium text-gray-700">Task Type</Label>
@@ -255,7 +274,7 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div>
                   <Label htmlFor="priority" className="text-sm font-medium text-gray-700">Priority</Label>
                   <Select value={priority} onValueChange={setPriority}>
@@ -279,7 +298,7 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
               <Clock className="h-5 w-5 text-orange-500" />
               Effort Estimation
             </h3>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="developmentDueHours" className="text-sm font-medium text-gray-700 flex items-center gap-2">
@@ -323,7 +342,7 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
               <CalendarIcon className="h-5 w-5 text-purple-500" />
               Important Dates
             </h3>
-            
+
             <div className="space-y-4">
               <div>
                 <Label className="text-sm font-medium text-gray-700">Received Date</Label>
@@ -382,11 +401,11 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
           {/* Status */}
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Status Management</h3>
-            
+
             <div>
               <Label htmlFor="status" className="text-sm font-medium text-gray-700">Current Status</Label>
-              <Select 
-                value={currentStage} 
+              <Select
+                value={currentStage}
                 onValueChange={handleStatusChange}
                 disabled={isStatusDropdownDisabled}
               >
@@ -418,12 +437,12 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
           selectedDeveloperIds={selectedDeveloperIds}
           selectedTesterIds={selectedTesterIds}
           onDeveloperToggle={(id) => {
-            setSelectedDeveloperIds(prev => 
+            setSelectedDeveloperIds(prev =>
               prev.includes(id) ? prev.filter(devId => devId !== id) : [...prev, id]
             );
           }}
           onTesterToggle={(id) => {
-            setSelectedTesterIds(prev => 
+            setSelectedTesterIds(prev =>
               prev.includes(id) ? prev.filter(testId => testId !== id) : [...prev, id]
             );
           }}
@@ -434,7 +453,7 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
       {(showCommentField || showCommitIdField) && (
         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Additional Information</h3>
-          
+
           <div className="space-y-4">
             {showCommentField && (
               <div>
@@ -446,8 +465,8 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
                   placeholder={
-                    isCommentRequired 
-                      ? "A comment is required for this status transition..." 
+                    isCommentRequired
+                      ? "A comment is required for this status transition..."
                       : "Add a comment about this status change (optional)..."
                   }
                   className={cn(
@@ -488,7 +507,7 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
           </div>
         </div>
       )}
-      
+
       {/* Description */}
       <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Task Description</h3>
@@ -508,8 +527,8 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
         <Button variant="outline" onClick={onClose} className="px-6">
           Cancel
         </Button>
-        <Button 
-          onClick={handleSave} 
+        <Button
+          onClick={handleSave}
           className="bg-blue-600 hover:bg-blue-700 px-6"
           disabled={editTaskMutation.isPending || !isFormValid()}
         >
