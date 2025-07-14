@@ -3,21 +3,27 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
-  Plus, 
-  Search, 
-  Filter, 
-  Calendar, 
-  User, 
-  Clock, 
-  AlertTriangle, 
-  CheckCircle2, 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Plus,
+  Search,
+  Filter,
+  Calendar,
+  User,
+  Clock,
+  AlertTriangle,
+  CheckCircle2,
   FileText,
   Code,
   TestTube,
   Target,
-  Timer
+  Timer,
 } from "lucide-react";
 import { format, parseISO, isValid } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -28,7 +34,10 @@ import { AddTaskDialog } from "@/components/AddTaskDialog";
 import { TaskDetailsDialog } from "@/components/TaskDetailsDialog";
 
 // Helper function to safely format dates
-const formatSafeDate = (dateString: string, formatStr: string = "MMM dd, yyyy") => {
+const formatSafeDate = (
+  dateString: string,
+  formatStr: string = "MMM dd, yyyy"
+) => {
   try {
     if (!dateString) return "N/A";
     const date = parseISO(dateString);
@@ -43,39 +52,63 @@ const formatSafeDate = (dateString: string, formatStr: string = "MMM dd, yyyy") 
 // Helper function to get status badge styling
 const getStatusBadgeClass = (status: string) => {
   const statusClasses = {
-    'BACKLOG': 'bg-professional-slate/10 text-professional-slate-dark border-professional-slate/30',
-    'ANALYSIS': 'bg-professional-purple/10 text-professional-purple-dark border-professional-purple/30',
-    'DEVELOPMENT': 'bg-professional-blue/10 text-professional-blue-dark border-professional-blue/30',
-    'CODE_REVIEW': 'bg-professional-cyan/10 text-professional-cyan-dark border-professional-cyan/30',
-    'UAT_TESTING': 'bg-professional-yellow/10 text-professional-yellow-dark border-professional-yellow/30',
-    'UAT_FAILED': 'bg-professional-red/10 text-professional-red-dark border-professional-red/30',
-    'READY_FOR_PREPROD': 'bg-professional-green/10 text-professional-green-dark border-professional-green/30',
-    'PREPROD': 'bg-professional-indigo/10 text-professional-indigo-dark border-professional-indigo/30',
-    'PROD': 'bg-professional-emerald/10 text-professional-emerald-dark border-professional-emerald/30',
-    'COMPLETED': 'bg-professional-green/10 text-professional-green-dark border-professional-green/30',
-    'CLOSED': 'bg-professional-slate/10 text-professional-slate-dark border-professional-slate/30',
-    'REOPENED': 'bg-professional-orange/10 text-professional-orange-dark border-professional-orange/30',
-    'BLOCKED': 'bg-professional-red/10 text-professional-red-dark border-professional-red/30'
+    BACKLOG:
+      "bg-professional-slate/10 text-professional-slate-dark border-professional-slate/30",
+    ANALYSIS:
+      "bg-professional-purple/10 text-professional-purple-dark border-professional-purple/30",
+    DEVELOPMENT:
+      "bg-professional-blue/10 text-professional-blue-dark border-professional-blue/30",
+    CODE_REVIEW:
+      "bg-professional-cyan/10 text-professional-cyan-dark border-professional-cyan/30",
+    UAT_TESTING:
+      "bg-professional-yellow/10 text-professional-yellow-dark border-professional-yellow/30",
+    UAT_FAILED:
+      "bg-professional-red/10 text-professional-red-dark border-professional-red/30",
+    READY_FOR_PREPROD:
+      "bg-professional-green/10 text-professional-green-dark border-professional-green/30",
+    PREPROD:
+      "bg-professional-indigo/10 text-professional-indigo-dark border-professional-indigo/30",
+    PROD: "bg-professional-emerald/10 text-professional-emerald-dark border-professional-emerald/30",
+    COMPLETED:
+      "bg-professional-green/10 text-professional-green-dark border-professional-green/30",
+    CLOSED:
+      "bg-professional-slate/10 text-professional-slate-dark border-professional-slate/30",
+    REOPENED:
+      "bg-professional-orange/10 text-professional-orange-dark border-professional-orange/30",
+    BLOCKED:
+      "bg-professional-red/10 text-professional-red-dark border-professional-red/30",
   };
-  return statusClasses[status as keyof typeof statusClasses] || statusClasses.BACKLOG;
+  return (
+    statusClasses[status as keyof typeof statusClasses] || statusClasses.BACKLOG
+  );
 };
 
 // Helper function to get priority badge styling
 const getPriorityBadgeClass = (priority: string) => {
   const priorityClasses = {
-    'CRITICAL': 'bg-professional-red/10 text-professional-red-dark border-professional-red/30',
-    'HIGH': 'bg-professional-orange/10 text-professional-orange-dark border-professional-orange/30',
-    'MEDIUM': 'bg-professional-yellow/10 text-professional-yellow-dark border-professional-yellow/30',
-    'LOW': 'bg-professional-green/10 text-professional-green-dark border-professional-green/30'
+    CRITICAL:
+      "bg-professional-red/10 text-professional-red-dark border-professional-red/30",
+    HIGH: "bg-professional-orange/10 text-professional-orange-dark border-professional-orange/30",
+    MEDIUM:
+      "bg-professional-yellow/10 text-professional-yellow-dark border-professional-yellow/30",
+    LOW: "bg-professional-green/10 text-professional-green-dark border-professional-green/30",
   };
-  return priorityClasses[priority as keyof typeof priorityClasses] || priorityClasses.MEDIUM;
+  return (
+    priorityClasses[priority as keyof typeof priorityClasses] ||
+    priorityClasses.MEDIUM
+  );
 };
 
 export const Tasks = () => {
   const { user } = useAuth();
-  const { data: tasksData, isLoading: tasksLoading, error: tasksError } = useTasksData();
-  const { data: teammatesData, isLoading: teammatesLoading } = useTeammatesData();
-  
+  const {
+    data: tasksData,
+    isLoading: tasksLoading,
+    error: tasksError,
+  } = useTasksData();
+  const { data: teammatesData, isLoading: teammatesLoading } =
+    useTeammatesData();
+
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
@@ -85,42 +118,64 @@ export const Tasks = () => {
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
 
   // Check if user can add tasks (exclude TEST_LEAD, TESTER, TEST_MANAGER)
-  const canAddTasks = user?.functionalGroup && !['TEST_LEAD', 'TESTER', 'TEST_MANAGER'].includes(user.functionalGroup);
+  const canAddTasks =
+    user?.functionalGroup &&
+    !["TEST_LEAD", "TESTER", "TEST_MANAGER"].includes(user.functionalGroup);
 
   // Helper function to check if user can edit a task
   const canEditTask = (task: any) => {
     if (!user?.functionalGroup) return false;
-    
+
     // Management roles can edit any task
-    const managementRoles = ['ADMIN', 'MANAGER', 'DEV_MANAGER', 'TEST_MANAGER', 'DEV_LEAD', 'TEST_LEAD', 'BUSINESS_ANALYST'];
+    const managementRoles = [
+      "ADMIN",
+      "MANAGER",
+      "DEV_MANAGER",
+      "TEST_MANAGER",
+      "DEV_LEAD",
+      "TEST_LEAD",
+      "BUSINESS_ANALYST",
+    ];
     if (managementRoles.includes(user.functionalGroup)) {
       return true;
     }
-    
+
     // Check if user is assigned to the task based on their role and the task assignment
     const userFullName = user.fullName;
-    if (user.functionalGroup === 'DEVELOPER' && task.developerName === userFullName) {
+    if (
+      user.functionalGroup === "DEVELOPER" &&
+      task.developerName === userFullName
+    ) {
       return true;
     }
-    if (['TESTER', 'TEST_LEAD'].includes(user.functionalGroup) && task.testerName === userFullName) {
+    if (
+      ["TESTER", "TEST_LEAD"].includes(user.functionalGroup) &&
+      task.testerName === userFullName
+    ) {
       return true;
     }
-    
+
     return false;
   };
 
   // Helper function to check if task is assigned to current user
   const isTaskAssignedToCurrentUser = (task: any) => {
     if (!user?.fullName) return false;
-    
+
     const userFullName = user.fullName;
-    if (user.functionalGroup === 'DEVELOPER' && task.developerName === userFullName) {
+    if (
+      user.functionalGroup === "DEVELOPER" &&
+      task.developerName === userFullName
+    ) {
       return true;
     }
-    if (['TESTER', 'TEST_LEAD'].includes(user.functionalGroup) && task.testerName === userFullName) {
+    if (
+      ["TESTER", "TEST_LEAD"].includes(user.functionalGroup) &&
+      task.testerName === userFullName
+    ) {
       return true;
     }
-    
+
     return false;
   };
 
@@ -129,12 +184,15 @@ export const Tasks = () => {
     if (!tasksData?.tasks) return [];
 
     return tasksData.tasks.filter((task) => {
-      const matchesSearch = task.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           task.taskNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           task.description?.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesStatus = statusFilter === "all" || task.status === statusFilter;
-      const matchesPriority = priorityFilter === "all" || task.priority === priorityFilter;
+      const matchesSearch =
+        task.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        task.taskNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        task.description?.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchesStatus =
+        statusFilter === "all" || task.status === statusFilter;
+      const matchesPriority =
+        priorityFilter === "all" || task.priority === priorityFilter;
       const matchesType = typeFilter === "all" || task.taskType === typeFilter;
 
       return matchesSearch && matchesStatus && matchesPriority && matchesType;
@@ -150,7 +208,7 @@ export const Tasks = () => {
 
   const handleTaskSave = (updatedTask: any) => {
     // Handle task update
-    console.log('Task updated:', updatedTask);
+    console.log("Task updated:", updatedTask);
   };
 
   if (tasksLoading || teammatesLoading) {
@@ -184,11 +242,12 @@ export const Tasks = () => {
               Tasks Management
             </h1>
             <p className="text-professional-slate-dark mt-1">
-              Manage and track project tasks • {filteredTasks.length} tasks found
+              Manage and track project tasks • {filteredTasks.length} tasks
+              found
             </p>
           </div>
           {canAddTasks && (
-            <Button 
+            <Button
               onClick={() => setIsAddDialogOpen(true)}
               className="professional-button shadow-professional-lg"
             >
@@ -212,7 +271,7 @@ export const Tasks = () => {
                 className="pl-10 professional-input"
               />
             </div>
-            
+
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="professional-input">
                 <SelectValue placeholder="Filter by status" />
@@ -225,7 +284,9 @@ export const Tasks = () => {
                 <SelectItem value="CODE_REVIEW">Code Review</SelectItem>
                 <SelectItem value="UAT_TESTING">UAT Testing</SelectItem>
                 <SelectItem value="UAT_FAILED">UAT Failed</SelectItem>
-                <SelectItem value="READY_FOR_PREPROD">Ready for Pre-Prod</SelectItem>
+                <SelectItem value="READY_FOR_PREPROD">
+                  Ready for Pre-Prod
+                </SelectItem>
                 <SelectItem value="PREPROD">Pre-Production</SelectItem>
                 <SelectItem value="PROD">Production</SelectItem>
                 <SelectItem value="COMPLETED">Completed</SelectItem>
@@ -287,12 +348,18 @@ export const Tasks = () => {
               <FileText className="h-12 w-12 text-professional-slate-dark mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">No tasks found</h3>
               <p className="text-professional-slate-dark mb-4">
-                {searchTerm || statusFilter !== "all" || priorityFilter !== "all" || typeFilter !== "all"
+                {searchTerm ||
+                statusFilter !== "all" ||
+                priorityFilter !== "all" ||
+                typeFilter !== "all"
                   ? "Try adjusting your search criteria or filters."
                   : "Get started by creating your first task."}
               </p>
               {canAddTasks && (
-                <Button onClick={() => setIsAddDialogOpen(true)} className="professional-button">
+                <Button
+                  onClick={() => setIsAddDialogOpen(true)}
+                  className="professional-button"
+                >
                   <Plus className="h-4 w-4 mr-2" />
                   Add First Task
                 </Button>
@@ -303,25 +370,32 @@ export const Tasks = () => {
           filteredTasks.map((task) => {
             const isAssignedToUser = isTaskAssignedToCurrentUser(task);
             const canEdit = canEditTask(task);
-            
+
             // Determine highlight class based on user's role and assignment
             let highlightClass = "";
             if (isAssignedToUser) {
-              if (user?.functionalGroup === 'DEVELOPER' || user?.functionalGroup === 'DEV_LEAD') {
+              if (
+                user?.functionalGroup === "DEVELOPER" ||
+                user?.functionalGroup === "DEV_LEAD"
+              ) {
                 highlightClass = "ring-2 ring-blue-500/50 bg-blue-50/30"; // Highlight for assigned developer
-              } else if (user?.functionalGroup === 'TESTER' || user?.functionalGroup === 'TEST_LEAD') {
+              } else if (
+                user?.functionalGroup === "TESTER" ||
+                user?.functionalGroup === "TEST_LEAD"
+              ) {
                 highlightClass = "ring-2 ring-green-500/50 bg-green-50/30"; // Highlight for assigned tester
               }
             }
 
             return (
-              <Card 
-                key={task.id} 
+              <Card
+                key={task.id}
                 className={cn(
                   "professional-card professional-hover transition-all duration-300",
                   highlightClass, // Apply highlight class here
                   canEdit && "cursor-pointer",
-                  task.status === 'UAT_FAILED' && "border-professional-red/30 bg-professional-red/5"
+                  task.status === "UAT_FAILED" &&
+                    "border-professional-red/30 bg-professional-red/5"
                 )}
                 onClick={() => handleTaskClick(task)}
               >
@@ -331,22 +405,26 @@ export const Tasks = () => {
                       <div className="bg-gradient-to-r from-professional-navy to-professional-blue text-white px-3 py-1 rounded-lg font-mono text-sm font-bold shadow-professional">
                         {task.taskNumber}
                       </div>
-                      {task.status === 'UAT_FAILED' && (
+                      {task.status === "UAT_FAILED" && (
                         <div className="flex items-center gap-1 bg-professional-red/10 text-professional-red-dark px-2 py-1 rounded-full border border-professional-red/30">
                           <AlertTriangle className="h-4 w-4" />
-                          <span className="text-xs font-medium">UAT Failed</span>
+                          <span className="text-xs font-medium">
+                            UAT Failed
+                          </span>
                         </div>
                       )}
                       {isAssignedToUser && (
                         <div className="flex items-center gap-1 bg-professional-blue/10 text-professional-blue-dark px-2 py-1 rounded-full border border-professional-blue/30">
                           <Target className="h-4 w-4" />
-                          <span className="text-xs font-medium">Assigned to You</span>
+                          <span className="text-xs font-medium">
+                            Assigned to You
+                          </span>
                         </div>
                       )}
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge className={getStatusBadgeClass(task.status)}>
-                        {task.status.replace(/_/g, ' ')}
+                        {task.status.replace(/_/g, " ")}
                       </Badge>
                       <Badge className={getPriorityBadgeClass(task.priority)}>
                         {task.priority}
@@ -356,20 +434,29 @@ export const Tasks = () => {
 
                   <div className="space-y-4">
                     <div>
-                      <h3 className="text-lg font-semibold text-professional-navy mb-2">{task.name}</h3>
+                      <h3 className="text-lg font-semibold text-professional-navy mb-2">
+                        {task.name}
+                      </h3>
                       {task.description && (
-                        <p className="text-professional-slate-dark text-sm line-clamp-2">{task.description}</p>
+                        <p className="text-professional-slate-dark text-sm line-clamp-2">
+                          {task.description}
+                        </p>
                       )}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                       {/* Developer Assignment */}
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-4">
                         <Code className="h-4 w-4 text-professional-blue" />
                         <div>
-                          <p className="text-xs text-professional-slate-dark">Developer</p>
-                          <p className="text-sm font-medium text-professional-navy">
-                            {task.developerName || "Unassigned"}
+                          <p className="text-xs text-professional-slate-dark">
+                            Developer
+                          </p>
+                          <p className="text-sm font-medium text-professional-navy whitespace-pre-line">
+                            {task.assignedDeveloperNames &&
+                            task.assignedDeveloperNames.length > 0
+                              ? task.assignedDeveloperNames.join("\n")
+                              : "Unassigned"}
                           </p>
                         </div>
                       </div>
@@ -378,9 +465,14 @@ export const Tasks = () => {
                       <div className="flex items-center gap-2">
                         <TestTube className="h-4 w-4 text-professional-green" />
                         <div>
-                          <p className="text-xs text-professional-slate-dark">Tester</p>
-                          <p className="text-sm font-medium text-professional-navy">
-                            {task.testerName || "Unassigned"}
+                          <p className="text-xs text-professional-slate-dark">
+                            Tester
+                          </p>
+                          <p className="text-sm font-medium text-professional-navy whitespace-pre-line">
+                            {task.assignedTesterNames &&
+                            task.assignedTesterNames.length > 0
+                              ? task.assignedTesterNames.join("\n")
+                              : "Unassigned"}
                           </p>
                         </div>
                       </div>
@@ -389,9 +481,12 @@ export const Tasks = () => {
                       <div className="flex items-center gap-2">
                         <Timer className="h-4 w-4 text-professional-orange" />
                         <div>
-                          <p className="text-xs text-professional-slate-dark">Due Hours</p>
+                          <p className="text-xs text-professional-slate-dark">
+                            Due Hours
+                          </p>
                           <p className="text-sm font-medium text-professional-navy">
-                            Dev: {task.developmentDueHours || 0}h • Test: {task.testingDueHours || 0}h
+                            Dev: {task.developmentDueHours || 0}h • Test:{" "}
+                            {task.testingDueHours || 0}h
                           </p>
                         </div>
                       </div>
@@ -400,7 +495,9 @@ export const Tasks = () => {
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-professional-purple" />
                         <div>
-                          <p className="text-xs text-professional-slate-dark">Received</p>
+                          <p className="text-xs text-professional-slate-dark">
+                            Received
+                          </p>
                           <p className="text-sm font-medium text-professional-navy">
                             {formatSafeDate(task.receivedDate, "MMM dd")}
                           </p>
@@ -410,14 +507,23 @@ export const Tasks = () => {
 
                     {task.projectName && (
                       <div className="flex items-center gap-2 pt-2 border-t border-professional-slate/20">
-                        <Badge variant="outline" className="text-xs bg-professional-slate/5">
+                        <Badge
+                          variant="outline"
+                          className="text-xs bg-professional-slate/5"
+                        >
                           {task.projectName}
                         </Badge>
-                        <Badge variant="outline" className="text-xs bg-professional-slate/5">
-                          {task.taskType.replace(/_/g, ' ')}
+                        <Badge
+                          variant="outline"
+                          className="text-xs bg-professional-slate/5"
+                        >
+                          {task.taskType.replace(/_/g, " ")}
                         </Badge>
                         {!canEdit && (
-                          <Badge variant="outline" className="text-xs bg-professional-yellow/10 text-professional-yellow-dark border-professional-yellow/30">
+                          <Badge
+                            variant="outline"
+                            className="text-xs bg-professional-yellow/10 text-professional-yellow-dark border-professional-yellow/30"
+                          >
                             View Only
                           </Badge>
                         )}
@@ -451,5 +557,3 @@ export const Tasks = () => {
 };
 
 export default Tasks;
-
-

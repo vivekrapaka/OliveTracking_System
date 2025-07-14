@@ -3,16 +3,36 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, AlertTriangle, Code, TestTube, Clock } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  CalendarIcon,
+  AlertTriangle,
+  Code,
+  TestTube,
+  Clock,
+} from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useEditTask } from "@/hooks/useEditTask";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProjectTeammates } from "@/hooks/useProjectTeammates";
-import { getAvailableStatuses, requiresCommitId, requiresComment } from "@/utils/statusWorkflowUtils";
+import {
+  getAvailableStatuses,
+  requiresCommitId,
+  requiresComment,
+} from "@/utils/statusWorkflowUtils";
 import { DisciplineBasedTeammateSelector } from "./DisciplineBasedTeammateSelector";
 
 interface Task {
@@ -39,8 +59,8 @@ interface Task {
   commitId?: string;
   developmentDueHours?: number;
   testingDueHours?: number;
-  assignedDeveloperIds: number[],
-  assignedTesterIds: number[],
+  assignedDeveloperIds: number[];
+  assignedTesterIds: number[];
 }
 
 interface Teammate {
@@ -57,7 +77,12 @@ interface TaskDetailsTabProps {
   onClose: () => void;
 }
 
-export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetailsTabProps) => {
+export const TaskDetailsTab = ({
+  task,
+  onSave,
+  teammates,
+  onClose,
+}: TaskDetailsTabProps) => {
   const { user } = useAuth();
   const [taskName, setTaskName] = useState(task.name);
   const [description, setDescription] = useState(task.description || "");
@@ -67,12 +92,21 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
   const [commitId, setCommitId] = useState(task.commitId || "");
   const [comment, setComment] = useState("");
   const [selectedReceivedDate, setSelectedReceivedDate] = useState<Date>();
-  const [selectedDevelopmentStartDate, setSelectedDevelopmentStartDate] = useState<Date>();
-  const [selectedDeveloperIds, setSelectedDeveloperIds] = useState<number[]>([]);
+  const [selectedDevelopmentStartDate, setSelectedDevelopmentStartDate] =
+    useState<Date>();
+  const [selectedDeveloperIds, setSelectedDeveloperIds] = useState<number[]>(
+    []
+  );
   const [selectedTesterIds, setSelectedTesterIds] = useState<number[]>([]);
-  const [developmentDueHours, setDevelopmentDueHours] = useState(task.developmentDueHours || 0);
-  const [testingDueHours, setTestingDueHours] = useState(task.testingDueHours || 0);
-  const [selectedProjectId, setSelectedProjectId] = useState<number | undefined>();
+  const [developmentDueHours, setDevelopmentDueHours] = useState(
+    task.developmentDueHours || 0
+  );
+  const [testingDueHours, setTestingDueHours] = useState(
+    task.testingDueHours || 0
+  );
+  const [selectedProjectId, setSelectedProjectId] = useState<
+    number | undefined
+  >();
   const editTaskMutation = useEditTask();
 
   // Fetch project teammates
@@ -80,11 +114,16 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
   const projectTeammates = projectTeammatesData?.teammates || [];
 
   // Separate developers and testers from project teammates
-  const developers = projectTeammates.filter(t =>
-    t.department === "DEVELOPER" || t.department === "DEV_LEAD"
+ const developers = projectTeammates.filter(
+    (t) =>
+      (t.department === "DEVELOPER" || t.department === "DEV_LEAD") &&
+      t.projectIds?.includes(selectedProjectId!)
   );
-  const testers = projectTeammates.filter(t =>
-    t.department === "TESTER" || t.department === "TEST_LEAD"
+
+  const testers = projectTeammates.filter(
+    (t) =>
+      (t.department === "TESTER" || t.department === "TEST_LEAD") &&
+      t.projectIds?.includes(selectedProjectId!)
   );
 
   // Get available status transitions based on current status and user functionalGroup
@@ -102,7 +141,8 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
 
   // Check if comment is required for the status change
   const isCommentRequired = requiresComment(task.status, currentStage);
-  const showCommentField = isCommentRequired ||
+  const showCommentField =
+    isCommentRequired ||
     (task.status === "CODE_REVIEW" && availableStatusTransitions.length > 0) ||
     (task.status === "UAT_TESTING" && currentStage === "UAT_FAILED") ||
     (task.status === "UAT_FAILED" && currentStage === "UAT_TESTING");
@@ -114,7 +154,7 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
     { value: "TASK", label: "Task" },
     { value: "BUG", label: "Bug" },
     { value: "SUB_TASK", label: "Sub-Task" },
-    { value: "ANALYSIS_TASK", label: "Analysis Task" }
+    { value: "ANALYSIS_TASK", label: "Analysis Task" },
   ];
 
   const priorities = ["CRITICAL", "HIGH", "MEDIUM", "LOW"];
@@ -136,37 +176,22 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
     if (task.developmentStartDate) {
       setSelectedDevelopmentStartDate(new Date(task.developmentStartDate));
     }
-console.log("Edit Task Loaded:", task);
+    console.log("Edit Task Loaded:", task);
     // Set initial developer and tester selections based on project teammates
-   if (projectTeammates.length > 0 && Array.isArray(task.assignedTeammates)) {
-    const assignedNames = task.assignedTeammates.map((name: string) =>
-      name.trim().toLowerCase()
+    const devIds = projectTeammates.filter(
+      (t) =>
+        (t.department === "DEVELOPER" || t.department === "DEV_LEAD") &&
+        t.projectIds?.includes(selectedProjectId!)
     );
 
-    const devIds = projectTeammates
-      .filter(
-        (t) =>
-          (t.department === "DEVELOPER" || t.department === "DEV_LEAD") &&
-          assignedNames.includes(t.name.trim().toLowerCase())
-      )
-      .map((t) => t.id);
-
-    const testIds = projectTeammates
-      .filter(
-        (t) =>
-          (t.department === "TESTER" || t.department === "TEST_LEAD") &&
-          assignedNames.includes(t.name.trim().toLowerCase())
-      )
-      .map((t) => t.id);
-
-    console.log("✅ Pre-filled developer IDs:", devIds);
-    console.log("✅ Pre-filled tester IDs:", testIds);
+    const testIds = projectTeammates.filter(
+      (t) =>
+        (t.department === "TESTER" || t.department === "TEST_LEAD") &&
+        t.projectIds?.includes(selectedProjectId!)
+    );
 
     setSelectedDeveloperIds(devIds);
     setSelectedTesterIds(testIds);
-  }
-
-
   }, [task, projectTeammates]);
 
   const handleStatusChange = (newStatus: string) => {
@@ -197,8 +222,12 @@ console.log("Edit Task Loaded:", task);
       description: description,
       status: currentStage,
       taskType: taskType,
-      receivedDate: selectedReceivedDate ? format(selectedReceivedDate, "yyyy-MM-dd") : task.receivedDate,
-      developmentStartDate: selectedDevelopmentStartDate ? format(selectedDevelopmentStartDate, "yyyy-MM-dd") : task.developmentStartDate,
+      receivedDate: selectedReceivedDate
+        ? format(selectedReceivedDate, "yyyy-MM-dd")
+        : task.receivedDate,
+      developmentStartDate: selectedDevelopmentStartDate
+        ? format(selectedDevelopmentStartDate, "yyyy-MM-dd")
+        : task.developmentStartDate,
       developerIds: selectedDeveloperIds,
       testerIds: selectedTesterIds,
       priority: priority,
@@ -208,14 +237,17 @@ console.log("Edit Task Loaded:", task);
       testingDueHours: testingDueHours,
     };
 
-    editTaskMutation.mutate({
-      taskId: task.id,
-      taskData
-    }, {
-      onSuccess: () => {
-        onClose();
+    editTaskMutation.mutate(
+      {
+        taskId: task.id,
+        taskData,
+      },
+      {
+        onSuccess: () => {
+          onClose();
+        },
       }
-    });
+    );
   };
 
   return (
@@ -231,7 +263,7 @@ console.log("Edit Task Loaded:", task);
             <p className="text-sm text-gray-600">{task.projectName}</p>
           </div>
         </div>
-        {task.status === 'UAT_FAILED' && (
+        {task.status === "UAT_FAILED" && (
           <div className="mt-3 flex items-center gap-2 bg-red-50 text-red-700 px-3 py-2 rounded-lg border border-red-200">
             <AlertTriangle className="h-5 w-5" />
             <span className="font-medium">UAT Failed - Requires attention</span>
@@ -251,7 +283,12 @@ console.log("Edit Task Loaded:", task);
 
             <div className="space-y-4">
               <div>
-                <Label htmlFor="taskName" className="text-sm font-medium text-gray-700">Task Name</Label>
+                <Label
+                  htmlFor="taskName"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  Task Name
+                </Label>
                 <Input
                   id="taskName"
                   value={taskName}
@@ -262,28 +299,42 @@ console.log("Edit Task Loaded:", task);
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="taskType" className="text-sm font-medium text-gray-700">Task Type</Label>
+                  <Label
+                    htmlFor="taskType"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    Task Type
+                  </Label>
                   <Select value={taskType} onValueChange={setTaskType}>
                     <SelectTrigger className="mt-1">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       {taskTypes.map((type) => (
-                        <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div>
-                  <Label htmlFor="priority" className="text-sm font-medium text-gray-700">Priority</Label>
+                  <Label
+                    htmlFor="priority"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    Priority
+                  </Label>
                   <Select value={priority} onValueChange={setPriority}>
                     <SelectTrigger className="mt-1">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       {priorities.map((priorityOption) => (
-                        <SelectItem key={priorityOption} value={priorityOption}>{priorityOption}</SelectItem>
+                        <SelectItem key={priorityOption} value={priorityOption}>
+                          {priorityOption}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -301,7 +352,10 @@ console.log("Edit Task Loaded:", task);
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="developmentDueHours" className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                <Label
+                  htmlFor="developmentDueHours"
+                  className="text-sm font-medium text-gray-700 flex items-center gap-2"
+                >
                   <Code className="h-4 w-4 text-blue-500" />
                   Development Hours
                 </Label>
@@ -309,14 +363,19 @@ console.log("Edit Task Loaded:", task);
                   id="developmentDueHours"
                   type="number"
                   value={developmentDueHours}
-                  onChange={(e) => setDevelopmentDueHours(Number(e.target.value))}
+                  onChange={(e) =>
+                    setDevelopmentDueHours(Number(e.target.value))
+                  }
                   className="mt-1"
                   min="0"
                   step="0.5"
                 />
               </div>
               <div>
-                <Label htmlFor="testingDueHours" className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                <Label
+                  htmlFor="testingDueHours"
+                  className="text-sm font-medium text-gray-700 flex items-center gap-2"
+                >
                   <TestTube className="h-4 w-4 text-green-500" />
                   Testing Hours
                 </Label>
@@ -345,7 +404,9 @@ console.log("Edit Task Loaded:", task);
 
             <div className="space-y-4">
               <div>
-                <Label className="text-sm font-medium text-gray-700">Received Date</Label>
+                <Label className="text-sm font-medium text-gray-700">
+                  Received Date
+                </Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -356,7 +417,11 @@ console.log("Edit Task Loaded:", task);
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {selectedReceivedDate ? format(selectedReceivedDate, "PPP") : <span>Pick received date</span>}
+                      {selectedReceivedDate ? (
+                        format(selectedReceivedDate, "PPP")
+                      ) : (
+                        <span>Pick received date</span>
+                      )}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -371,7 +436,9 @@ console.log("Edit Task Loaded:", task);
               </div>
 
               <div>
-                <Label className="text-sm font-medium text-gray-700">Development Start Date</Label>
+                <Label className="text-sm font-medium text-gray-700">
+                  Development Start Date
+                </Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -382,7 +449,11 @@ console.log("Edit Task Loaded:", task);
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {selectedDevelopmentStartDate ? format(selectedDevelopmentStartDate, "PPP") : <span>Pick development start date</span>}
+                      {selectedDevelopmentStartDate ? (
+                        format(selectedDevelopmentStartDate, "PPP")
+                      ) : (
+                        <span>Pick development start date</span>
+                      )}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -400,21 +471,35 @@ console.log("Edit Task Loaded:", task);
 
           {/* Status */}
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Status Management</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Status Management
+            </h3>
 
             <div>
-              <Label htmlFor="status" className="text-sm font-medium text-gray-700">Current Status</Label>
+              <Label
+                htmlFor="status"
+                className="text-sm font-medium text-gray-700"
+              >
+                Current Status
+              </Label>
               <Select
                 value={currentStage}
                 onValueChange={handleStatusChange}
                 disabled={isStatusDropdownDisabled}
               >
-                <SelectTrigger className={cn("mt-1", isStatusDropdownDisabled && "opacity-50 cursor-not-allowed")}>
+                <SelectTrigger
+                  className={cn(
+                    "mt-1",
+                    isStatusDropdownDisabled && "opacity-50 cursor-not-allowed"
+                  )}
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {availableStatusTransitions.map((status) => (
-                    <SelectItem key={status.value} value={status.value}>{status.label}</SelectItem>
+                    <SelectItem key={status.value} value={status.value}>
+                      {status.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -430,20 +515,26 @@ console.log("Edit Task Loaded:", task);
 
       {/* Team Assignment Section */}
       <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-900 mb-6">Team Assignment</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-6">
+          Team Assignment
+        </h3>
         <DisciplineBasedTeammateSelector
           developers={developers}
           testers={testers}
           selectedDeveloperIds={selectedDeveloperIds}
           selectedTesterIds={selectedTesterIds}
           onDeveloperToggle={(id) => {
-            setSelectedDeveloperIds(prev =>
-              prev.includes(id) ? prev.filter(devId => devId !== id) : [...prev, id]
+            setSelectedDeveloperIds((prev) =>
+              prev.includes(id)
+                ? prev.filter((devId) => devId !== id)
+                : [...prev, id]
             );
           }}
           onTesterToggle={(id) => {
-            setSelectedTesterIds(prev =>
-              prev.includes(id) ? prev.filter(testId => testId !== id) : [...prev, id]
+            setSelectedTesterIds((prev) =>
+              prev.includes(id)
+                ? prev.filter((testId) => testId !== id)
+                : [...prev, id]
             );
           }}
         />
@@ -452,13 +543,19 @@ console.log("Edit Task Loaded:", task);
       {/* Conditional Fields */}
       {(showCommentField || showCommitIdField) && (
         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Additional Information</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Additional Information
+          </h3>
 
           <div className="space-y-4">
             {showCommentField && (
               <div>
-                <Label htmlFor="comment" className="text-sm font-medium text-gray-700">
-                  Comment {isCommentRequired && <span className="text-red-500">*</span>}
+                <Label
+                  htmlFor="comment"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  Comment{" "}
+                  {isCommentRequired && <span className="text-red-500">*</span>}
                 </Label>
                 <Textarea
                   id="comment"
@@ -471,7 +568,9 @@ console.log("Edit Task Loaded:", task);
                   }
                   className={cn(
                     "min-h-[80px] mt-1",
-                    isCommentRequired && !comment.trim() && "border-red-300 focus:border-red-500"
+                    isCommentRequired &&
+                      !comment.trim() &&
+                      "border-red-300 focus:border-red-500"
                   )}
                 />
                 {isCommentRequired && !comment.trim() && (
@@ -484,8 +583,14 @@ console.log("Edit Task Loaded:", task);
 
             {showCommitIdField && (
               <div>
-                <Label htmlFor="commitId" className="text-sm font-medium text-gray-700">
-                  Commit ID {isCommitIdRequired && <span className="text-red-500">*</span>}
+                <Label
+                  htmlFor="commitId"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  Commit ID{" "}
+                  {isCommitIdRequired && (
+                    <span className="text-red-500">*</span>
+                  )}
                 </Label>
                 <Input
                   id="commitId"
@@ -494,12 +599,15 @@ console.log("Edit Task Loaded:", task);
                   placeholder="Enter commit ID (required for UAT Testing and Pre-Production)"
                   className={cn(
                     "mt-1",
-                    isCommitIdRequired && !commitId.trim() && "border-red-300 focus:border-red-500"
+                    isCommitIdRequired &&
+                      !commitId.trim() &&
+                      "border-red-300 focus:border-red-500"
                   )}
                 />
                 {isCommitIdRequired && !commitId.trim() && (
                   <p className="text-xs text-red-600 bg-red-50 p-2 rounded mt-2 border border-red-200">
-                    Commit ID is required when moving to UAT Testing or Pre-Production.
+                    Commit ID is required when moving to UAT Testing or
+                    Pre-Production.
                   </p>
                 )}
               </div>
@@ -510,7 +618,9 @@ console.log("Edit Task Loaded:", task);
 
       {/* Description */}
       <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Task Description</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          Task Description
+        </h3>
         <Textarea
           id="taskDescription"
           value={description}
@@ -519,7 +629,9 @@ console.log("Edit Task Loaded:", task);
           maxLength={1000}
           className="min-h-[120px]"
         />
-        <p className="text-xs text-gray-500 mt-2">{description.length}/1000 characters</p>
+        <p className="text-xs text-gray-500 mt-2">
+          {description.length}/1000 characters
+        </p>
       </div>
 
       {/* Action Buttons */}
@@ -538,5 +650,3 @@ console.log("Edit Task Loaded:", task);
     </div>
   );
 };
-
-

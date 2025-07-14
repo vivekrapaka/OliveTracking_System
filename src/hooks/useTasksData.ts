@@ -15,8 +15,10 @@ export interface BackendTask {
   receivedDate: string;
   developmentStartDate: string;
   dueDate: string;
-  assignedTeammateIds: number[];
-  assignedTeammateNames: string[];
+  assignedDeveloperIds: number[];
+  assignedDeveloperNames: string[];
+  assignedTesterIds: number[];
+  assignedTesterNames: string[];
   developerName?: string;
   testerName?: string;
   priority: string;

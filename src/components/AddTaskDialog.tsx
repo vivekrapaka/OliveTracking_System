@@ -89,7 +89,7 @@ export const AddTaskDialog = ({
   } = useTaskSequenceNumber();
 
   // Fetch project teammates when project is selected
-  console.log("selectedProjectId for -{}",selectedProjectId)
+  console.log("selectedProjectId for -{}", selectedProjectId);
   const { data: projectTeammatesData } = useProjectTeammates(selectedProjectId);
   const projectTeammates = projectTeammatesData?.teammates || [];
 
@@ -132,20 +132,20 @@ export const AddTaskDialog = ({
     })) || [];
 
   // Separate developers and testers from project teammates
-  console.log("printing the projectTeammats -{}",projectTeammates)
- const developers = projectTeammates.filter(
-  (t) =>
-    (t.department === "DEVELOPER" || t.department === "DEV_LEAD") &&
-    t.projectIds?.includes(selectedProjectId!)
-);
+  console.log("printing the projectTeammats -{}", projectTeammates);
+  const developers = projectTeammates.filter(
+    (t) =>
+      (t.department === "DEVELOPER" || t.department === "DEV_LEAD") &&
+      t.projectIds?.includes(selectedProjectId!)
+  );
 
-const testers = projectTeammates.filter(
-  (t) =>
-    (t.department === "TESTER" || t.department === "TEST_LEAD") &&
-    t.projectIds?.includes(selectedProjectId!)
-);
+  const testers = projectTeammates.filter(
+    (t) =>
+      (t.department === "TESTER" || t.department === "TEST_LEAD") &&
+      t.projectIds?.includes(selectedProjectId!)
+  );
 
-console.log("printing the developers", developers)
+  console.log("printing the developers", developers);
   const resetForm = () => {
     setTaskName("");
     setDescription("");
@@ -229,8 +229,8 @@ console.log("printing the developers", developers)
   };
 
   useEffect(() => {
-  console.log("🔥 selectedProjectId changed:", selectedProjectId);
-}, [selectedProjectId]);
+    console.log("🔥 selectedProjectId changed:", selectedProjectId);
+  }, [selectedProjectId]);
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
