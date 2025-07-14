@@ -14,15 +14,15 @@ interface ProjectTeammatesResponse {
 }
 
 
-const fetchProjectTeammates = async (taskId: number) => {
-  const url = `/api/tasks/${taskId}/history`;
+const fetchProjectTeammates = async (projectId: number) => {
+  const url = `/api/teammates?projectId=${projectId}`;
   
-  console.log('Fetchinwertyui:', url);
+  console.log("fecthing for the projects teammates :", url);
   
   try {
 
     const response = await apiClient.get(url);
-    console.log('Task history response:', response.data);
+    console.log("response of project teammates:", response.data);
     return response.data;
   } catch (error) {
     console.error('Task history fetch error:', error);
