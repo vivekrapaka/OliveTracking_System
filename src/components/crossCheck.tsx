@@ -89,7 +89,6 @@ export const AddTaskDialog = ({
   } = useTaskSequenceNumber();
 
   // Fetch project teammates when project is selected
-  console.log("selectedProjectId for -{}", selectedProjectId);
   const { data: projectTeammatesData } = useProjectTeammates(selectedProjectId);
   const projectTeammates = projectTeammatesData?.teammates || [];
 
@@ -105,7 +104,7 @@ export const AddTaskDialog = ({
     { value: "PREPROD", label: "Pre-Production" },
     { value: "PROD", label: "Production" },
     { value: "COMPLETED", label: "Completed" },
-
+    { value: "CLOSED", label: "Closed" },
     { value: "REOPENED", label: "Reopened" },
     { value: "BLOCKED", label: "Blocked" },
   ];
@@ -132,20 +131,13 @@ export const AddTaskDialog = ({
     })) || [];
 
   // Separate developers and testers from project teammates
-  console.log("printing the projectTeammats -{}", projectTeammates);
   const developers = projectTeammates.filter(
-    (t) =>
-      (t.department === "DEVELOPER" || t.department === "DEV_LEAD") &&
-      t.projectIds?.includes(selectedProjectId!)
+    (t) => t.functionalGroup === "DEVELOPER" || t.functionalGroup === "DEV_LEAD"
   );
-
   const testers = projectTeammates.filter(
-    (t) =>
-      (t.department === "TESTER" || t.department === "TEST_LEAD") &&
-      t.projectIds?.includes(selectedProjectId!)
+    (t) => t.functionalGroup === "TESTER" || t.functionalGroup === "TEST_LEAD"
   );
 
-  console.log("printing the developers", developers);
   const resetForm = () => {
     setTaskName("");
     setDescription("");
@@ -228,9 +220,6 @@ export const AddTaskDialog = ({
     onClose();
   };
 
-  useEffect(() => {
-    console.log("🔥 selectedProjectId changed:", selectedProjectId);
-  }, [selectedProjectId]);
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
@@ -641,6 +630,27 @@ export const AddTaskDialog = ({
             onTaskSelect={setParentId}
             currentTaskType={taskType}
           />
+
+          {/* Team Assignment Section */}
+      <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+        <h3 className="text-lg font-semibold text-gray-900 mb-6">Team Assignment</h3>
+        <DisciplineBasedTeammateSelector
+          developers={developers}
+          testers={testers}
+          selectedDeveloperIds={selectedDeveloperIds}
+          selectedTesterIds={selectedTesterIds}
+          onDeveloperToggle={(id) => {
+            setSelectedDeveloperIds(prev => 
+              prev.includes(id) ? prev.filter(devId => devId !== id) : [...prev, id]
+            );
+          }}
+          onTesterToggle={(id) => {
+            setSelectedTesterIds(prev => 
+              prev.includes(id) ? prev.filter(testId => testId !== id) : [...prev, id]
+            );
+          }}
+        />
+      </div>
 
           {/* Team Assignment */}
           {selectedProjectId && projectTeammates.length > 0 && (

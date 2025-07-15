@@ -5,7 +5,17 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
   Table,
   TableBody,
@@ -43,8 +53,8 @@ interface Teammate {
   availabilityStatus: string;
   tasksAssigned: number;
   tasksCompleted: number;
-  projectName: string;
   projectIds: number[];
+  projectNames: string[];
 }
 
 export const Teammates = () => {
@@ -53,14 +63,18 @@ export const Teammates = () => {
   const deleteTeammateMutation = useDeleteTeammate();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [selectedTeammate, setSelectedTeammate] = useState<Teammate | null>(null);
+  const [selectedTeammate, setSelectedTeammate] = useState<Teammate | null>(
+    null
+  );
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
 
   // Convert backend data to frontend format
-  const convertBackendToFrontend = (backendTeammate: BackendTeammate): Teammate => {
+  const convertBackendToFrontend = (
+    backendTeammate: BackendTeammate
+  ): Teammate => {
     return {
       id: backendTeammate.id,
       name: backendTeammate.name,
@@ -73,13 +87,14 @@ export const Teammates = () => {
       availabilityStatus: backendTeammate.availabilityStatus,
       tasksAssigned: backendTeammate.tasksAssigned,
       tasksCompleted: backendTeammate.tasksCompleted,
-      projectName: backendTeammate.projectName || 'Not Assigned',
-      projectIds: backendTeammate.projectIds || []
+      projectNames: backendTeammate.projectNames || "Not Assigned",
+      projectIds: backendTeammate.projectIds || [],
     };
   };
 
   // Convert API data to component state
-  const apiTeammatesData = teammatesApiData?.teammates?.map(convertBackendToFrontend) || [];
+  const apiTeammatesData =
+    teammatesApiData?.teammates?.map(convertBackendToFrontend) || [];
   const [teammatesData, setTeammatesData] = useState<Teammate[]>([]);
 
   // Update local state when API data changes
@@ -90,38 +105,49 @@ export const Teammates = () => {
   }, [apiTeammatesData]);
 
   // Filter teammates based on search and filters
-  const filteredTeammates = teammatesData.filter(teammate => {
-    const matchesSearch = searchTerm === "" ||
+  const filteredTeammates = teammatesData.filter((teammate) => {
+    const matchesSearch =
+      searchTerm === "" ||
       teammate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       teammate.email.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesRole = selectedRoles.length === 0 || selectedRoles.includes(teammate.role);
-    const matchesDepartment = selectedDepartments.length === 0 || selectedDepartments.includes(teammate.department);
-    const matchesStatus = selectedStatuses.length === 0 || selectedStatuses.includes(teammate.availabilityStatus);
+    const matchesRole =
+      selectedRoles.length === 0 || selectedRoles.includes(teammate.role);
+    const matchesDepartment =
+      selectedDepartments.length === 0 ||
+      selectedDepartments.includes(teammate.department);
+    const matchesStatus =
+      selectedStatuses.length === 0 ||
+      selectedStatuses.includes(teammate.availabilityStatus);
 
     return matchesSearch && matchesRole && matchesDepartment && matchesStatus;
   });
 
   // Filter options for dropdowns
   const filterOptions = {
-    roles: [...new Set(teammatesData.map(t => t.role))].map(r => ({
+    roles: [...new Set(teammatesData.map((t) => t.role))].map((r) => ({
       label: r,
       value: r,
-      count: teammatesData.filter(t => t.role === r).length
+      count: teammatesData.filter((t) => t.role === r).length,
     })),
-    departments: [...new Set(teammatesData.map(t => t.department))].map(d => ({
-      label: d,
-      value: d,
-      count: teammatesData.filter(t => t.department === d).length
-    })),
-    statuses: [...new Set(teammatesData.map(t => t.availabilityStatus))].map(s => ({
-      label: s,
-      value: s,
-      count: teammatesData.filter(t => t.availabilityStatus === s).length
-    }))
+    departments: [...new Set(teammatesData.map((t) => t.department))].map(
+      (d) => ({
+        label: d,
+        value: d,
+        count: teammatesData.filter((t) => t.department === d).length,
+      })
+    ),
+    statuses: [...new Set(teammatesData.map((t) => t.availabilityStatus))].map(
+      (s) => ({
+        label: s,
+        value: s,
+        count: teammatesData.filter((t) => t.availabilityStatus === s).length,
+      })
+    ),
   };
 
-  const activeFiltersCount = selectedRoles.length + selectedDepartments.length + selectedStatuses.length;
+  const activeFiltersCount =
+    selectedRoles.length + selectedDepartments.length + selectedStatuses.length;
 
   const clearAllFilters = () => {
     setSelectedRoles([]);
@@ -132,10 +158,14 @@ export const Teammates = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Available": return "bg-professional-green text-professional-green-dark border-professional-green-dark";
-      case "Occupied": return "bg-professional-red text-professional-red-dark border-professional-red-dark";
-      case "On Leave": return "bg-professional-orange text-professional-orange-dark border-professional-orange-dark";
-      default: return "bg-professional-gray text-professional-gray-dark border-professional-gray-dark";
+      case "Available":
+        return "bg-professional-green text-professional-green-dark border-professional-green-dark";
+      case "Occupied":
+        return "bg-professional-red text-professional-red-dark border-professional-red-dark";
+      case "On Leave":
+        return "bg-professional-orange text-professional-orange-dark border-professional-orange-dark";
+      default:
+        return "bg-professional-gray text-professional-gray-dark border-professional-gray-dark";
     }
   };
 
@@ -185,7 +215,9 @@ export const Teammates = () => {
       <div className="text-center py-12 bg-gradient-to-br from-professional-blue/5 to-professional-cyan/5">
         <div className="text-professional-red mb-4">
           <AlertCircle className="h-12 w-12 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">Failed to load teammates</h3>
+          <h3 className="text-lg font-semibold mb-2">
+            Failed to load teammates
+          </h3>
           <p className="text-professional-slate-dark mb-4">{error.message}</p>
         </div>
       </div>
@@ -197,15 +229,22 @@ export const Teammates = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0 bg-white/80 backdrop-blur-md rounded-xl p-6 shadow-professional-lg border border-professional-slate/20">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-professional-blue to-professional-cyan bg-clip-text text-transparent">Team Members</h1>
-          <p className="text-professional-slate-dark mt-1">Manage your team members and their availability</p>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-professional-blue to-professional-cyan bg-clip-text text-transparent">
+            Team Members
+          </h1>
+          <p className="text-professional-slate-dark mt-1">
+            Manage your team members and their availability
+          </p>
         </div>
 
         <div className="flex items-center space-x-2">
           {/* Add Teammate button - disabled for everyone */}
           <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-gradient-to-r from-professional-blue to-professional-cyan hover:from-professional-blue-dark hover:to-professional-cyan-dark text-white shadow-professional" disabled>
+              <Button
+                className="bg-gradient-to-r from-professional-blue to-professional-cyan hover:from-professional-blue-dark hover:to-professional-cyan-dark text-white shadow-professional"
+                disabled
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Teammate
               </Button>
@@ -272,19 +311,27 @@ export const Teammates = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="bg-white/80 backdrop-blur-md border-professional-slate/20 shadow-professional hover:shadow-professional-lg transition-all duration-300">
           <CardContent className="p-6">
-            <div className="text-2xl font-bold bg-gradient-to-r from-professional-blue to-professional-cyan bg-clip-text text-transparent">{teammatesApiData?.totalMembersInTeamCount || 0}</div>
-            <p className="text-sm text-professional-slate-dark">Total Team Members</p>
+            <div className="text-2xl font-bold bg-gradient-to-r from-professional-blue to-professional-cyan bg-clip-text text-transparent">
+              {teammatesApiData?.totalMembersInTeamCount || 0}
+            </div>
+            <p className="text-sm text-professional-slate-dark">
+              Total Team Members
+            </p>
           </CardContent>
         </Card>
         <Card className="bg-white/80 backdrop-blur-md border-professional-slate/20 shadow-professional hover:shadow-professional-lg transition-all duration-300">
           <CardContent className="p-6">
-            <div className="text-2xl font-bold text-professional-green">{teammatesApiData?.availableTeamMembersCount || 0}</div>
+            <div className="text-2xl font-bold text-professional-green">
+              {teammatesApiData?.availableTeamMembersCount || 0}
+            </div>
             <p className="text-sm text-professional-slate-dark">Available</p>
           </CardContent>
         </Card>
         <Card className="bg-white/80 backdrop-blur-md border-professional-slate/20 shadow-professional hover:shadow-professional-lg transition-all duration-300">
           <CardContent className="p-6">
-            <div className="text-2xl font-bold text-professional-red">{teammatesApiData?.occupiedTeamMembersCount || 0}</div>
+            <div className="text-2xl font-bold text-professional-red">
+              {teammatesApiData?.occupiedTeamMembersCount || 0}
+            </div>
             <p className="text-sm text-professional-slate-dark">Occupied</p>
           </CardContent>
         </Card>
@@ -293,35 +340,61 @@ export const Teammates = () => {
       {/* Teammates Table */}
       <Card className="bg-white/80 backdrop-blur-md border-professional-slate/20 shadow-professional-lg">
         <CardHeader>
-          <CardTitle className="bg-gradient-to-r from-professional-blue to-professional-cyan bg-clip-text text-transparent">All Team Members</CardTitle>
+          <CardTitle className="bg-gradient-to-r from-professional-blue to-professional-cyan bg-clip-text text-transparent">
+            All Team Members
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow className="border-professional-slate/20">
-                <TableHead className="text-professional-slate-dark font-semibold">Name</TableHead>
-                <TableHead className="text-professional-slate-dark font-semibold">Role</TableHead>
-                <TableHead className="text-professional-slate-dark font-semibold">Project Name</TableHead>
-                <TableHead className="text-professional-slate-dark font-semibold">Phone</TableHead>
-                <TableHead className="text-professional-slate-dark font-semibold">Status</TableHead>
-                <TableHead className="text-professional-slate-dark font-semibold">Tasks Assigned</TableHead>
-                <TableHead className="text-professional-slate-dark font-semibold">Actions</TableHead>
+                <TableHead className="text-professional-slate-dark font-semibold">
+                  Name
+                </TableHead>
+                <TableHead className="text-professional-slate-dark font-semibold">
+                  Role
+                </TableHead>
+                <TableHead className="text-professional-slate-dark font-semibold">
+                  Project Name
+                </TableHead>
+                <TableHead className="text-professional-slate-dark font-semibold">
+                  Phone
+                </TableHead>
+                <TableHead className="text-professional-slate-dark font-semibold">
+                  Status
+                </TableHead>
+                <TableHead className="text-professional-slate-dark font-semibold">
+                  Tasks Assigned
+                </TableHead>
+                <TableHead className="text-professional-slate-dark font-semibold">
+                  Actions
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredTeammates.map((teammate) => (
-                <TableRow key={teammate.id} className="border-professional-slate/10 hover:bg-professional-blue/5 transition-colors">
+                <TableRow
+                  key={teammate.id}
+                  className="border-professional-slate/10 hover:bg-professional-blue/5 transition-colors"
+                >
                   <TableCell>
                     <div className="flex items-center space-x-3">
                       <Avatar className="ring-2 ring-professional-blue/20">
-                        <AvatarImage src={teammate.avatar} alt={teammate.name} />
+                        <AvatarImage
+                          src={teammate.avatar}
+                          alt={teammate.name}
+                        />
                         <AvatarFallback className="bg-gradient-to-br from-professional-blue to-professional-cyan text-white font-semibold">
                           {teammate.name.substring(0, 2).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <div className="font-medium text-professional-navy">{teammate.name}</div>
-                        <div className="text-sm text-professional-slate-dark">{teammate.email}</div>
+                        <div className="font-medium text-professional-navy">
+                          {teammate.name}
+                        </div>
+                        <div className="text-sm text-professional-slate-dark">
+                          {teammate.email}
+                        </div>
                       </div>
                     </div>
                   </TableCell>
@@ -330,26 +403,38 @@ export const Teammates = () => {
                       {teammate.role}
                     </Badge>
                   </TableCell>
-                  <TableCell>
-                    <Badge className="bg-professional-cyan/10 text-professional-cyan-dark border-professional-cyan/20">
-                      {teammate.projectName}
-                    </Badge>
+                  <TableCell className="space-x-1">
+                    {teammate.projectNames.map((name, idx) => (
+                      <Badge
+                        key={idx}
+                        className="bg-professional-cyan/10 text-professional-cyan-dark border-professional-cyan/20"
+                      >
+                        {name}
+                      </Badge>
+                    ))}
                   </TableCell>
-                  <TableCell className="text-professional-slate-dark">{teammate.phone}</TableCell>
+                  <TableCell className="text-professional-slate-dark">
+                    {teammate.phone}
+                  </TableCell>
                   <TableCell>
-                    <Badge className={getStatusColor(teammate.availabilityStatus)}>
+                    <Badge
+                      className={getStatusColor(teammate.availabilityStatus)}
+                    >
                       {teammate.availabilityStatus}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <div className="font-semibold text-professional-navy">{teammate.tasksAssigned}</div>
+                    <div className="font-semibold text-professional-navy">
+                      {teammate.tasksAssigned}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-2">
                       {/* Edit button - only visible to ADMIN and HR */}
-                      {(user?.functionalGroup === 'ADMIN' || user?.functionalGroup === 'HR') && (
-                        <Button 
-                          variant="ghost" 
+                      {(user?.functionalGroup === "ADMIN" ||
+                        user?.functionalGroup === "HR") && (
+                        <Button
+                          variant="ghost"
                           size="sm"
                           onClick={() => handleEditTeammate(teammate)}
                           className="text-professional-blue hover:text-professional-blue-dark hover:bg-professional-blue/10"
@@ -358,28 +443,42 @@ export const Teammates = () => {
                         </Button>
                       )}
                       {/* Delete button - only visible to ADMIN and HR */}
-                      {(user?.functionalGroup === 'ADMIN' || user?.functionalGroup === 'HR') && (
+                      {(user?.functionalGroup === "ADMIN" ||
+                        user?.functionalGroup === "HR") && (
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm" className="text-professional-red hover:text-professional-red-dark hover:bg-professional-red/10">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-professional-red hover:text-professional-red-dark hover:bg-professional-red/10"
+                            >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent className="bg-white/95 backdrop-blur-md border-professional-slate/20">
                             <AlertDialogHeader>
-                              <AlertDialogTitle className="text-professional-navy">Delete Teammate</AlertDialogTitle>
+                              <AlertDialogTitle className="text-professional-navy">
+                                Delete Teammate
+                              </AlertDialogTitle>
                               <AlertDialogDescription className="text-professional-slate-dark">
-                                Are you sure you want to delete "{teammate.name}"? This action cannot be undone.
+                                Are you sure you want to delete "{teammate.name}
+                                "? This action cannot be undone.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                              <AlertDialogCancel className="hover:bg-professional-slate/10">Cancel</AlertDialogCancel>
+                              <AlertDialogCancel className="hover:bg-professional-slate/10">
+                                Cancel
+                              </AlertDialogCancel>
                               <AlertDialogAction
-                                onClick={() => handleDeleteTeammate(teammate.name)}
+                                onClick={() =>
+                                  handleDeleteTeammate(teammate.name)
+                                }
                                 className="bg-professional-red hover:bg-professional-red-dark text-white"
                                 disabled={deleteTeammateMutation.isPending}
                               >
-                                {deleteTeammateMutation.isPending ? "Deleting..." : "Delete"}
+                                {deleteTeammateMutation.isPending
+                                  ? "Deleting..."
+                                  : "Delete"}
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
@@ -397,9 +496,9 @@ export const Teammates = () => {
       {/* Edit Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
         {selectedTeammate && (
-          <EditTeammateForm 
-            teammate={selectedTeammate} 
-            onSuccess={handleEditSuccess} 
+          <EditTeammateForm
+            teammate={selectedTeammate}
+            onSuccess={handleEditSuccess}
           />
         )}
       </Dialog>
@@ -407,8 +506,12 @@ export const Teammates = () => {
       {filteredTeammates.length === 0 && !isLoading && (
         <div className="text-center py-12 bg-white/80 backdrop-blur-md rounded-xl border border-professional-slate/20">
           <Users className="h-12 w-12 text-professional-slate-dark mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-professional-navy mb-2">No teammates found</h3>
-          <p className="text-professional-slate-dark">Try adjusting your search criteria or add a new teammate.</p>
+          <h3 className="text-lg font-semibold text-professional-navy mb-2">
+            No teammates found
+          </h3>
+          <p className="text-professional-slate-dark">
+            Try adjusting your search criteria or add a new teammate.
+          </p>
         </div>
       )}
     </div>

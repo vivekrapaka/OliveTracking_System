@@ -3,16 +3,50 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  CalendarIcon,
+  AlertTriangle,
+  Code,
+  TestTube,
+  Clock,
+} from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { TeammateSelector } from "./TeammateSelector";
 import { useEditTask } from "@/hooks/useEditTask";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAvailableStatuses, requiresCommitId, requiresComment } from "@/utils/statusWorkflowUtils";
+import { useProjectTeammates } from "@/hooks/useProjectTeammates";
+import {
+  getAvailableStatuses,
+  requiresCommitId,
+  requiresComment,
+} from "@/utils/statusWorkflowUtils";
+import { DisciplineBasedTeammateSelector } from "./DisciplineBasedTeammateSelector";
+
+const statusLabelMap: Record<string, string> = {
+  BACKLOG: "Backlog",
+  ANALYSIS: "Analysis",
+  DEVELOPMENT: "Development",
+  CODE_REVIEW: "Code Review",
+  UAT_TESTING: "UAT Testing",
+  UAT_FAILED: "UAT Failed",
+  READY_FOR_PREPROD: "Ready for Pre-Production",
+  PREPROD: "Pre-Production",
+  PROD: "Production",
+  COMPLETED: "Completed",
+};
 
 interface Task {
   id: number;
@@ -29,17 +63,24 @@ interface Task {
   dueDate: string;
   assignedTeammates: string[];
   assignedTeammateIds: number[];
+  developerName?: string;
+  testerName?: string;
   priority: string;
   projectId: number;
   projectName: string;
   documentPath?: string;
   commitId?: string;
+  developmentDueHours?: number;
+  testingDueHours?: number;
+  assignedDeveloperIds: number[];
+  assignedTesterIds: number[];
 }
 
 interface Teammate {
   id: number;
   name: string;
   role: string;
+  functionalGroup: string;
 }
 
 interface TaskDetailsTabProps {
@@ -49,7 +90,12 @@ interface TaskDetailsTabProps {
   onClose: () => void;
 }
 
-export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetailsTabProps) => {
+export const TaskDetailsTab = ({
+  task,
+  onSave,
+  teammates,
+  onClose,
+}: TaskDetailsTabProps) => {
   const { user } = useAuth();
   const [taskName, setTaskName] = useState(task.name);
   const [description, setDescription] = useState(task.description || "");
@@ -58,19 +104,46 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
   const [priority, setPriority] = useState(task.priority);
   const [commitId, setCommitId] = useState(task.commitId || "");
   const [comment, setComment] = useState("");
-  const [selectedDate, setSelectedDate] = useState<Date>();
-  const [selectedDevelopmentStartDate, setSelectedDevelopmentStartDate] = useState<Date>();
   const [selectedReceivedDate, setSelectedReceivedDate] = useState<Date>();
-  const [selectedTeammates, setSelectedTeammates] = useState<string[]>([]);
-
+  const [selectedDevelopmentStartDate, setSelectedDevelopmentStartDate] =
+    useState<Date>();
+  const [selectedDeveloperIds, setSelectedDeveloperIds] = useState<number[]>(
+    []
+  );
+  const [selectedTesterIds, setSelectedTesterIds] = useState<number[]>([]);
+  const [developmentDueHours, setDevelopmentDueHours] = useState(
+    task.developmentDueHours || 0
+  );
+  const [testingDueHours, setTestingDueHours] = useState(
+    task.testingDueHours || 0
+  );
+  const [selectedProjectId, setSelectedProjectId] = useState<
+    number | undefined
+  >();
   const editTaskMutation = useEditTask();
+
+  // Fetch project teammates
+  const { data: projectTeammatesData } = useProjectTeammates(task.projectId);
+  const projectTeammates = projectTeammatesData?.teammates || [];
+
+  // Separate developers and testers from project teammates
+  const developers = projectTeammates.filter(
+    (t) =>
+      (t.department === "DEVELOPER" || t.department === "DEV_LEAD") &&
+      t.projectIds?.includes(selectedProjectId!)
+  );
+
+  const testers = projectTeammates.filter(
+    (t) =>
+      (t.department === "TESTER" || t.department === "TEST_LEAD") &&
+      t.projectIds?.includes(selectedProjectId!)
+  );
 
   // Get available status transitions based on current status and user functionalGroup
   const availableStatusTransitions = getAvailableStatuses(
-    task.status,
+    currentStage,
     user?.functionalGroup || ""
   );
-
   // Check if the status dropdown should be disabled
   const isStatusDropdownDisabled = availableStatusTransitions.length === 0;
 
@@ -80,10 +153,13 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
 
   // Check if comment is required for the status change
   const isCommentRequired = requiresComment(task.status, currentStage);
-  const showCommentField = isCommentRequired || 
+  const showCommentField =
+    isCommentRequired ||
     (task.status === "CODE_REVIEW" && availableStatusTransitions.length > 0) ||
     (task.status === "UAT_TESTING" && currentStage === "UAT_FAILED") ||
-    (task.status === "UAT_FAILED" && currentStage === "UAT_TESTING");
+    (task.status === "UAT_FAILED" && currentStage === "UAT_TESTING") ||
+    (task.status === "CODE_REVIEW" && currentStage === "UAT_TESTING") ||
+    (task.status === "CODE_REVIEW" && currentStage === "DEVELOPMENT");
 
   const taskTypes = [
     { value: "BRD", label: "Business Requirement Document" },
@@ -92,7 +168,7 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
     { value: "TASK", label: "Task" },
     { value: "BUG", label: "Bug" },
     { value: "SUB_TASK", label: "Sub-Task" },
-    { value: "ANALYSIS_TASK", label: "Analysis Task" }
+    { value: "ANALYSIS_TASK", label: "Analysis Task" },
   ];
 
   const priorities = ["CRITICAL", "HIGH", "MEDIUM", "LOW"];
@@ -100,38 +176,31 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
   useEffect(() => {
     setTaskName(task.name);
     setDescription(task.description || "");
-    setCurrentStage(task.status);
+    setCurrentStage(currentStage);
     setTaskType(task.taskType);
     setPriority(task.priority);
     setCommitId(task.commitId || "");
-    setSelectedTeammates(task.assignedTeammates || []);
-    
-    if (task.dueDate) {
-      setSelectedDate(new Date(task.dueDate));
+    setSelectedProjectId(task.projectId);
+    setDevelopmentDueHours(task.developmentDueHours || 0);
+    setTestingDueHours(task.testingDueHours || 0);
+
+    if (task.receivedDate) {
+      setSelectedReceivedDate(new Date(task.receivedDate));
     }
     if (task.developmentStartDate) {
       setSelectedDevelopmentStartDate(new Date(task.developmentStartDate));
     }
-    if (task.receivedDate) {
-      setSelectedReceivedDate(new Date(task.receivedDate));
-    }
-  }, [task]);
-
-  const handleTeammateToggle = (teammateName: string) => {
-    setSelectedTeammates(prev => {
-      return prev.includes(teammateName)
-        ? prev.filter(name => name !== teammateName)
-        : [...prev, teammateName];
-    });
-  };
+    console.log("Edit Task Loaded:", task);
+    // Set initial developer and tester selections based on project teammates
+    setSelectedDeveloperIds(task.assignedDeveloperIds);
+    setSelectedTesterIds(task.assignedTesterIds); 
+  }, [task, projectTeammates]);
 
   const handleStatusChange = (newStatus: string) => {
     setCurrentStage(newStatus);
-    // Clear commit ID if not required for the new status
     if (!requiresCommitId(newStatus)) {
       setCommitId("");
     }
-    // Clear comment when status changes
     setComment("");
   };
 
@@ -155,253 +224,432 @@ export const TaskDetailsTab = ({ task, onSave, teammates, onClose }: TaskDetails
       description: description,
       status: currentStage,
       taskType: taskType,
-      dueDate: selectedDate ? format(selectedDate, "yyyy-MM-dd") : task.dueDate,
-      receivedDate: selectedReceivedDate ? format(selectedReceivedDate, "yyyy-MM-dd") : task.receivedDate,
-      developmentStartDate: selectedDevelopmentStartDate ? format(selectedDevelopmentStartDate, "yyyy-MM-dd") : task.developmentStartDate,
-      assignedTeammateNames: selectedTeammates,
+      receivedDate: selectedReceivedDate
+        ? format(selectedReceivedDate, "yyyy-MM-dd")
+        : task.receivedDate,
+      developmentStartDate: selectedDevelopmentStartDate
+        ? format(selectedDevelopmentStartDate, "yyyy-MM-dd")
+        : task.developmentStartDate,
+      developerIds: selectedDeveloperIds,
+      testerIds: selectedTesterIds,
       priority: priority,
       commitId: commitId.trim() || undefined,
       comment: comment.trim() || undefined,
+      developmentDueHours: developmentDueHours,
+      testingDueHours: testingDueHours,
     };
 
-    editTaskMutation.mutate({
-      taskId: task.id,
-      taskData
-    }, {
-      onSuccess: () => {
-        onClose();
+    editTaskMutation.mutate(
+      {
+        taskId: task.id,
+        taskData,
+      },
+      {
+        onSuccess: () => {
+          onClose();
+        },
       }
-    });
+    );
   };
 
   return (
-    <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto">
-      <div className="grid gap-2">
-        <Label htmlFor="taskNumber">Task Number</Label>
-        <Input
-          id="taskNumber"
-          value={task.taskNumber}
-          readOnly
-          className="bg-gray-100 border border-gray-300"
-        />
-      </div>
-      
-      <div className="grid gap-2">
-        <Label htmlFor="taskName">Task Name</Label>
-        <Input
-          id="taskName"
-          value={taskName}
-          onChange={(e) => setTaskName(e.target.value)}
-        />
-      </div>
-      
-      <div className="grid gap-2">
-        <Label htmlFor="taskType">Task Type</Label>
-        <Select value={taskType} onValueChange={setTaskType}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {taskTypes.map((type) => (
-              <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      
-      <div className="grid gap-2">
-        <Label htmlFor="priority">Priority</Label>
-        <Select value={priority} onValueChange={setPriority}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {priorities.map((priorityOption) => (
-              <SelectItem key={priorityOption} value={priorityOption}>{priorityOption}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      
-      <div className="grid gap-2">
-        <Label>Received Date</Label>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className={cn(
-                "justify-start text-left font-normal",
-                !selectedReceivedDate && "text-muted-foreground"
-              )}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {selectedReceivedDate ? format(selectedReceivedDate, "PPP") : <span>Pick received date</span>}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={selectedReceivedDate}
-              onSelect={setSelectedReceivedDate}
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
-      </div>
-
-      <div className="grid gap-2">
-        <Label>Development Start Date</Label>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className={cn(
-                "justify-start text-left font-normal",
-                !selectedDevelopmentStartDate && "text-muted-foreground"
-              )}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {selectedDevelopmentStartDate ? format(selectedDevelopmentStartDate, "PPP") : <span>Pick development start date</span>}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={selectedDevelopmentStartDate}
-              onSelect={setSelectedDevelopmentStartDate}
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
-      </div>
-
-      <div className="grid gap-2">
-        <Label>Due Date</Label>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className={cn(
-                "justify-start text-left font-normal",
-                !selectedDate && "text-muted-foreground"
-              )}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={setSelectedDate}
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
-      </div>
-      
-      {/* Smart Status Dropdown - THE MOST CRITICAL COMPONENT */}
-      <div className="grid gap-2">
-        <Label htmlFor="status">Status</Label>
-        <Select 
-          value={currentStage} 
-          onValueChange={handleStatusChange}
-          disabled={isStatusDropdownDisabled}
-        >
-          <SelectTrigger className={cn(isStatusDropdownDisabled && "opacity-50 cursor-not-allowed")}>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {availableStatusTransitions.map((status) => (
-              <SelectItem key={status.value} value={status.value}>{status.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {isStatusDropdownDisabled && (
-          <p className="text-xs text-slate-500">
-            No status changes available for your role at this stage.
-          </p>
+    <div className="space-y-6 max-h-[75vh] overflow-y-auto">
+      {/* Header with Task Number */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200 shadow-sm">
+        <div className="flex items-center gap-4">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-lg font-mono text-lg font-bold shadow-md">
+            {task.taskNumber}
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">{task.name}</h2>
+            <p className="text-sm text-gray-600">{task.projectName}</p>
+          </div>
+        </div>
+        {task.status === "UAT_FAILED" && (
+          <div className="mt-3 flex items-center gap-2 bg-red-50 text-red-700 px-3 py-2 rounded-lg border border-red-200">
+            <AlertTriangle className="h-5 w-5" />
+            <span className="font-medium">UAT Failed - Requires attention</span>
+          </div>
         )}
       </div>
 
-      {/* Conditional Comment Field - Mandatory for specific transitions */}
-      {showCommentField && (
-        <div className="grid gap-2">
-          <Label htmlFor="comment">
-            Comment {isCommentRequired && <span className="text-red-500">*</span>}
-          </Label>
-          <Textarea
-            id="comment"
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            placeholder={
-              isCommentRequired 
-                ? "A comment is required for this status transition..." 
-                : "Add a comment about this status change (optional)..."
-            }
-            className={cn(
-              "min-h-[80px]",
-              isCommentRequired && !comment.trim() && "border-red-300 focus:border-red-500"
+      <div className="grid lg:grid-cols-2 gap-8">
+        {/* Left Column */}
+        <div className="space-y-6">
+          {/* Basic Information */}
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              Basic Information
+            </h3>
+
+            <div className="space-y-4">
+              <div>
+                <Label
+                  htmlFor="taskName"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  Task Name
+                </Label>
+                <Input
+                  id="taskName"
+                  value={taskName}
+                  onChange={(e) => setTaskName(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label
+                    htmlFor="taskType"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    Task Type
+                  </Label>
+                  <Select value={taskType} onValueChange={setTaskType}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {taskTypes.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label
+                    htmlFor="priority"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    Priority
+                  </Label>
+                  <Select value={priority} onValueChange={setPriority}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {priorities.map((priorityOption) => (
+                        <SelectItem key={priorityOption} value={priorityOption}>
+                          {priorityOption}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Due Hours */}
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <Clock className="h-5 w-5 text-orange-500" />
+              Effort Estimation
+            </h3>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label
+                  htmlFor="developmentDueHours"
+                  className="text-sm font-medium text-gray-700 flex items-center gap-2"
+                >
+                  <Code className="h-4 w-4 text-blue-500" />
+                  Development Hours
+                </Label>
+                <Input
+                  id="developmentDueHours"
+                  type="number"
+                  value={developmentDueHours}
+                  onChange={(e) =>
+                    setDevelopmentDueHours(Number(e.target.value))
+                  }
+                  className="mt-1"
+                  min="0"
+                  step="0.5"
+                />
+              </div>
+              <div>
+                <Label
+                  htmlFor="testingDueHours"
+                  className="text-sm font-medium text-gray-700 flex items-center gap-2"
+                >
+                  <TestTube className="h-4 w-4 text-green-500" />
+                  Testing Hours
+                </Label>
+                <Input
+                  id="testingDueHours"
+                  type="number"
+                  value={testingDueHours}
+                  onChange={(e) => setTestingDueHours(Number(e.target.value))}
+                  className="mt-1"
+                  min="0"
+                  step="0.5"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column */}
+        <div className="space-y-6">
+          {/* Dates */}
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <CalendarIcon className="h-5 w-5 text-purple-500" />
+              Important Dates
+            </h3>
+
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium text-gray-700">
+                  Received Date
+                </Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal mt-1",
+                        !selectedReceivedDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {selectedReceivedDate ? (
+                        format(selectedReceivedDate, "PPP")
+                      ) : (
+                        <span>Pick received date</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={selectedReceivedDate}
+                      onSelect={setSelectedReceivedDate}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-gray-700">
+                  Development Start Date
+                </Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal mt-1",
+                        !selectedDevelopmentStartDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {selectedDevelopmentStartDate ? (
+                        format(selectedDevelopmentStartDate, "PPP")
+                      ) : (
+                        <span>Pick development start date</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={selectedDevelopmentStartDate}
+                      onSelect={setSelectedDevelopmentStartDate}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+          </div>
+
+          {/* Status */}
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Status Management
+            </h3>
+
+            <div>
+              <Label
+                htmlFor="status"
+                className="text-sm font-medium text-gray-700"
+              >
+                Current Status
+              </Label>
+              <Select
+                value={currentStage}
+                onValueChange={handleStatusChange}
+                disabled={isStatusDropdownDisabled}
+              >
+                <SelectTrigger
+                  className={cn(
+                    "mt-1",
+                    isStatusDropdownDisabled && "opacity-50 cursor-not-allowed"
+                  )}
+                >
+                  <SelectValue placeholder="Select status">
+                    {statusLabelMap[currentStage] || currentStage}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {availableStatusTransitions.map((statusOption) => (
+                    <SelectItem
+                      key={statusOption.value}
+                      value={statusOption.value}
+                    >
+                      {statusOption.value}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {isStatusDropdownDisabled && (
+                <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded mt-2 border border-amber-200">
+                  No status changes available for your role at this stage.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Team Assignment Section */}
+      <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+        <h3 className="text-lg font-semibold text-gray-900 mb-6">
+          Team Assignment
+        </h3>
+        <DisciplineBasedTeammateSelector
+          developers={developers}
+          testers={testers}
+          selectedDeveloperIds={selectedDeveloperIds}
+          selectedTesterIds={selectedTesterIds}
+          onDeveloperToggle={(id) => {
+            setSelectedDeveloperIds((prev) =>
+              prev.includes(id)
+                ? prev.filter((devId) => devId !== id)
+                : [...prev, id]
+            );
+          }}
+          onTesterToggle={(id) => {
+            setSelectedTesterIds((prev) =>
+              prev.includes(id)
+                ? prev.filter((testId) => testId !== id)
+                : [...prev, id]
+            );
+          }}
+        />
+      </div>
+
+      {/* Conditional Fields */}
+      {(showCommentField || showCommitIdField) && (
+        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Additional Information
+          </h3>
+
+          <div className="space-y-4">
+            {showCommentField && (
+              <div>
+                <Label
+                  htmlFor="comment"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  Comment{" "}
+                  {isCommentRequired && <span className="text-red-500">*</span>}
+                </Label>
+                <Textarea
+                  id="comment"
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  placeholder={
+                    isCommentRequired
+                      ? "A comment is required for this status transition..."
+                      : "Add a comment about this status change (optional)..."
+                  }
+                  className={cn(
+                    "min-h-[80px] mt-1",
+                    isCommentRequired &&
+                      !comment.trim() &&
+                      "border-red-300 focus:border-red-500"
+                  )}
+                />
+                {isCommentRequired && !comment.trim() && (
+                  <p className="text-xs text-red-600 bg-red-50 p-2 rounded mt-2 border border-red-200">
+                    A comment is required for this status transition.
+                  </p>
+                )}
+              </div>
             )}
-          />
-          {isCommentRequired && !comment.trim() && (
-            <p className="text-xs text-red-500">
-              A comment is required for this status transition.
-            </p>
-          )}
+
+            {showCommitIdField && (
+              <div>
+                <Label
+                  htmlFor="commitId"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  Commit ID{" "}
+                  {isCommitIdRequired && (
+                    <span className="text-red-500">*</span>
+                  )}
+                </Label>
+                <Input
+                  id="commitId"
+                  value={commitId}
+                  onChange={(e) => setCommitId(e.target.value)}
+                  placeholder="Enter commit ID (required for UAT Testing and Pre-Production)"
+                  className={cn(
+                    "mt-1",
+                    isCommitIdRequired &&
+                      !commitId.trim() &&
+                      "border-red-300 focus:border-red-500"
+                  )}
+                />
+                {isCommitIdRequired && !commitId.trim() && (
+                  <p className="text-xs text-red-600 bg-red-50 p-2 rounded mt-2 border border-red-200">
+                    Commit ID is required when moving to UAT Testing or
+                    Pre-Production.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
-      {/* Conditional Commit ID Field - Mandatory for UAT_TESTING and PREPROD */}
-      {showCommitIdField && (
-        <div className="grid gap-2">
-          <Label htmlFor="commitId">
-            Commit ID {isCommitIdRequired && <span className="text-red-500">*</span>}
-          </Label>
-          <Input
-            id="commitId"
-            value={commitId}
-            onChange={(e) => setCommitId(e.target.value)}
-            placeholder="Enter commit ID (required for UAT Testing and Pre-Production)"
-            className={cn(
-              isCommitIdRequired && !commitId.trim() && "border-red-300 focus:border-red-500"
-            )}
-          />
-          {isCommitIdRequired && !commitId.trim() && (
-            <p className="text-xs text-red-500">
-              Commit ID is required when moving to UAT Testing or Pre-Production.
-            </p>
-          )}
-        </div>
-      )}
-      
-      <TeammateSelector
-        teammates={teammates}
-        selectedTeammates={selectedTeammates}
-        onTeammateToggle={handleTeammateToggle}
-      />
-      
-      <div className="grid gap-2">
-        <Label htmlFor="taskDescription">Description</Label>
+      {/* Description */}
+      <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          Task Description
+        </h3>
         <Textarea
           id="taskDescription"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Enter task description (max 1000 words)"
           maxLength={1000}
-          className="min-h-[100px]"
+          className="min-h-[120px]"
         />
-        <p className="text-xs text-slate-500">{description.length}/1000 characters</p>
+        <p className="text-xs text-gray-500 mt-2">
+          {description.length}/1000 characters
+        </p>
       </div>
 
-      <div className="flex justify-end space-x-2 pt-4">
-        <Button variant="outline" onClick={onClose}>
+      {/* Action Buttons */}
+      <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+        <Button variant="outline" onClick={onClose} className="px-6">
           Cancel
         </Button>
-        <Button 
-          onClick={handleSave} 
-          className="bg-blue-600 hover:bg-blue-700"
+        <Button
+          onClick={handleSave}
+          className="bg-blue-600 hover:bg-blue-700 px-6"
           disabled={editTaskMutation.isPending || !isFormValid()}
         >
           {editTaskMutation.isPending ? "Saving..." : "Save Changes"}

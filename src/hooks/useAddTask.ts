@@ -12,12 +12,15 @@ export interface AddTaskRequest {
   receivedDate: string;
   developmentStartDate?: string;
   dueDate: string;
-  assignedTeammateIds?: number[];
+  developerIds?: number[];
+  testerIds?: number[];
   priority: string;
   projectId: number;
   documentPath?: string;
   commitId?: string;
   comment?: string;
+  developmentDueHours?: number;
+  testingDueHours?: number;
 }
 
 const addTask = async (taskData: AddTaskRequest) => {

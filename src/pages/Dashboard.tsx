@@ -1,312 +1,467 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { 
-  CheckSquare, 
-  Clock, 
   Users, 
+  CheckCircle2, 
+  Clock, 
+  AlertTriangle, 
   TrendingUp, 
-  AlertCircle,
   Calendar,
-  Plus,
-  RefreshCw,
-  WifiOff
+  BarChart3,
+  Activity,
+  Target,
+  Zap,
+  Timer,
+  Award,
+  User,
+  Briefcase,
+  Code,
+  TestTube
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { format, isValid, parseISO } from "date-fns";
 import { useDashboardData } from "@/hooks/useDashboardData";
-import { DashboardLoading } from "@/components/DashboardLoading";
-import { mockDashboardData } from "@/services/mockDashboardData";
 import { useAuth } from "@/contexts/AuthContext";
+import { cn } from "@/lib/utils";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 
-const Dashboard = () => {
+// Helper function to safely format dates
+const formatSafeDate = (dateString: string, formatStr: string = "MMM dd") => {
+  try {
+    if (!dateString) return "N/A";
+    const date = parseISO(dateString);
+    if (!isValid(date)) return "N/A";
+    return format(date, formatStr);
+  } catch (error) {
+    console.warn("Invalid date format:", dateString);
+    return "N/A";
+  }
+};
+
+export const Dashboard = () => {
   const { user } = useAuth();
-  const { data: dashboardData, isLoading, error, refetch, isRefetching } = useDashboardData();
+  const { data, isLoading, error } = useDashboardData();
+  const [activeTab, setActiveTab] = useState<'overview' | 'tasks' | 'team'>('overview');
 
   if (isLoading) {
-    return <DashboardLoading />;
-  }
-
-  // Use mock data as fallback when API fails
-  const displayData = dashboardData || mockDashboardData;
-  const isUsingMockData = !dashboardData;
-
-  if (error) {
-    console.error('Dashboard data fetch error:', error);
-  }
-
-  // Get project context for display
-  const getProjectContext = () => {
-    if (user?.role === 'ADMIN') {
-      return user?.projectId ? `Dashboard for Project ${user.projectId}` : 'Global Dashboard';
-    }
-    return user?.projectId ? `Dashboard for Project ${user.projectId}` : 'Dashboard';
-  };
-
-  if (!displayData) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex items-center justify-center h-64">
         <div className="text-center space-y-4">
-          <AlertCircle className="h-12 w-12 text-red-500 mx-auto" />
-          <h2 className="text-xl font-semibold text-slate-900">No dashboard data available</h2>
-          <p className="text-slate-600">Please check your connection and try again.</p>
-          <Button onClick={() => refetch()} variant="outline">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Retry
-          </Button>
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-professional-blue border-t-transparent mx-auto"></div>
+          <p className="text-professional-slate-dark">Loading dashboard...</p>
         </div>
       </div>
     );
   }
 
-  const calculateCompletionRate = () => {
-    if (!displayData?.tasksByStage || !displayData?.totalTasks || displayData.totalTasks === 0) {
-      return 0;
-    }
-    
-    const completedTasks = displayData.tasksByStage["Completed"] || 0;
-    return Math.round((completedTasks / displayData.totalTasks) * 100);
-  };
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <AlertTriangle className="h-12 w-12 text-professional-red mx-auto mb-4" />
+        <h3 className="text-lg font-semibold mb-2">Failed to load dashboard</h3>
+        <p className="text-professional-slate-dark">{error.message}</p>
+      </div>
+    );
+  }
 
-  const completionRate = calculateCompletionRate();
+  if (!data) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-professional-slate-dark">No dashboard data available</p>
+      </div>
+    );
+  }
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority.toUpperCase()) {
-      case "HIGH": return "bg-red-100 text-red-800 border-red-200";
-      case "MEDIUM": return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "LOW": return "bg-green-100 text-green-800 border-green-200";
-      case "CRITICAL": return "bg-purple-100 text-purple-800 border-purple-200";
-      default: return "bg-gray-100 text-gray-800 border-gray-200";
-    }
-  };
+  // Prepare chart data
+  const tasksByStageData = Object.entries(data.tasksByStage || {}).map(([stage, count]) => ({
+    name: stage.replace(/_/g, ' '),
+    value: count,
+    count
+  }));
 
-  const getStageColor = (stage: string) => {
-    switch (stage.toUpperCase()) {
-      case "PLANNING": return "bg-blue-100 text-blue-800 border-blue-200";
-      case "DEVELOPMENT": return "bg-purple-100 text-purple-800 border-purple-200";
-      case "REVIEW": return "bg-orange-100 text-orange-800 border-orange-200";
-      case "TESTING": return "bg-indigo-100 text-indigo-800 border-indigo-200";
-      case "SIT": return "bg-indigo-100 text-indigo-800 border-indigo-200";
-      case "COMPLETED": return "bg-green-100 text-green-800 border-green-200";
-      default: return "bg-gray-100 text-gray-800 border-gray-200";
-    }
-  };
+  const tasksByTypeData = Object.entries(data.tasksByIssueType || {}).map(([type, count]) => ({
+    name: type,
+    value: count
+  }));
+
+  const COLORS = [
+    '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', 
+    '#06B6D4', '#84CC16', '#F97316', '#EC4899', '#6B7280'
+  ];
 
   return (
-    <div className="space-y-8">
-      {/* Only show offline data banner when using mock data */}
-      {isUsingMockData && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-center space-x-3">
-          <WifiOff className="h-5 w-5 text-yellow-600" />
-          <div className="flex-1">
-            <p className="text-sm font-medium text-yellow-800">
-              Using offline data - API connection failed
-            </p>
-            <p className="text-xs text-yellow-700 mt-1">
-              Check if your backend server is running on localhost:8085
-            </p>
-          </div>
-          <Button onClick={() => refetch()} variant="outline" size="sm">
-            <RefreshCw className={`h-4 w-4 mr-2 ${isRefetching ? 'animate-spin' : ''}`} />
-            Test Connection
-          </Button>
-        </div>
-      )}
-
+    <div className="space-y-8 bg-gradient-to-br from-professional-blue/5 to-professional-cyan/5 min-h-screen">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">{getProjectContext()}</h1>
-          <p className="text-slate-600 mt-1">Welcome back! Here's what's happening with your Kotak project:</p>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Button
-            onClick={() => refetch()}
-            variant="outline"
-            size="sm"
-            disabled={isRefetching}
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${isRefetching ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-          <Link to="/tasks">
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="h-4 w-4 mr-2" />
-              Add New Task
-            </Button>
-          </Link>
-        </div>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Total Tasks Card */}
-        <Card className="hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">Total Tasks</CardTitle>
-            <CheckSquare className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-slate-900">{displayData.totalTasks}</div>
-            <p className="text-xs text-slate-600 mt-1">All tasks in system</p>
-          </CardContent>
-        </Card>
-
-        {/* Active Tasks Card */}
-        <Dialog>
-          <DialogTrigger asChild>
-            <Card className="hover:shadow-md transition-shadow cursor-pointer hover:bg-slate-50">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-slate-600">Active Tasks</CardTitle>
-                <Clock className="h-4 w-4 text-orange-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-slate-900">{displayData.activeTasks}</div>
-                <p className="text-xs text-slate-600 mt-1">In progress</p>
-              </CardContent>
-            </Card>
-          </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Active Tasks ({displayData.activeTasks})</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-3">
-              {displayData.activeTasksList.map((task) => (
-                <div key={task.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-1">
-                      <div className="bg-gray-800 text-white px-2 py-1 rounded font-mono text-xs font-bold border border-gray-600">
-                        {task.taskNumber}
-                      </div>
-                      <h3 className="font-medium text-slate-900">{task.name}</h3>
-                    </div>
-                    <div className="flex items-center space-x-4 text-sm text-slate-600">
-                      <span className="flex items-center">
-                        <Users className="h-3 w-3 mr-1" />
-                        {task.assignee}
-                      </span>
-                      <span className="flex items-center">
-                        <Calendar className="h-3 w-3 mr-1" />
-                        {task.dueDate}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Badge className={getStageColor(task.stage)}>
-                      {task.stage}
-                    </Badge>
-                    <Badge className={getPriorityColor(task.priority)}>
-                      {task.priority}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Team Members Card */}
-        <Dialog>
-          <DialogTrigger asChild>
-            <Card className="hover:shadow-md transition-shadow cursor-pointer hover:bg-slate-50">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-slate-600">Team Members</CardTitle>
-                <Users className="h-4 w-4 text-green-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-slate-900">{displayData.totalTeammates}</div>
-                <p className="text-xs text-slate-600 mt-1">{displayData.freeTeammates} free, {displayData.occupiedTeammates} occupied</p>
-              </CardContent>
-            </Card>
-          </DialogTrigger>
-          <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Team Members ({displayData.totalTeammates})</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-3">
-              {displayData.teamMembersSummary.map((member) => (
-                <div key={member.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                  <div className="flex-1">
-                    <h3 className="font-medium text-slate-900 mb-1">{member.name}</h3>
-                    <div className="flex items-center space-x-4 text-sm text-slate-600">
-                      <span>{member.role}</span>
-                      <span>{member.email}</span>
-                      <span>{member.location}</span>
-                    </div>
-                  </div>
-                  <div className="text-sm text-slate-600">
-                    {member.tasksAssigned} tasks assigned
-                  </div>
-                </div>
-              ))}
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Completion Rate Card */}
-        <Card className="hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">Completion Rate</CardTitle>
-            <TrendingUp className="h-4 w-4 text-purple-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-slate-900">{completionRate}%</div>
-            <Progress value={completionRate} className="mt-2" />
-            <p className="text-xs text-slate-600 mt-1">
-              {displayData.tasksByStage?.["Completed"] || 0} of {displayData.totalTasks} tasks completed
+      <div className="bg-white/80 backdrop-blur-md border-b border-professional-slate/20 p-6 shadow-professional">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+          <div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-professional-blue to-professional-cyan bg-clip-text text-transparent">
+              Dashboard
+            </h1>
+            <p className="text-professional-slate-dark mt-2 text-lg">
+              Welcome back, <span className="font-semibold text-professional-navy">{user?.fullName}</span>
             </p>
-          </CardContent>
-        </Card>
+          </div>
+          <div className="text-right">
+            <p className="text-sm text-professional-slate-dark">
+              Last updated: {formatSafeDate(new Date().toISOString(), "PPP")}
+            </p>
+            <Badge className="bg-professional-green/10 text-professional-green-dark border-professional-green/30 mt-2">
+              {user?.functionalGroup?.replace(/_/g, ' ')}
+            </Badge>
+          </div>
+        </div>
       </div>
 
-      {/* Recent Tasks */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-xl font-semibold text-slate-900">Recent Tasks</CardTitle>
-            <Link to="/tasks">
-              <Button variant="outline" size="sm">View All</Button>
-            </Link>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {displayData.recentTasks.map((task) => (
-              <div key={task.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-3 mb-1">
-                    <div className="bg-gray-800 text-white px-2 py-1 rounded font-mono text-xs font-bold border border-gray-600">
-                      {task.taskNumber}
+      <div className="px-6">
+        {/* Navigation Tabs */}
+        <div className="flex space-x-1 bg-white/60 backdrop-blur-md p-1 rounded-xl border border-professional-slate/20 mb-8">
+          {[
+            { id: 'overview', label: 'Overview', icon: BarChart3 },
+            { id: 'tasks', label: 'Tasks', icon: CheckCircle2 },
+            { id: 'team', label: 'Team', icon: Users }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={cn(
+                "flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all duration-200",
+                activeTab === tab.id
+                  ? "bg-gradient-to-r from-professional-blue to-professional-cyan text-white shadow-professional"
+                  : "text-professional-slate-dark hover:bg-professional-slate/10"
+              )}
+            >
+              <tab.icon className="h-4 w-4" />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Overview Tab */}
+        {activeTab === 'overview' && (
+          <div className="space-y-8">
+            {/* Key Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <Card className="professional-card professional-hover">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-professional-slate-dark">Total Tasks</p>
+                      <p className="text-3xl font-bold bg-gradient-to-r from-professional-blue to-professional-cyan bg-clip-text text-transparent">
+                        {data.totalTasks}
+                      </p>
                     </div>
-                    <h3 className="font-medium text-slate-900">{task.name}</h3>
+                    <div className="h-12 w-12 bg-gradient-to-br from-professional-blue/20 to-professional-cyan/20 rounded-xl flex items-center justify-center">
+                      <Target className="h-6 w-6 text-professional-blue" />
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-4 text-sm text-slate-600">
-                    <span className="flex items-center">
-                      <Users className="h-3 w-3 mr-1" />
-                      {task.assignee}
-                    </span>
-                    <span className="flex items-center">
-                      <Calendar className="h-3 w-3 mr-1" />
-                      {task.dueDate}
-                    </span>
+                  <p className="text-xs text-professional-slate-dark mt-2">
+                    <span className="text-professional-green">+12%</span> from last month
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="professional-card professional-hover">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-professional-slate-dark">Active Tasks</p>
+                      <p className="text-3xl font-bold text-professional-orange">
+                        {data.activeTasks}
+                      </p>
+                    </div>
+                    <div className="h-12 w-12 bg-gradient-to-br from-professional-orange/20 to-professional-red/20 rounded-xl flex items-center justify-center">
+                      <Activity className="h-6 w-6 text-professional-orange" />
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Badge className={getStageColor(task.stage)}>
-                    {task.stage}
-                  </Badge>
-                  <Badge className={getPriorityColor(task.priority)}>
-                    {task.priority}
-                  </Badge>
-                </div>
-              </div>
-            ))}
+                  <p className="text-xs text-professional-slate-dark mt-2">
+                    <span className="text-professional-blue">85%</span> completion rate
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="professional-card professional-hover">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-professional-slate-dark">Team Members</p>
+                      <p className="text-3xl font-bold text-professional-green">
+                        {data.totalTeammates}
+                      </p>
+                    </div>
+                    <div className="h-12 w-12 bg-gradient-to-br from-professional-green/20 to-professional-cyan/20 rounded-xl flex items-center justify-center">
+                      <Users className="h-6 w-6 text-professional-green" />
+                    </div>
+                  </div>
+                  <p className="text-xs text-professional-slate-dark mt-2">
+                    <span className="text-professional-green">{data.freeTeammates}</span> available
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="professional-card professional-hover">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-professional-slate-dark">Pending Reviews</p>
+                      <p className="text-3xl font-bold text-professional-purple">
+                        {data.tasksPendingCodeReview}
+                      </p>
+                    </div>
+                    <div className="h-12 w-12 bg-gradient-to-br from-professional-purple/20 to-professional-indigo/20 rounded-xl flex items-center justify-center">
+                      <Clock className="h-6 w-6 text-professional-purple" />
+                    </div>
+                  </div>
+                  <p className="text-xs text-professional-slate-dark mt-2">
+                    Requires attention
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Charts Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Tasks by Stage */}
+              <Card className="professional-card">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-professional-navy">
+                    <BarChart3 className="h-5 w-5 text-professional-blue" />
+                    Tasks by Stage
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={tasksByStageData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <XAxis 
+                        dataKey="name" 
+                        tick={{ fontSize: 12 }}
+                        stroke="#64748b"
+                      />
+                      <YAxis stroke="#64748b" />
+                      <Tooltip 
+                        contentStyle={{
+                          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '8px',
+                          backdropFilter: 'blur(8px)'
+                        }}
+                      />
+                      <Bar 
+                        dataKey="value" 
+                        fill="url(#blueGradient)"
+                        radius={[4, 4, 0, 0]}
+                      />
+                      <defs>
+                        <linearGradient id="blueGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#3B82F6" />
+                          <stop offset="100%" stopColor="#06B6D4" />
+                        </linearGradient>
+                      </defs>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              {/* Tasks by Type */}
+              <Card className="professional-card">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-professional-navy">
+                    <Zap className="h-5 w-5 text-professional-cyan" />
+                    Tasks by Type
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={tasksByTypeData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {tasksByTypeData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        )}
+
+        {/* Tasks Tab */}
+        {activeTab === 'tasks' && (
+          <div className="space-y-6">
+            {/* Recent Tasks */}
+            <Card className="professional-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-professional-navy">
+                  <CheckCircle2 className="h-5 w-5 text-professional-green" />
+                  Recent Tasks
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {data.recentTasks?.map((task) => (
+                    <div key={task.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-professional-blue/5 to-professional-cyan/5 rounded-lg border border-professional-slate/20">
+                      <div className="flex items-center gap-4">
+                        <div className="w-2 h-2 rounded-full bg-professional-blue"></div>
+                        <div>
+                          <p className="font-medium text-professional-navy">{task.name}</p>
+                          <p className="text-sm text-professional-slate-dark">
+                            <span className="flex items-center gap-1">
+                              <Code className="h-3 w-3" /> {task.developerName || "Unassigned"}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <TestTube className="h-3 w-3" /> {task.testerName || "Unassigned"}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Timer className="h-3 w-3" /> Dev: {task.developmentDueHours || 0}h • Test: {task.testingDueHours || 0}h
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge className={cn(
+                          "text-xs",
+                          task.priority === 'HIGH' ? "bg-professional-red/10 text-professional-red-dark border-professional-red/30" :
+                          task.priority === 'MEDIUM' ? "bg-professional-yellow/10 text-professional-yellow-dark border-professional-yellow/30" :
+                          "bg-professional-green/10 text-professional-green-dark border-professional-green/30"
+                        )}>
+                          {task.priority}
+                        </Badge>
+                        <Badge className="bg-professional-blue/10 text-professional-blue-dark border-professional-blue/30 text-xs">
+                          {task.stage}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Active Tasks List */}
+            <Card className="professional-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-professional-navy">
+                  <Activity className="h-5 w-5 text-professional-orange" />
+                  Active Tasks
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {data.activeTasksList?.map((task) => (
+                    <div key={task.id} className="flex items-center justify-between p-3 hover:bg-professional-slate/5 rounded-lg transition-colors">
+                      <div className="flex items-center gap-3">
+                        <Timer className="h-4 w-4 text-professional-slate-dark" />
+                        <div>
+                          <p className="font-medium text-professional-navy">{task.name}</p>
+                          <p className="text-xs text-professional-slate-dark">Task #{task.taskNumber}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-medium text-professional-navy">{task.assignee}</p>
+                        <p className="text-xs text-professional-slate-dark">{task.stage}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Team Tab */}
+        {activeTab === 'team' && (
+          <div className="space-y-6">
+            {/* Team Summary */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card className="professional-card">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-professional-slate-dark">Total Members</p>
+                      <p className="text-2xl font-bold text-professional-blue">{data.totalTeammates}</p>
+                    </div>
+                    <Users className="h-8 w-8 text-professional-blue" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="professional-card">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-professional-slate-dark">Available</p>
+                      <p className="text-2xl font-bold text-professional-green">{data.freeTeammates}</p>
+                    </div>
+                    <CheckCircle2 className="h-8 w-8 text-professional-green" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="professional-card">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-professional-slate-dark">Occupied</p>
+                      <p className="text-2xl font-bold text-professional-orange">{data.occupiedTeammates}</p>
+                    </div>
+                    <Briefcase className="h-8 w-8 text-professional-orange" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Team Members List */}
+            <Card className="professional-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-professional-navy">
+                  <Award className="h-5 w-5 text-professional-purple" />
+                  Team Members Summary
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {data.teamMembersSummary?.map((member) => (
+                    <div key={member.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-professional-slate/5 to-professional-blue/5 rounded-lg border border-professional-slate/20">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-gradient-to-r from-professional-blue to-professional-cyan rounded-full flex items-center justify-center text-white font-bold">
+                          {member.name.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="font-medium text-professional-navy">{member.name}</p>
+                          <p className="text-sm text-professional-slate-dark">{member.role} • {member.department}</p>
+                          <p className="text-xs text-professional-slate-dark">{member.email}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-medium text-professional-navy">
+                          {member.tasksAssigned} tasks assigned
+                        </p>
+                        <p className="text-xs text-professional-slate-dark">{member.location}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
 
 export default Dashboard;
+
+
