@@ -836,32 +836,78 @@ const Reports = () => {
                   )}
                 </div>
 
-                {/* Team Members */}
+                {/* Team Members - REPLACE THIS SECTION */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Development Effort */}
                   <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6">
                     <div className="flex items-center space-x-3 mb-4">
                       <UserCheck className="h-5 w-5 text-green-600" />
-                      <h4 className="font-bold text-green-800">Developers</h4>
+                      <h4 className="font-bold text-green-800">Development Effort</h4>
                     </div>
-                    <div className="space-y-2">
-                      {taskReportData.developerNames.map((developer, index) => (
-                        <div key={index} className="bg-white px-3 py-2 rounded border text-green-700 font-medium">
-                          {developer}
-                        </div>
-                      ))}
+                    <div className="mb-2 text-sm text-gray-700 font-semibold">
+                      Due Hours: {taskReportData.developmentDueHours || 0}h
+                    </div>
+                    <table className="w-full text-left mb-2">
+                      <thead>
+                        <tr>
+                          <th className="py-1 pr-2">Developer</th>
+                          <th className="py-1 pr-2">Hours Logged</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(taskReportData.developerEffort || []).map((dev, idx) => (
+                          <tr key={idx}>
+                            <td className="py-1 pr-2">{dev.teammateName}</td>
+                            <td className="py-1 pr-2">{dev.hoursLogged} h</td>
+                          </tr>
+                        ))}
+                        {/* Total row for developers */}
+                        <tr className="font-bold border-t">
+                          <td className="py-1 pr-2 text-right">Total</td>
+                          <td className="py-1 pr-2">
+                            {taskReportData.developerEffort ? taskReportData.developerEffort.reduce((sum, d) => sum + d.hoursLogged, 0) : 0} h
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <div className="text-xs text-gray-600 font-semibold">
+                      Total Dev Hours: {taskReportData.developerEffort ? taskReportData.developerEffort.reduce((sum, d) => sum + d.hoursLogged, 0) : 0} / {taskReportData.developmentDueHours || 0} (Estimated)
                     </div>
                   </div>
+                  {/* Testing Effort */}
                   <div className="bg-orange-50 border-2 border-orange-200 rounded-xl p-6">
                     <div className="flex items-center space-x-3 mb-4">
                       <UserCheck className="h-5 w-5 text-orange-600" />
-                      <h4 className="font-bold text-orange-800">Testers</h4>
+                      <h4 className="font-bold text-orange-800">Testing Effort</h4>
                     </div>
-                    <div className="space-y-2">
-                      {taskReportData.testerNames.map((tester, index) => (
-                        <div key={index} className="bg-white px-3 py-2 rounded border text-orange-700 font-medium">
-                          {tester}
-                        </div>
-                      ))}
+                    <div className="mb-2 text-sm text-gray-700 font-semibold">
+                      Due Hours: {taskReportData.testingDueHours || 0}h
+                    </div>
+                    <table className="w-full text-left mb-2">
+                      <thead>
+                        <tr>
+                          <th className="py-1 pr-2">Tester</th>
+                          <th className="py-1 pr-2">Hours Logged</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(taskReportData.testerEffort || []).map((tester, idx) => (
+                          <tr key={idx}>
+                            <td className="py-1 pr-2">{tester.teammateName}</td>
+                            <td className="py-1 pr-2">{tester.hoursLogged} h</td>
+                          </tr>
+                        ))}
+                        {/* Total row for testers */}
+                        <tr className="font-bold border-t">
+                          <td className="py-1 pr-2 text-right">Total</td>
+                          <td className="py-1 pr-2">
+                            {taskReportData.testerEffort ? taskReportData.testerEffort.reduce((sum, t) => sum + t.hoursLogged, 0) : 0} h
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <div className="text-xs text-gray-600 font-semibold">
+                      Total Test Hours: {taskReportData.testerEffort ? taskReportData.testerEffort.reduce((sum, t) => sum + t.hoursLogged, 0) : 0} / {taskReportData.testingDueHours || 0} (Estimated)
                     </div>
                   </div>
                 </div>
@@ -875,7 +921,8 @@ const Reports = () => {
                         <TableRow>
                           <TableHead className="font-bold text-foreground py-6 text-base">Discipline</TableHead>
                           <TableHead className="font-bold text-foreground py-6 text-base">Hours Logged</TableHead>
-                          <TableHead className="font-bold text-foreground py-6 text-base">Percentage</TableHead>
+                          <TableHead className="font-bold text-foreground py-6 text-base">Due Hours</TableHead>
+                          <TableHead className="font-bold text-foreground py-6 text-base">Status</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -884,17 +931,32 @@ const Reports = () => {
                             <div className="w-4 h-4 bg-gradient-to-r from-blue-400 to-blue-600 rounded-full shadow-sm" />
                             <span>Development Hours</span>
                           </TableCell>
+                          {(() => {
+                            const devLogged = taskReportData.developerEffort ? taskReportData.developerEffort.reduce((sum, d) => sum + d.hoursLogged, 0) : 0;
+                            const devDue = taskReportData.developmentDueHours || 0;
+                            const over = devLogged > devDue;
+                            return (
+                              <TableCell className={`py-6 ${over ? 'bg-red-100 text-red-700 font-bold border border-red-400' : ''}`}>
+                                <span className={`font-bold text-xl ${over ? 'text-red-700' : 'text-blue-600'}`}>
+                                  {devLogged} hours
+                                </span>
+                              </TableCell>
+                            );
+                          })()}
                           <TableCell className="py-6">
                             <span className="font-bold text-xl text-blue-600">
-                              {taskReportData.breakdown.developmentHours} hours
+                              {taskReportData.developmentDueHours || 0} hours
                             </span>
                           </TableCell>
                           <TableCell className="py-6">
-                            <span className="text-base font-semibold text-muted-foreground">
-                              {taskReportData.totalHours > 0 
-                                ? ((taskReportData.breakdown.developmentHours / taskReportData.totalHours) * 100).toFixed(1)
-                                : 0}%
-                            </span>
+                            {(() => {
+                              const devLogged = taskReportData.developerEffort ? taskReportData.developerEffort.reduce((sum, d) => sum + d.hoursLogged, 0) : 0;
+                              const devDue = taskReportData.developmentDueHours || 0;
+                              if (devDue === 0) return <span className="text-base text-gray-400">N/A</span>;
+                              if (devLogged < devDue) return <span className="text-base font-semibold text-yellow-700 bg-yellow-100 px-2 py-1 rounded">Under: {(devDue - devLogged).toFixed(1)} h less</span>;
+                              if (devLogged === devDue) return <span className="text-base font-semibold text-green-700 bg-green-100 px-2 py-1 rounded">On Time</span>;
+                              if (devLogged > devDue) return <span className="text-base font-semibold text-red-700 bg-red-100 px-2 py-1 rounded">Over: {(devLogged - devDue).toFixed(1)} h extra</span>;
+                            })()}
                           </TableCell>
                         </TableRow>
                         <TableRow className="bg-green-50 hover:bg-green-100 border-l-4 border-l-green-500 transition-all duration-200">
@@ -902,17 +964,32 @@ const Reports = () => {
                             <div className="w-4 h-4 bg-gradient-to-r from-green-400 to-green-600 rounded-full shadow-sm" />
                             <span>Testing Hours</span>
                           </TableCell>
+                          {(() => {
+                            const testLogged = taskReportData.testerEffort ? taskReportData.testerEffort.reduce((sum, t) => sum + t.hoursLogged, 0) : 0;
+                            const testDue = taskReportData.testingDueHours || 0;
+                            const over = testLogged > testDue;
+                            return (
+                              <TableCell className={`py-6 ${over ? 'bg-red-100 text-red-700 font-bold border border-red-400' : ''}`}>
+                                <span className={`font-bold text-xl ${over ? 'text-red-700' : 'text-green-600'}`}>
+                                  {testLogged} hours
+                                </span>
+                              </TableCell>
+                            );
+                          })()}
                           <TableCell className="py-6">
                             <span className="font-bold text-xl text-green-600">
-                              {taskReportData.breakdown.testingHours} hours
+                              {taskReportData.testingDueHours || 0} hours
                             </span>
                           </TableCell>
                           <TableCell className="py-6">
-                            <span className="text-base font-semibold text-muted-foreground">
-                              {taskReportData.totalHours > 0 
-                                ? ((taskReportData.breakdown.testingHours / taskReportData.totalHours) * 100).toFixed(1)
-                                : 0}%
-                            </span>
+                            {(() => {
+                              const testLogged = taskReportData.testerEffort ? taskReportData.testerEffort.reduce((sum, t) => sum + t.hoursLogged, 0) : 0;
+                              const testDue = taskReportData.testingDueHours || 0;
+                              if (testDue === 0) return <span className="text-base text-gray-400">N/A</span>;
+                              if (testLogged < testDue) return <span className="text-base font-semibold text-yellow-700 bg-yellow-100 px-2 py-1 rounded">Under: {(testDue - testLogged).toFixed(1)} h less</span>;
+                              if (testLogged === testDue) return <span className="text-base font-semibold text-green-700 bg-green-100 px-2 py-1 rounded">On Time</span>;
+                              if (testLogged > testDue) return <span className="text-base font-semibold text-red-700 bg-red-100 px-2 py-1 rounded">Over: {(testLogged - testDue).toFixed(1)} h extra</span>;
+                            })()}
                           </TableCell>
                         </TableRow>
                         <TableRow className="bg-gray-50 hover:bg-gray-100 border-l-4 border-l-gray-500 transition-all duration-200">
@@ -922,14 +999,17 @@ const Reports = () => {
                           </TableCell>
                           <TableCell className="py-6">
                             <span className="font-bold text-xl text-gray-600">
-                              {taskReportData.breakdown.otherHours} hours
+                              {(taskReportData.breakdown?.otherHours ?? 0)} hours
                             </span>
                           </TableCell>
                           <TableCell className="py-6">
+                            <span className="font-bold text-xl text-gray-600">-</span>
+                          </TableCell>
+                          <TableCell className="py-6">
                             <span className="text-base font-semibold text-muted-foreground">
-                              {taskReportData.totalHours > 0 
-                                ? ((taskReportData.breakdown.otherHours / taskReportData.totalHours) * 100).toFixed(1)
-                                : 0}%
+                              {taskReportData.breakdown?.otherHours > 0 && (taskReportData.developmentDueHours > 0 || taskReportData.testingDueHours > 0)
+                                ? "-"
+                                : "0%"}
                             </span>
                           </TableCell>
                         </TableRow>
