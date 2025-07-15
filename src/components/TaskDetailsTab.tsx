@@ -35,6 +35,19 @@ import {
 } from "@/utils/statusWorkflowUtils";
 import { DisciplineBasedTeammateSelector } from "./DisciplineBasedTeammateSelector";
 
+const statusLabelMap: Record<string, string> = {
+  BACKLOG: "Backlog",
+  ANALYSIS: "Analysis",
+  DEVELOPMENT: "Development",
+  CODE_REVIEW: "Code Review",
+  UAT_TESTING: "UAT Testing",
+  UAT_FAILED: "UAT Failed",
+  READY_FOR_PREPROD: "Ready for Pre-Production",
+  PREPROD: "Pre-Production",
+  PROD: "Production",
+  COMPLETED: "Completed",
+};
+
 interface Task {
   id: number;
   taskNumber: string;
@@ -114,7 +127,7 @@ export const TaskDetailsTab = ({
   const projectTeammates = projectTeammatesData?.teammates || [];
 
   // Separate developers and testers from project teammates
- const developers = projectTeammates.filter(
+  const developers = projectTeammates.filter(
     (t) =>
       (t.department === "DEVELOPER" || t.department === "DEV_LEAD") &&
       t.projectIds?.includes(selectedProjectId!)
@@ -128,10 +141,9 @@ export const TaskDetailsTab = ({
 
   // Get available status transitions based on current status and user functionalGroup
   const availableStatusTransitions = getAvailableStatuses(
-    task.status,
-    user?.department || ""
+    currentStage,
+    user?.functionalGroup || ""
   );
-
   // Check if the status dropdown should be disabled
   const isStatusDropdownDisabled = availableStatusTransitions.length === 0;
 
@@ -145,7 +157,9 @@ export const TaskDetailsTab = ({
     isCommentRequired ||
     (task.status === "CODE_REVIEW" && availableStatusTransitions.length > 0) ||
     (task.status === "UAT_TESTING" && currentStage === "UAT_FAILED") ||
-    (task.status === "UAT_FAILED" && currentStage === "UAT_TESTING");
+    (task.status === "UAT_FAILED" && currentStage === "UAT_TESTING") ||
+    (task.status === "CODE_REVIEW" && currentStage === "UAT_TESTING") ||
+    (task.status === "CODE_REVIEW" && currentStage === "DEVELOPMENT");
 
   const taskTypes = [
     { value: "BRD", label: "Business Requirement Document" },
@@ -162,11 +176,11 @@ export const TaskDetailsTab = ({
   useEffect(() => {
     setTaskName(task.name);
     setDescription(task.description || "");
-    setCurrentStage(task.status);
+    setCurrentStage(currentStage);
     setTaskType(task.taskType);
     setPriority(task.priority);
     setCommitId(task.commitId || "");
-    setSelectedProjectId(task.id);
+    setSelectedProjectId(task.projectId);
     setDevelopmentDueHours(task.developmentDueHours || 0);
     setTestingDueHours(task.testingDueHours || 0);
 
@@ -178,20 +192,8 @@ export const TaskDetailsTab = ({
     }
     console.log("Edit Task Loaded:", task);
     // Set initial developer and tester selections based on project teammates
-    const devIds = projectTeammates.filter(
-      (t) =>
-        (t.department === "DEVELOPER" || t.department === "DEV_LEAD") &&
-        t.projectIds?.includes(selectedProjectId!)
-    );
-
-    const testIds = projectTeammates.filter(
-      (t) =>
-        (t.department === "TESTER" || t.department === "TEST_LEAD") &&
-        t.projectIds?.includes(selectedProjectId!)
-    );
-
-    setSelectedDeveloperIds(devIds);
-    setSelectedTesterIds(testIds);
+    setSelectedDeveloperIds(task.assignedDeveloperIds);
+    setSelectedTesterIds(task.assignedTesterIds); 
   }, [task, projectTeammates]);
 
   const handleStatusChange = (newStatus: string) => {
@@ -493,16 +495,22 @@ export const TaskDetailsTab = ({
                     isStatusDropdownDisabled && "opacity-50 cursor-not-allowed"
                   )}
                 >
-                  <SelectValue />
+                  <SelectValue placeholder="Select status">
+                    {statusLabelMap[currentStage] || currentStage}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {availableStatusTransitions.map((status) => (
-                    <SelectItem key={status.value} value={status.value}>
-                      {status.label}
+                  {availableStatusTransitions.map((statusOption) => (
+                    <SelectItem
+                      key={statusOption.value}
+                      value={statusOption.value}
+                    >
+                      {statusOption.value}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+
               {isStatusDropdownDisabled && (
                 <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded mt-2 border border-amber-200">
                   No status changes available for your role at this stage.

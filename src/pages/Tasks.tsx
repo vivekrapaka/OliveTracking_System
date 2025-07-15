@@ -142,42 +142,48 @@ export const Tasks = () => {
 
     // Check if user is assigned to the task based on their role and the task assignment
     const userFullName = user.fullName;
-    if (
-      user.functionalGroup === "DEVELOPER" &&
-      task.developerName === userFullName
-    ) {
-      return true;
-    }
-    if (
-      ["TESTER", "TEST_LEAD"].includes(user.functionalGroup) &&
-      task.testerName === userFullName
-    ) {
-      return true;
-    }
+  if (
+    user.functionalGroup === "DEVELOPER" &&
+    Array.isArray(task.assignedDeveloperNames) &&
+    task.assignedDeveloperNames.includes(userFullName)
+  ) {
+    return true;
+  }
+
+  if (
+    ["TESTER", "TEST_LEAD"].includes(user.functionalGroup) &&
+    Array.isArray(task.assignedTesterNames) &&
+    task.assignedTesterNames.includes(userFullName)
+  ) {
+    return true;
+  }
 
     return false;
   };
 
   // Helper function to check if task is assigned to current user
-  const isTaskAssignedToCurrentUser = (task: any) => {
-    if (!user?.fullName) return false;
+ const isTaskAssignedToCurrentUser = (task: any) => {
+  if (!user?.fullName) return false;
 
-    const userFullName = user.fullName;
-    if (
-      user.functionalGroup === "DEVELOPER" &&
-      task.developerName === userFullName
-    ) {
-      return true;
-    }
-    if (
-      ["TESTER", "TEST_LEAD"].includes(user.functionalGroup) &&
-      task.testerName === userFullName
-    ) {
-      return true;
-    }
+  const userFullName = user.fullName.trim();
 
-    return false;
-  };
+  const isDevAssigned =
+    user.functionalGroup === "DEVELOPER" &&
+    Array.isArray(task.assignedDeveloperNames) &&
+    task.assignedDeveloperNames.some(
+      (name: string) => name.trim() === userFullName
+    );
+
+  const isTesterAssigned =
+    ["TESTER", "TEST_LEAD"].includes(user.functionalGroup) &&
+    Array.isArray(task.assignedTesterNames) &&
+    task.assignedTesterNames.some(
+      (name: string) => name.trim() === userFullName
+    );
+
+  return isDevAssigned || isTesterAssigned;
+};
+
 
   // Filter and search tasks
   const filteredTasks = useMemo(() => {
