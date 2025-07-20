@@ -154,7 +154,7 @@ export const TaskDetailsTab = ({
   // Check if comment is required for the status change
   const isCommentRequired = requiresComment(task.status, currentStage);
   const showCommentField =
-    isCommentRequired ||
+    isCommentRequired ||  
     (task.status === "CODE_REVIEW" && availableStatusTransitions.length > 0) ||
     (task.status === "UAT_TESTING" && currentStage === "UAT_FAILED") ||
     (task.status === "UAT_FAILED" && currentStage === "UAT_TESTING") ||

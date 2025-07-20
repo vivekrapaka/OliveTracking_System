@@ -32,6 +32,7 @@ import { useTasksData } from "@/hooks/useTasksData";
 import { useTeammatesData } from "@/hooks/useTeammatesData";
 import { AddTaskDialog } from "@/components/AddTaskDialog";
 import { TaskDetailsDialog } from "@/components/TaskDetailsDialog";
+import LogActivityDialog from "@/components/LogActivityDialog";
 
 // Helper function to safely format dates
 const formatSafeDate = (
@@ -114,6 +115,7 @@ export const Tasks = () => {
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isLogActivityDialogOpen, setIsLogActivityDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
 
@@ -252,15 +254,24 @@ export const Tasks = () => {
               found
             </p>
           </div>
-          {canAddTasks && (
+          <div className="flex space-x-3">
+            {canAddTasks && (
+              <Button
+                onClick={() => setIsAddDialogOpen(true)}
+                className="professional-button shadow-professional-lg"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Task
+              </Button>
+            )}
             <Button
-              onClick={() => setIsAddDialogOpen(true)}
-              className="professional-button shadow-professional-lg"
+              onClick={() => setIsLogActivityDialogOpen(true)}
+              className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white shadow-professional-lg"
             >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Task
+              <Clock className="h-4 w-4 mr-2" />
+              Log Activity
             </Button>
-          )}
+          </div>
         </div>
       </div>
 
@@ -548,6 +559,12 @@ export const Tasks = () => {
         isOpen={isAddDialogOpen}
         onClose={() => setIsAddDialogOpen(false)}
         teammates={teammatesData?.teammates || []}
+      />
+
+      {/* Log Activity Dialog */}
+      <LogActivityDialog
+        isOpen={isLogActivityDialogOpen}
+        onClose={() => setIsLogActivityDialogOpen(false)}
       />
 
       {/* Task Details Dialog */}

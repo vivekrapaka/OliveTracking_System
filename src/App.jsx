@@ -12,6 +12,8 @@ import { Tasks } from "./pages/Tasks";
 import { default as Teammates } from "./pages/Teammates";
 import Reports from "./pages/Reports";
 import Login from "./pages/Login";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import ProjectManagement from "./pages/admin/ProjectManagement";
 import UserManagement from "./pages/admin/UserManagement";
@@ -27,6 +29,8 @@ function App() {
         <Router>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/" element={
               <ProtectedRoute>
                 <Layout>

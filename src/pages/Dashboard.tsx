@@ -24,6 +24,7 @@ import { format, isValid, parseISO } from "date-fns";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
+import LogActivityDialog from "@/components/LogActivityDialog";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 
 // Helper function to safely format dates
@@ -43,6 +44,7 @@ export const Dashboard = () => {
   const { user } = useAuth();
   const { data, isLoading, error } = useDashboardData();
   const [activeTab, setActiveTab] = useState<'overview' | 'tasks' | 'team'>('overview');
+  const [isLogActivityDialogOpen, setIsLogActivityDialogOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -103,13 +105,22 @@ export const Dashboard = () => {
               Welcome back, <span className="font-semibold text-professional-navy">{user?.fullName}</span>
             </p>
           </div>
-          <div className="text-right">
-            <p className="text-sm text-professional-slate-dark">
-              Last updated: {formatSafeDate(new Date().toISOString(), "PPP")}
-            </p>
-            <Badge className="bg-professional-green/10 text-professional-green-dark border-professional-green/30 mt-2">
-              {user?.functionalGroup?.replace(/_/g, ' ')}
-            </Badge>
+          <div className="flex flex-col items-end space-y-3">
+            <Button
+              onClick={() => setIsLogActivityDialogOpen(true)}
+              className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white shadow-professional"
+            >
+              <Clock className="h-4 w-4 mr-2" />
+              Log Activity
+            </Button>
+            <div className="text-right">
+              <p className="text-sm text-professional-slate-dark">
+                Last updated: {formatSafeDate(new Date().toISOString(), "PPP")}
+              </p>
+              <Badge className="bg-professional-green/10 text-professional-green-dark border-professional-green/30 mt-2">
+                {user?.functionalGroup?.replace(/_/g, ' ')}
+              </Badge>
+            </div>
           </div>
         </div>
       </div>
@@ -458,6 +469,12 @@ export const Dashboard = () => {
           </div>
         )}
       </div>
+
+      {/* Log Activity Dialog */}
+      <LogActivityDialog
+        isOpen={isLogActivityDialogOpen}
+        onClose={() => setIsLogActivityDialogOpen(false)}
+      />
     </div>
   );
 };

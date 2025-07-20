@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import {Link, Navigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -205,6 +205,12 @@ const Login = () => {
                   <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
                     {isLoading ? "Signing In..." : "Sign In"}
                   </Button>
+                  
+                  <div className="text-center">
+                    <Link to="/forgot-password" className="text-blue-600 hover:text-blue-700 text-sm">
+                      Forgot your password?
+                    </Link>
+                  </div>
                 </form>
               </TabsContent>
               

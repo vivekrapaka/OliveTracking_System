@@ -42,12 +42,42 @@ interface TaskTimeSummaryResponse {
   testManagerName?: string;
   developerNames: string[];
   testerNames: string[];
+  developmentDueHours?: number;
+  testingDueHours?: number;
+  developerEffort?: Array<{
+    teammateName: string;
+    hoursLogged: number;
+  }>;
+  testerEffort?: Array<{
+    teammateName: string;
+    hoursLogged: number;
+  }>;
   breakdown: {
     developmentHours: number;
     testingHours: number;
     otherHours: number;
   };
 }
+
+// Add normalization function
+const normalizeTimesheetData = (data) => {
+  if (!data || !Array.isArray(data.dailyLogs)) return data;
+  return {
+    ...data,
+    dailyLogs: data.dailyLogs.map(day => ({
+      ...day,
+      taskLogs: Array.isArray(day.breakdown?.taskDetails)
+        ? day.breakdown.taskDetails.map(t => ({
+            taskName: t.taskName,
+            hours: t.hours,
+            comments: t.comments,
+          }))
+        : [],
+      taskHours: day.breakdown?.taskHours ?? 0,
+      generalHours: day.breakdown?.generalHours ?? 0,
+    })),
+  };
+};
 
 const Reports = () => {
   const { user } = useAuth();
@@ -159,7 +189,7 @@ const Reports = () => {
       });
       
       console.log('Timesheet report response:', response.data);
-      setTimesheetReportData(response.data);
+      setTimesheetReportData(normalizeTimesheetData(response.data));
       
       toast({
         title: "Report Generated Successfully",
@@ -439,7 +469,7 @@ const Reports = () => {
                             <div>
                               <div className="font-semibold text-foreground">{teammate.name}</div>
                               <div className="text-sm text-muted-foreground">
-                                {teammate.role} • {teammate.department} • {teammate.email}
+                                {teammate.role} • {teammate.department} 
                               </div>
                             </div>
                           </div>
@@ -584,37 +614,103 @@ const Reports = () => {
           </Card>
 
           {/* Enhanced Timesheet Report Display */}
-          {timesheetReportData && (
+          {timesheetReportData && Array.isArray(timesheetReportData.dailyLogs) ? (
             <Card className="border-0 shadow-2xl">
               <CardHeader className="bg-gradient-to-r from-green-500/10 to-primary/10 border-b border-green-200">
-                <CardTitle className="text-2xl flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center">
-                    <User className="h-4 w-4 text-white" />
-                  </div>
-                  <span>Timesheet Report for {timesheetReportData.teammateName}</span>
-                </CardTitle>
-                <CardDescription className="text-lg">
-                  Period: {startDate && format(startDate, "PPP")} to {endDate && format(endDate, "PPP")}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-10 space-y-10">
-                {/* Enhanced Summary */}
-                <div className="bg-gradient-to-br from-primary/15 via-primary/10 to-secondary/15 border-2 border-primary/30 rounded-2xl p-8 shadow-inner">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-2xl font-bold text-foreground mb-2">Total Hours for Period</h3>
-                      <p className="text-5xl font-bold text-primary mt-4">{timesheetReportData.totalHoursForPeriod} hours</p>
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-3xl font-bold shadow-lg">
+                      {timesheetReportData.teammateName.charAt(0)}
                     </div>
-                    <div className="p-6 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-2xl shadow-lg">
-                      <Clock className="h-12 w-12 text-primary" />
+                    <div>
+                      <CardTitle className="text-3xl font-bold text-foreground mb-1">
+                        {timesheetReportData.teammateName}
+                      </CardTitle>
+                      <div className="text-gray-600 text-lg font-medium">
+                        {(() => {
+                          const teammate = teammates.find(t => t.id === timesheetReportData.teammateId);
+                          return teammate ? `${teammate.role} • ${teammate.department}` : '';
+                        })()}
+                      </div>
+                      <div className="text-gray-500 text-sm mt-1">
+                        {startDate && endDate && `${format(startDate, 'PPP')} to ${format(endDate, 'PPP')}`}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-2">
+                    <div className="text-5xl font-extrabold text-primary">
+                      {timesheetReportData.totalHoursForPeriod}h
+                    </div>
+                    <div className="text-gray-500 font-medium">Total Hours</div>
+                    <div className="w-40 mt-2">
+                      <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+                        <div
+                          className="h-3 bg-gradient-to-r from-green-400 to-green-600 rounded-full"
+                          style={{ width: `${Math.min((timesheetReportData.totalHoursForPeriod / ((timesheetReportData.dailyLogs ?? []).length || 1)) * 100, 100)}%` }}
+                        ></div>
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {`Target: ${(8 * ((timesheetReportData.dailyLogs ?? []).length || 1))}h`}
+                      </div>
                     </div>
                   </div>
                 </div>
-
-                {/* Enhanced Daily Log Table */}
-                <div className="space-y-6">
-                  <h3 className="text-2xl font-bold text-foreground">Daily Work Log</h3>
-                  <div className="border-2 border-primary/20 rounded-2xl overflow-hidden shadow-xl">
+              </CardHeader>
+              <CardContent className="p-8 space-y-10">
+                {/* Professional Summary */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-4">
+                      <span className="text-lg font-semibold text-gray-700">Days Worked:</span>
+                      <span className="text-2xl font-bold text-primary">
+                        {(timesheetReportData.dailyLogs ?? []).length}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className="text-lg font-semibold text-gray-700">Average Hours/Day:</span>
+                      <span className="text-2xl font-bold text-primary">
+                        {(
+                          timesheetReportData.totalHoursForPeriod /
+                          ((timesheetReportData.dailyLogs ?? []).length || 1)
+                        ).toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className="text-lg font-semibold text-gray-700">Days Below Target:</span>
+                      <span className="text-2xl font-bold text-red-500">
+                        {(timesheetReportData.dailyLogs ?? []).filter(d => d.totalHours < 8).length}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className="text-lg font-semibold text-gray-700">Days Target Met/Exceeded:</span>
+                      <span className="text-2xl font-bold text-green-600">
+                        {(timesheetReportData.dailyLogs ?? []).filter(d => d.totalHours >= 8).length}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2 items-end justify-end">
+                    <Button
+                      onClick={downloadTimesheetPDF}
+                      disabled={isDownloadingTimesheetPDF}
+                      variant="outline"
+                      className="border-green-400 hover:bg-green-50 hover:border-green-500 hover:text-green-700 px-8 py-3 h-12 font-semibold text-base"
+                    >
+                      {isDownloadingTimesheetPDF ? (
+                        <>
+                          <Clock className="mr-3 h-5 w-5 animate-spin" /> Downloading...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="mr-3 h-5 w-5" /> Download PDF
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+                {/* Daily Breakdown Table */}
+                <div className="mt-8">
+                  <h3 className="text-2xl font-bold text-foreground mb-4">Daily Work Log</h3>
+                  <div className="border-2 border-primary/20 rounded-2xl overflow-x-auto shadow-xl">
                     <Table>
                       <TableHeader className="bg-gradient-to-r from-primary/10 to-secondary/10">
                         <TableRow>
@@ -625,7 +721,7 @@ const Reports = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {timesheetReportData.dailyLogs.map((log, index) => (
+                        {(timesheetReportData.dailyLogs ?? []).map((log, index) => (
                           <TableRow
                             key={index}
                             className={cn(
@@ -650,11 +746,26 @@ const Reports = () => {
                             </TableCell>
                             <TableCell className="py-6">
                               <div className="space-y-1">
-                                {log.taskLogs.map((taskLog, taskIndex) => (
-                                  <div key={taskIndex} className="text-sm bg-white/80 px-2 py-1 rounded border">
-                                    <span className="font-medium">{taskLog.taskName}</span>: {taskLog.hours}h
-                                  </div>
-                                ))}
+                                {log.taskLogs.length === 0 ? (
+                                  <span className="text-gray-400 italic">No tasks logged</span>
+                                ) : (
+                                  log.taskLogs.map((taskLog, taskIndex) => (
+                                    <div key={taskIndex} className="flex flex-col gap-0.5 bg-white/80 px-2 py-1 rounded border mb-1">
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-medium text-gray-800">{taskLog.taskName}</span>
+                                        <span className="ml-auto text-gray-600">{taskLog.hours}h</span>
+                                        {taskLog.taskName.toLowerCase().includes('general') && (
+                                          <span className="ml-2 px-2 py-0.5 rounded bg-blue-100 text-blue-700 text-xs font-semibold">General</span>
+                                        )}
+                                      </div>
+                                      {taskLog.comments && (
+                                        <div className="text-xs text-gray-500 italic pl-2 border-l-2 border-gray-200">
+                                          {taskLog.comments}
+                                        </div>
+                                      )}
+                                    </div>
+                                  ))
+                                )}
                               </div>
                             </TableCell>
                             <TableCell className="py-6">
@@ -674,8 +785,7 @@ const Reports = () => {
                       </TableBody>
                     </Table>
                   </div>
-
-                  {timesheetReportData.dailyLogs.length === 0 && (
+                  {(timesheetReportData.dailyLogs ?? []).length === 0 && (
                     <div className="text-center py-16 text-muted-foreground">
                       <Clock className="h-20 w-20 mx-auto mb-6 opacity-50" />
                       <p className="text-xl font-semibold">No work logs found for the selected period.</p>
@@ -685,6 +795,10 @@ const Reports = () => {
                 </div>
               </CardContent>
             </Card>
+          ) : (
+            <div className="text-center text-red-500 py-8">
+              No timesheet data available for the selected teammate and period.
+            </div>
           )}
         </TabsContent>
 
@@ -1007,7 +1121,7 @@ const Reports = () => {
                           </TableCell>
                           <TableCell className="py-6">
                             <span className="text-base font-semibold text-muted-foreground">
-                              {taskReportData.breakdown?.otherHours > 0 && (taskReportData.developmentDueHours > 0 || taskReportData.testingDueHours > 0)
+                                                             {taskReportData.breakdown?.otherHours > 0 && ((taskReportData.developmentDueHours || 0) > 0 || (taskReportData.testingDueHours || 0) > 0)
                                 ? "-"
                                 : "0%"}
                             </span>
